@@ -1,0 +1,40 @@
+# Ignorar entornos virtuales
+venv/
+env/
+.env/
+
+# Ignorar archivos de Python compilados
+*.pyc
+*.pyo
+__pycache__/
+
+# Ignorar archivos de base de datos locales (si no usas SQLite o si es un archivo temporal)
+*.sqlite3
+
+# Ignorar archivos de migraciones (si no deseas que se suban migraciones ya generadas)
+*/migrations/*
+
+# Ignorar archivos de configuración de sistema
+.DS_Store
+Thumbs.db
+
+# Ignorar archivos de logs
+*.log
+
+# Ignorar archivos de tests
+*.bak
+
+# Archivos y carpetas personales
+.vscode/
+*.lnk
+*.zip
+*.xls*
+*.docx
+
+# Archivos temporales de Windows
+AppData/
+Documents/
+Downloads/
+Pictures/
+Videos/
+OneDrive/

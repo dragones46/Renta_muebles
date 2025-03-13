@@ -1,0 +1,21 @@
+{% extends 'muebles/barnav.html' %}
+
+{% block titulo %}Muebles Disponibles{% endblock %}
+
+{% block contenedor %}
+<h1>Nuestros Muebles</h1>
+<div class="row">
+    {% for mueble in muebles %}
+    <div class="col-md-4">
+        <div class="card mb-4">
+            <img src="{{ mueble.imagen.url }}" class="card-img-top" alt="{{ mueble.nombre }}">
+            <div class="card-body">
+                <h5 class="card-title">{{ mueble.nombre }}</h5>
+                <p class="card-text">{{ mueble.descripcion }}</p>
+                <p class="card-text">Precio: ${{ mueble.precio_diario }}/día</p>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}
