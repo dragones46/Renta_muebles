@@ -1,0 +1,35 @@
+{% extends 'muebles/barnav.html' %}
+
+{% block titulo %}Rentar Mueble{% endblock %}
+
+{% block contenedor %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card shadow">
+                <div class="card-body">
+                    <h1 class="card-title text-center">Rentar {{ mueble.nombre }}</h1>
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="mb-3">
+                            <label for="fecha_inicio" class="form-label">Fecha de Inicio:</label>
+                            <input type="date" class="form-control" id="fecha_inicio" name="fecha_inicio" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="duracion_meses" class="form-label">Duración en Meses:</label>
+                            <input type="number" class="form-control" id="duracion_meses" name="duracion_meses" min="0" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="duracion_anios" class="form-label">Duración en Años:</label>
+                            <input type="number" class="form-control" id="duracion_anios" name="duracion_anios" min="0" required>
+                        </div>
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary">Confirmar Renta</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

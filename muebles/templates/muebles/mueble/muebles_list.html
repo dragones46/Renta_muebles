@@ -13,6 +13,8 @@
                 <h5 class="card-title">{{ mueble.nombre }}</h5>
                 <p class="card-text">{{ mueble.descripcion }}</p>
                 <p class="card-text">Precio: ${{ mueble.precio_diario }}/día</p>
+                <!-- Botón de Rentar -->
+                <a href="{% url 'rentar_mueble' mueble.id %}" class="btn btn-primary">Rentar</a>
             </div>
         </div>
     </div>

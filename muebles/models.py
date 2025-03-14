@@ -1,3 +1,4 @@
+from datetime import timedelta
 from django.db import models
 from django.contrib.auth.models import AbstractUser, BaseUserManager
 from django import forms
@@ -86,12 +87,32 @@ class Mueble(models.Model):
 class Renta(models.Model):
     mueble = models.ForeignKey(Mueble, on_delete=models.CASCADE)
     fecha_inicio = models.DateField()
-    fecha_fin = models.DateField()
+    fecha_fin = models.DateField()  # Campo obligatorio
     usuario = models.ForeignKey(Usuario, on_delete=models.CASCADE)
+    duracion_meses = models.IntegerField(default=0)  # Duración en meses
+    duracion_anios = models.IntegerField(default=0)  # Duración en años
 
     def __str__(self):
         return f"Renta de {self.mueble.nombre} por {self.usuario.nombre}"
 
+    def save(self, *args, **kwargs):
+        # Calcular la fecha_fin en función de la duración
+        if self.fecha_inicio and (self.duracion_meses or self.duracion_anios):
+            self.fecha_fin = self.fecha_inicio + timedelta(
+                days=(self.duracion_meses * 30) + (self.duracion_anios * 365)
+            )
+        super().save(*args, **kwargs)
+
+class RentaForm(forms.ModelForm):
+    class Meta:
+        model = Renta
+        fields = ['fecha_inicio', 'duracion_meses', 'duracion_anios']
+        widgets = {
+            'fecha_inicio': forms.DateInput(attrs={'type': 'date', 'required': True}),
+            'duracion_meses': forms.NumberInput(attrs={'required': True, 'min': 0}),
+            'duracion_anios': forms.NumberInput(attrs={'required': True, 'min': 0}),
+        }
+        
 class UsuarioForm(forms.ModelForm):
     class Meta:
         model = Usuario

@@ -1,0 +1,139 @@
+{% extends 'muebles/barNav.html' %}
+{% load static %}
+
+{% block titulo %}Perfil - Renta de Muebles{% endblock %}
+
+{% block contenedor %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header text-center">
+                    <h3>Perfil de Usuario</h3>
+                </div>
+                <div class="card-body">
+                    <div class="text-center mb-3">
+                        {% if user.foto %}
+                        <img src="{{ user.foto.url }}" class="img-fluid rounded-circle" alt="{{ user.nombre }}"
+                            style="width: 150px; height: 150px;">
+                        {% else %}
+                        <img src="{% static 'img/default.png' %}" class="img-fluid rounded-circle" alt="Foto de perfil"
+                            style="width: 150px; height: 150px;">
+                        {% endif %}
+                    </div>
+                    <p><strong>Nombre:</strong> {{ user.nombre }}</p>
+                    <p><strong>Correo:</strong> {{ user.email }}</p>
+                    <p><strong>Dirección:</strong> {{ user.direccion }}</p>
+                    <p><strong>Rol:</strong> {{ user.get_rol_display }}</p>
+                    <p><strong>Estado:</strong> {{ user.get_estado_display }}</p>
+                    <div class="d-flex justify-content-between align-items-center mt-3">
+                        <button type="button" class="btn btn-primary" data-bs-toggle="modal"
+                            data-bs-target="#editarPerfilModal">
+                            Editar Perfil
+                        </button>
+                        <button type="button" class="btn btn-primary" data-bs-toggle="modal"
+                            data-bs-target="#cambiarContrasenaModal">
+                            Cambiar Contraseña
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para editar perfil -->
+<div class="modal fade" id="editarPerfilModal" tabindex="-1" aria-labelledby="editarPerfilModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="editarPerfilModalLabel">Editar Perfil</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="editarPerfilForm" method="post" action="#" enctype="multipart/form-data" class="needs-validation" novalidate>
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label for="nombre" class="form-label"><strong>Nombre:</strong></label>
+                        <input type="text" class="form-control" id="nombre" name="nombre" value="{{ user.nombre }}" required>
+                        <div class="invalid-feedback">
+                            Este campo es obligatorio.
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="email" class="form-label"><strong>Correo:</strong></label>
+                        <input type="email" class="form-control" id="email" name="email" value="{{ user.email }}" required>
+                        <div class="invalid-feedback">
+                            Este campo es obligatorio.
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="direccion" class="form-label"><strong>Dirección:</strong></label>
+                        <input type="text" class="form-control" id="direccion" name="direccion" value="{{ user.direccion }}" required>
+                        <div class="invalid-feedback">
+                            Este campo es obligatorio.
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="foto" class="form-label"><strong>Foto de Perfil:</strong></label>
+                        <input type="file" class="form-control" id="foto" name="foto">
+                    </div>
+                    <button type="submit" class="btn btn-primary">Guardar Cambios</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<!-- Modal para cambiar contraseña -->
+<div class="modal fade" id="cambiarContrasenaModal" tabindex="-1" aria-labelledby="cambiarContrasenaModalLabel"
+    aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="cambiarContrasenaModalLabel">Cambiar Contraseña</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form method="post" action="#">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label for="contrasena" class="form-label"><strong>Nueva Contraseña:</strong></label>
+                        <input type="password" class="form-control" id="contrasena" name="contrasena" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="confirmar_contrasena" class="form-label"><strong>Confirmar
+                                Contraseña:</strong></label>
+                        <input type="password" class="form-control" id="confirmar_contrasena"
+                            name="confirmar_contrasena" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Cambiar Contraseña</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    (function () {
+        'use strict'
+
+        // Fetch all the forms we want to apply custom Bootstrap validation styles to
+        var forms = document.querySelectorAll('.needs-validation')
+
+        // Loop over them and prevent submission
+        Array.prototype.slice.call(forms)
+            .forEach(function (form) {
+                form.addEventListener('submit', function (event) {
+                    if (!form.checkValidity()) {
+                        event.preventDefault()
+                        event.stopPropagation()
+                    }
+                    form.classList.add('was-validated')
+                }, false)
+            })
+    })()
+</script>
+
+{% endblock %}

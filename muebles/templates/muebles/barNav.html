@@ -35,11 +35,11 @@
         }
 
         .navbar a {
-            color: white !important;
+            color: rgb(1, 0, 0) !important;
         }
 
         .navbar a:hover {
-            color: #00009f !important;
+            color: #9b9b9b !important;
         }
 
         .profile-image {
@@ -60,6 +60,7 @@
             width: 100%;
             position: absolute;
             bottom: 0;
+            margin-top: 50px;
         }
 
         /* Asegura que el contenido principal tenga suficiente espacio para el footer */
@@ -74,7 +75,7 @@
         /* Centrar textos en el interior */
         .content {
             text-align: center;
-            margin-bottom: 60px; /* Ajusta este valor según el espacio que desees */
+            margin-bottom: 100px;
         }
 
         .content h1,
@@ -107,6 +108,16 @@
             box-sizing: border-box;
             text-align: center;
         }
+
+        .dropdown-menu .dropdown-item {
+            color: black;
+            transition: color 0.3s ease;
+        }
+
+        .dropdown-menu .dropdown-item:hover {
+            color: #0000ff;
+            background-color: transparent;
+        }
     </style>
 </head>
 
@@ -132,14 +143,15 @@
                     </ul>
                     <!-- Menú alineado a la derecha -->
                     <ul class="navbar-nav">
-                        {% if user.is_authenticated %}
+                        {% if request.session.logueo %}
                         <li class="nav-item dropdown">
                             <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button"
                                 data-bs-toggle="dropdown" aria-expanded="false">
-                                {% if user.profile.foto %}
-                                <img src="{{ user.profile.foto.url }}" alt="FotoUsuario" class="profile-image">
+                                {% if request.session.logueo.foto %}
+                                <img src="{{ request.session.logueo.foto }}" alt="FotoUsuario" class="profile-image">
                                 {% else %}
-                                <img src="{% static 'img/default.png' %}" alt="LogoUsuario" class="profile-image">
+                                <img src="{% static 'muebles/img/default.png' %}" alt="LogoUsuario"
+                                    class="profile-image">
                                 {% endif %}
                             </a>
                             <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdown">
@@ -149,10 +161,10 @@
                         </li>
                         {% else %}
                         <li class="nav-item">
-                            <a class="btn btn-outline-success me-3" href="{% url 'login' %}">Iniciar sesión</a>
+                            <a class="btn btn-success me-3" href="{% url 'login' %}">Iniciar sesión</a>
                         </li>
                         <li class="nav-item">
-                            <a class="btn btn-outline-secondary" href="{% url 'registro' %}">Registrarse</a>
+                            <a class="btn btn-secondary" href="{% url 'registro' %}">Registrarse</a>
                         </li>
                         {% endif %}
                     </ul>
