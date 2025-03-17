@@ -93,7 +93,7 @@ def muebles_list(request):
     muebles = Mueble.objects.all()
     return render(request, 'muebles/mueble/muebles_list.html', {'muebles': muebles})
 
-@login_required
+@rol_requerido(['1', '2', '3'])
 def rentar_mueble(request, mueble_id):
     mueble = get_object_or_404(Mueble, id=mueble_id)
     if request.method == 'POST':

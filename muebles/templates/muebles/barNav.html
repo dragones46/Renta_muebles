@@ -1,5 +1,4 @@
 {% load static %}
-
 <!DOCTYPE html>
 <html lang="es">
 
@@ -10,8 +9,11 @@
 
     <!-- Bootstrap y estilos -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css" rel="stylesheet">
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link href="{% static './muebles/css/style.css' %}" rel="stylesheet">
     <link href="{% static 'muebles/css/muebles.css' %}" rel="stylesheet">
-    <link rel="stylesheet" href="{% static 'muebles/css/styles.css' %}">
 
     <!-- Icono de pestaña de la página -->
     <link rel="icon" type="image/png" sizes="32x32" href="{% static 'img/favicon-32x32.png' %}">
@@ -35,11 +37,11 @@
         }
 
         .navbar a {
-            color: rgb(1, 0, 0) !important;
+            color: rgb(250, 250, 250) !important;
         }
 
         .navbar a:hover {
-            color: #9b9b9b !important;
+            color: #0a0909 !important;
         }
 
         .profile-image {
@@ -49,18 +51,29 @@
             margin-left: 10px;
         }
 
-        /* styles.css */
-
         /* Estilos para el footer */
         footer {
             background-color: #ff8c00 !important;
             color: white;
-            text-align: center;
             padding: 10px;
             width: 100%;
             position: absolute;
             bottom: 0;
             margin-top: 50px;
+        }
+
+        .footer-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .footer-info {
+            text-align: left;
+        }
+
+        .footer-year {
+            text-align: right;
         }
 
         /* Asegura que el contenido principal tenga suficiente espacio para el footer */
@@ -118,6 +131,35 @@
             color: #0000ff;
             background-color: transparent;
         }
+
+        /* Estilos para los botones con efecto 3D */
+        .btn-success-3d {
+            background-color: #28a745;
+            border: 2px solid #28a745;
+            color: white;
+            transition: all 0.3s ease;
+        }
+
+        .btn-success-3d:hover {
+            background-color: rgba(40, 167, 69, 0.8);
+            color: #ff8c00;
+            border-color: #ff8c00;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .btn-primary-3d {
+            background-color: #007bff;
+            border: 2px solid #007bff;
+            color: white;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary-3d:hover {
+            background-color: rgba(0, 123, 255, 0.8);
+            color: #ff8c00;
+            border-color: #ff8c00;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
     </style>
 </head>
 
@@ -125,7 +167,7 @@
     <div class="wrapper">
         <!-- Navbar -->
         <nav class="navbar navbar-expand-lg navbar-dark">
-            <div class="container">
+            <div class="container-fluid">
                 <a class="navbar-brand" href="/">Renta de Muebles</a>
                 <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
                     aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
@@ -142,7 +184,7 @@
                         </li>
                     </ul>
                     <!-- Menú alineado a la derecha -->
-                    <ul class="navbar-nav">
+                    <ul class="navbar-nav ms-auto">
                         {% if request.session.logueo %}
                         <li class="nav-item dropdown">
                             <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button"
@@ -161,10 +203,10 @@
                         </li>
                         {% else %}
                         <li class="nav-item">
-                            <a class="btn btn-success me-3" href="{% url 'login' %}">Iniciar sesión</a>
+                            <a class="btn btn-success-3d me-3" href="{% url 'login' %}">Iniciar sesión</a>
                         </li>
                         <li class="nav-item">
-                            <a class="btn btn-secondary" href="{% url 'registro' %}">Registrarse</a>
+                            <a class="btn btn-primary-3d" href="{% url 'registro' %}">Registrarse</a>
                         </li>
                         {% endif %}
                     </ul>
@@ -191,16 +233,16 @@
         <!-- Footer -->
         <footer class="footer mt-5">
             <div class="container">
-                <div class="row w-100">
-                    <div class="col-md-6 text-center">
-                        <p>© 2024 Renta de Muebles</p>
-                    </div>
-                    <div class="col-md-6 footer-info">
+                <div class="footer-content">
+                    <div class="footer-info">
                         <h5>Atención al cliente:</h5>
                         <div class="footer-contact">
                             <p><i class="fab fa-whatsapp"></i> WhatsApp: 32594565442</p>
                             <p><i class="fas fa-phone-alt"></i> Llamadas: 32594565442</p>
                         </div>
+                    </div>
+                    <div class="footer-year">
+                        <p>© 2024 Renta de Muebles</p>
                     </div>
                 </div>
             </div>
