@@ -1,8 +1,18 @@
 {% extends 'muebles/barnav.html' %}
-
+{% load static %}
 {% block titulo %}Rentar Mueble{% endblock %}
 
 {% block contenedor %}
+<style>
+    .card {
+        border-radius: 15px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    }
+    .alert {
+        border-radius: 10px;
+    }
+</style>
+
 <div class="container mt-5">
     <div class="row justify-content-center">
         <div class="col-md-6">
@@ -16,12 +26,16 @@
                             <input type="date" class="form-control" id="fecha_inicio" name="fecha_inicio" required>
                         </div>
                         <div class="mb-3">
-                            <label for="duracion_meses" class="form-label">Duración en Meses:</label>
-                            <input type="number" class="form-control" id="duracion_meses" name="duracion_meses" min="0" required>
+                            <label for="fecha_fin" class="form-label">Fecha de Fin:</label>
+                            <input type="date" class="form-control" id="fecha_fin" name="fecha_fin" required>
                         </div>
                         <div class="mb-3">
-                            <label for="duracion_anios" class="form-label">Duración en Años:</label>
-                            <input type="number" class="form-control" id="duracion_anios" name="duracion_anios" min="0" required>
+                            <label for="duracion_dias" class="form-label">Duración en Días:</label>
+                            <input type="number" class="form-control" id="duracion_dias" name="duracion_dias" readonly>
+                        </div>
+                        <div class="mb-3">
+                            <label for="duracion_meses" class="form-label">Duración en Meses:</label>
+                            <input type="number" class="form-control" id="duracion_meses" name="duracion_meses" readonly>
                         </div>
                         <div class="d-grid">
                             <button type="submit" class="btn btn-primary">Confirmar Renta</button>
@@ -31,5 +45,17 @@
             </div>
         </div>
     </div>
+    <div class="row mt-4">
+        <div class="col-md-12">
+            <div class="alert alert-info" role="alert">
+                <h4 class="alert-heading">¡Oferta Especial!</h4>
+                <p>Si rentas este inmueble, puedes llevarte otro con un 50% de descuento.</p>
+                <hr>
+                <p class="mb-0">Aprovecha esta oferta y ahorra en tu próxima renta.</p>
+            </div>
+        </div>
+    </div>
 </div>
+
+<script src="{% static 'muebles/js/rentar_mueble.js' %}"></script>
 {% endblock %}

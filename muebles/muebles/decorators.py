@@ -19,3 +19,15 @@ def rol_requerido(roles_permitidos):
             return view_func(request, *args, **kwargs)
         return _wrapped_view
     return decorator
+
+def login_requerido(view_func):
+    @wraps(view_func)
+    def _wrapped_view(request, *args, **kwargs):
+        logueo = request.session.get("logueo", False)
+        if not logueo:
+            # Redirige al usuario a la página de login si no está logueado
+            return redirect('login')
+        
+        # Si el usuario está logueado, permite el acceso a la vista
+        return view_func(request, *args, **kwargs)
+    return _wrapped_view

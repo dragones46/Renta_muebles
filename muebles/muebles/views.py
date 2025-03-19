@@ -78,7 +78,7 @@ import uuid
 from io import BytesIO
 
 # Para restringir las vistas
-from .decorators import rol_requerido
+from .decorators import *
 
 # Create your views here.
 
@@ -93,23 +93,18 @@ def muebles_list(request):
     muebles = Mueble.objects.all()
     return render(request, 'muebles/mueble/muebles_list.html', {'muebles': muebles})
 
-@rol_requerido([1,2,3])
+@login_requerido
 def rentar_mueble(request, mueble_id):
     mueble = get_object_or_404(Mueble, id=mueble_id)
     if request.method == 'POST':
         form = RentaForm(request.POST)
-        print("Formulario recibido:", form.data)  # Depuración: Ver datos del formulario
         if form.is_valid():
-            print("Formulario válido")  # Depuración: Verificar si el formulario es válido
             renta = form.save(commit=False)
-            renta.mueble = mueble  # Asignar el mueble automáticamente
-            renta.usuario = request.user  # Asignar el usuario automáticamente
+            renta.mueble = mueble
+            renta.usuario = request.user
             renta.save()
-            print("Renta guardada correctamente")  # Depuración: Verificar si se guarda la renta
-            messages.success(request, "La renta ha sido registrada exitosamente.")  # Mensaje de éxito
-            return redirect('index')  # Redirige al índice
-        else:
-            print("Formulario no válido. Errores:", form.errors)  # Depuración: Ver errores del formulario
+            messages.success(request, "La renta ha sido registrada exitosamente.")
+            return redirect('index')
     else:
         form = RentaForm(initial={'mueble': mueble})
 
@@ -121,7 +116,7 @@ def contacto(request):
 
 
 #usuario
-@login_required
+@login_requerido
 def perfil(request):
     logueo = request.session.get("logueo", False)
     if not logueo:

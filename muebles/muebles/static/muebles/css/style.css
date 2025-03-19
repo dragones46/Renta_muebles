@@ -1,0 +1,135 @@
+body {
+    font-family: Arial, sans-serif;
+    background-color: #f8f9fa; /* Color de fondo claro para el contenido */
+    position: relative;
+    min-height: 100vh;
+    padding-bottom: 60px;
+    /* Ajusta este valor según la altura de tu footer */
+    box-sizing: border-box;
+}
+
+.navbar {
+    background-color: #000000 !important; /* Color negro */
+}
+
+.navbar-brand {
+    font-size: 1.5rem;
+    font-weight: bold;
+}
+
+.navbar a {
+    color: #f40000 !important; /* Color blanco para las letras */
+}
+
+.navbar a:hover {
+    color: #0586f0 !important; /* Color naranja al pasar el mouse */
+}
+
+.profile-image {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    margin-left: 10px;
+}
+
+/* Estilos para el footer */
+footer {
+    background-color: #000000 !important; /* Color negro */
+    color: #f40000;
+    padding: 10px;
+    width: 100%;
+    position: absolute;
+    bottom: 0;
+    margin-top: 50px;
+}
+
+.footer-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.footer-info {
+    text-align: left;
+}
+
+.footer-year {
+    text-align: right;
+}
+
+
+/* Centrar textos en el interior */
+.content {
+    text-align: center;
+    margin-bottom: 100px;
+}
+
+.content h1,
+.content p {
+    margin: 20px auto;
+}
+
+/* Estilos para las imágenes de los muebles */
+.mueble-item img {
+    width: 100%;
+    height: auto;
+    max-width: 300px;
+    /* Ajusta este valor según tus necesidades */
+    max-height: 300px;
+    /* Ajusta este valor según tus necesidades */
+    object-fit: cover;
+}
+
+/* Estilos para la sección de muebles */
+#muebles {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+    justify-content: center;
+}
+
+.mueble-item {
+    flex: 1 1 calc(33.333% - 20px);
+    /* Ajusta este valor según tus necesidades */
+    box-sizing: border-box;
+    text-align: center;
+}
+
+.dropdown-menu .dropdown-item {
+    color: black;
+    transition: color 0.3s ease;
+}
+
+.dropdown-menu .dropdown-item:hover {
+    color: #0000ff;
+    background-color: transparent;
+}
+
+/* Estilos para los botones con efecto 3D */
+.btn-success-3d {
+    background-color: #f6fcf7;
+    border: 2px solid #d8d8ce;
+    color: white;
+    transition: all 0.3s ease;
+}
+
+.btn-success-3d:hover {
+    background-color: rgba(5, 7, 5, 0.8);
+    color: #ff8c00;
+    border-color: #ff8c00;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.btn-primary-3d {
+    background-color: #66ff00;
+    border: 2px solid #66ff00;
+    color: white;
+    transition: all 0.3s ease;
+}
+
+.btn-primary-3d:hover {
+    background-color: #020101;
+    color: #ff8c00;
+    border-color: #ff8c00;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+}
