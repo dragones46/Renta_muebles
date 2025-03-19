@@ -1,0 +1,257 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block titulo %}Renta de Muebles{% endblock %}</title>
+
+    <!-- Bootstrap y estilos -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css" rel="stylesheet">
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link href="{% static './muebles/css/style.css' %}" rel="stylesheet">
+    <link href="{% static 'muebles/css/muebles.css' %}" rel="stylesheet">
+
+    <!-- Icono de pestaña de la página -->
+    <link rel="icon" type="image/png" sizes="32x32" href="{% static 'img/favicon-32x32.png' %}">
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="{% static 'muebles/js/jquery-3.7.1.min.js' %}"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f8f9fa; /* Color de fondo claro para el contenido */
+        }
+
+        .navbar {
+            background-color: #000000 !important; /* Color negro */
+        }
+
+        .navbar-brand {
+            font-size: 1.5rem;
+            font-weight: bold;
+        }
+
+        .navbar a {
+            color: #f40000 !important; /* Color blanco para las letras */
+        }
+
+        .navbar a:hover {
+            color: #02f7ba !important; /* Color naranja al pasar el mouse */
+        }
+
+        .profile-image {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            margin-left: 10px;
+        }
+
+        /* Estilos para el footer */
+        footer {
+            background-color: #000000 !important; /* Color negro */
+            color: #f40000;
+            padding: 10px;
+            width: 100%;
+            position: absolute;
+            bottom: 0;
+            margin-top: 50px;
+        }
+
+        .footer-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .footer-info {
+            text-align: left;
+        }
+
+        .footer-year {
+            text-align: right;
+        }
+
+        /* Asegura que el contenido principal tenga suficiente espacio para el footer */
+        body {
+            position: relative;
+            min-height: 100vh;
+            padding-bottom: 60px;
+            /* Ajusta este valor según la altura de tu footer */
+            box-sizing: border-box;
+        }
+
+        /* Centrar textos en el interior */
+        .content {
+            text-align: center;
+            margin-bottom: 100px;
+        }
+
+        .content h1,
+        .content p {
+            margin: 20px auto;
+        }
+
+        /* Estilos para las imágenes de los muebles */
+        .mueble-item img {
+            width: 100%;
+            height: auto;
+            max-width: 300px;
+            /* Ajusta este valor según tus necesidades */
+            max-height: 300px;
+            /* Ajusta este valor según tus necesidades */
+            object-fit: cover;
+        }
+
+        /* Estilos para la sección de muebles */
+        #muebles {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            justify-content: center;
+        }
+
+        .mueble-item {
+            flex: 1 1 calc(33.333% - 20px);
+            /* Ajusta este valor según tus necesidades */
+            box-sizing: border-box;
+            text-align: center;
+        }
+
+        .dropdown-menu .dropdown-item {
+            color: black;
+            transition: color 0.3s ease;
+        }
+
+        .dropdown-menu .dropdown-item:hover {
+            color: #0000ff;
+            background-color: transparent;
+        }
+
+        /* Estilos para los botones con efecto 3D */
+        .btn-success-3d {
+            background-color: #f6fcf7;
+            border: 2px solid #d8d8ce;
+            color: white;
+            transition: all 0.3s ease;
+        }
+
+        .btn-success-3d:hover {
+            background-color: rgba(5, 7, 5, 0.8);
+            color: #ff8c00;
+            border-color: #ff8c00;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .btn-primary-3d {
+            background-color: #66ff00;
+            border: 2px solid #66ff00;
+            color: white;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary-3d:hover {
+            background-color: #020101;
+            color: #ff8c00;
+            border-color: #ff8c00;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+    </style>
+</head>
+
+<body>
+    <div class="wrapper">
+        <!-- Navbar -->
+        <nav class="navbar navbar-expand-lg navbar-dark">
+            <div class="container-fluid">
+                <a class="navbar-brand" href="/">Renta de Muebles</a>
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
+                    aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+                <div class="collapse navbar-collapse" id="navbarNav">
+                    <!-- Menú alineado a la izquierda -->
+                    <ul class="navbar-nav me-auto">
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'muebles' %}">Muebles</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'contacto' %}">Contacto</a>
+                        </li>
+                    </ul>
+                    <!-- Menú alineado a la derecha -->
+                    <ul class="navbar-nav ms-auto">
+                        {% if request.session.logueo %}
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button"
+                                data-bs-toggle="dropdown" aria-expanded="false">
+                                {% if request.session.logueo.foto %}
+                                <img src="{{ request.session.logueo.foto }}" alt="FotoUsuario" class="profile-image">
+                                {% else %}
+                                <img src="{% static 'muebles/img/default.png' %}" alt="LogoUsuario"
+                                    class="profile-image">
+                                {% endif %}
+                            </a>
+                            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdown">
+                                <li><a class="dropdown-item" href="{% url 'perfil' %}">Ver Perfil</a></li>
+                                <li><a class="dropdown-item" href="{% url 'logout' %}">Cerrar Sesión</a></li>
+                            </ul>
+                        </li>
+                        {% else %}
+                        <li class="nav-item">
+                            <a class="btn btn-success-3d me-3" href="{% url 'login' %}">Iniciar sesión</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="btn btn-primary-3d" href="{% url 'registro' %}">Registrarse</a>
+                        </li>
+                        {% endif %}
+                    </ul>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Contenido -->
+        <div class="content container mt-5">
+            {% if messages %}
+            <div id="messages-container">
+                {% for message in messages %}
+                <div class="alert alert-{{ message.tags|default:'info' }} alert-dismissible fade show" role="alert">
+                    <strong>{{ message }}</strong>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+            {% block contenedor %}
+            {% endblock %}
+        </div>
+
+        <!-- Footer -->
+        <footer class="footer mt-5">
+            <div class="container">
+                <div class="footer-content">
+                    <div class="footer-info">
+                        <h5>Atención al cliente:</h5>
+                        <div class="footer-contact">
+                            <p><i class="fab fa-whatsapp"></i> WhatsApp: 32594565442</p>
+                            <p><i class="fas fa-phone-alt"></i> Llamadas: 32594565442</p>
+                        </div>
+                    </div>
+                    <div class="footer-year">
+                        <p>© 2024 Renta de Muebles</p>
+                    </div>
+                </div>
+            </div>
+        </footer>
+    </div>
+
+    <!-- Scripts adicionales -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.bundle.min.js"></script>
+</body>
+
+</html>
