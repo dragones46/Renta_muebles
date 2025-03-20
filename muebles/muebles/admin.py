@@ -42,6 +42,6 @@ class MuebleAdmin(admin.ModelAdmin):
 @admin.register(Renta)
 class RentaAdmin(admin.ModelAdmin):
     form = RentaForm
-    list_display = ('id','mueble', 'fecha_inicio', 'fecha_fin', 'usuario', 'duracion_meses', 'duracion_anios')
+    list_display = ('id','mueble', 'fecha_inicio', 'fecha_fin', 'usuario', 'duracion_meses', 'duracion_dias')
     search_fields = ('id','mueble__nombre', 'usuario__nombre')
     list_filter = ('fecha_inicio', 'fecha_fin')

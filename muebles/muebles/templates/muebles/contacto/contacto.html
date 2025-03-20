@@ -1,13 +1,41 @@
 {% extends 'muebles/barnav.html' %}
-{% load static %}
 {% block titulo %}Contacto - Renta de Muebles{% endblock %}
 
 {% block contenedor %}
-<h1>Contáctenos</h1>
-<br>
-<p>
-    <i class="fas fa-phone-alt"></i> <strong>Telefono:</strong> 3526565264
-    <br>
-    <i class="fab fa-whatsapp"></i> <STrong>WhatsApp:</strong> 78948554945
-</p>
+<style>
+    .contacto-container {
+        background-color: #2a2a2a;
+        border-radius: 10px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+        padding: 20px;
+        max-width: 600px;
+        margin: 50px auto;
+        text-align: center;
+    }
+
+    .contacto-container h1 {
+        color: #ffffff;
+    }
+
+    .contacto-container p {
+        color: #cccccc;
+    }
+
+    .contacto-container a {
+        color: #ff8c00;
+        text-decoration: none;
+    }
+
+    .contacto-container a:hover {
+        color: #e67600;
+    }
+</style>
+
+<div class="contacto-container">
+    <h1>Contacto</h1>
+    <p>¿Tienes alguna pregunta? No dudes en contactarnos.</p>
+    <p><i class="fas fa-phone"></i> Teléfono: +123 456 789</p>
+    <p><i class="fas fa-envelope"></i> Email: info@rentamuebles.com</p>
+    <p><i class="fas fa-map-marker-alt"></i> Dirección: Calle Falsa 123, Ciudad</p>
+</div>
 {% endblock %}

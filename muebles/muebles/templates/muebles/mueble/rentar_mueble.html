@@ -1,61 +1,161 @@
 {% extends 'muebles/barnav.html' %}
-{% load static %}
-{% block titulo %}Rentar Mueble{% endblock %}
+{% block titulo %}Rentar {{ mueble.nombre }}{% endblock %}
 
 {% block contenedor %}
 <style>
-    .card {
-        border-radius: 15px;
-        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-    }
-    .alert {
+    /* Estilos generales para el contenedor */
+    .renta-container {
+        background-color: #2a2a2a; /* Fondo gris */
         border-radius: 10px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+        padding: 20px;
+        max-width: 600px;
+        margin: 50px auto;
+    }
+
+    /* Estilos para el título */
+    .renta-container h1 {
+        color: #ffffff; /* Texto blanco */
+        text-align: center;
+    }
+
+    /* Estilos para las etiquetas */
+    .renta-container label {
+        color: #ffffff; /* Texto blanco */
+    }
+
+    /* Estilos para los inputs */
+    .renta-container input {
+        background-color: #555; /* Fondo gris más oscuro */
+        border: 1px solid #666; /* Borde sutil */
+        color: #ffffff; /* Texto blanco */
+        padding: 10px;
+        border-radius: 5px;
+    }
+
+    /* Estilos para los inputs cuando están enfocados */
+    .renta-container input:focus {
+        background-color: #666; /* Fondo gris más claro al enfocar */
+        border-color: #ff8c00; /* Borde naranja al enfocar */
+        color: #ffffff; /* Texto blanco */
+        outline: none; /* Elimina el borde por defecto */
+    }
+
+    /* Estilos para los botones */
+    .btn-primary {
+        background-color: #ff8c00; /* Botón naranja */
+        border: none;
+        width: 100%;
+        padding: 10px;
+        font-size: 1.2rem;
+        color: #ffffff; /* Texto blanco */
+        transition: background-color 0.3s ease;
+    }
+
+    /* Efecto hover para los botones */
+    .btn-primary:hover {
+        background-color: #e67600; /* Naranja más oscuro al pasar el mouse */
+    }
+
+    /* Estilos para los campos de solo lectura */
+    .renta-container input[readonly] {
+        background-color: #666; /* Fondo gris más oscuro */
+        cursor: not-allowed; /* Cambia el cursor a "no permitido" */
+    }
+
+    /* Estilos para las promociones */
+    .promociones-container {
+        background-color: #2a2a2a; /* Fondo gris */
+        border-radius: 10px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+        padding: 20px;
+        max-width: 600px;
+        margin: 20px auto;
+    }
+
+    .promociones-container h2 {
+        color: #ff8c00; /* Texto naranja */
+        text-align: center;
+    }
+
+    .promociones-container p {
+        color: #ffffff; /* Texto blanco */
+        text-align: center;
+    }
+
+    .promociones-container .btn {
+        background-color: #ff8c00; /* Botón naranja */
+        border: none;
+        width: 100%;
+        padding: 10px;
+        font-size: 1rem;
+        color: #ffffff; /* Texto blanco */
+        transition: background-color 0.3s ease;
+    }
+
+    .promociones-container .btn:hover {
+        background-color: #e67600; /* Naranja más oscuro al pasar el mouse */
     }
 </style>
 
-<div class="container mt-5">
-    <div class="row justify-content-center">
-        <div class="col-md-6">
-            <div class="card shadow">
-                <div class="card-body">
-                    <h1 class="card-title text-center">Rentar {{ mueble.nombre }}</h1>
-                    <form method="post">
-                        {% csrf_token %}
-                        <div class="mb-3">
-                            <label for="fecha_inicio" class="form-label">Fecha de Inicio:</label>
-                            <input type="date" class="form-control" id="fecha_inicio" name="fecha_inicio" required>
-                        </div>
-                        <div class="mb-3">
-                            <label for="fecha_fin" class="form-label">Fecha de Fin:</label>
-                            <input type="date" class="form-control" id="fecha_fin" name="fecha_fin" required>
-                        </div>
-                        <div class="mb-3">
-                            <label for="duracion_dias" class="form-label">Duración en Días:</label>
-                            <input type="number" class="form-control" id="duracion_dias" name="duracion_dias" readonly>
-                        </div>
-                        <div class="mb-3">
-                            <label for="duracion_meses" class="form-label">Duración en Meses:</label>
-                            <input type="number" class="form-control" id="duracion_meses" name="duracion_meses" readonly>
-                        </div>
-                        <div class="d-grid">
-                            <button type="submit" class="btn btn-primary">Confirmar Renta</button>
-                        </div>
-                    </form>
-                </div>
-            </div>
+<div class="renta-container">
+    <h1>Rentar {{ mueble.nombre }}</h1>
+    <form method="post">
+        {% csrf_token %}
+        <div class="mb-3">
+            <label for="fecha_inicio" class="form-label">Fecha de Inicio:</label>
+            <input type="date" class="form-control" id="fecha_inicio" name="fecha_inicio" required>
         </div>
-    </div>
-    <div class="row mt-4">
-        <div class="col-md-12">
-            <div class="alert alert-info" role="alert">
-                <h4 class="alert-heading">¡Oferta Especial!</h4>
-                <p>Si rentas este inmueble, puedes llevarte otro con un 50% de descuento.</p>
-                <hr>
-                <p class="mb-0">Aprovecha esta oferta y ahorra en tu próxima renta.</p>
-            </div>
+        <div class="mb-3">
+            <label for="fecha_fin" class="form-label">Fecha de Fin:</label>
+            <input type="date" class="form-control" id="fecha_fin" name="fecha_fin" required>
         </div>
+        <div class="mb-3">
+            <label for="duracion_dias" class="form-label">Duración en Días:</label>
+            <input type="number" class="form-control" id="duracion_dias" name="duracion_dias" readonly>
+        </div>
+        <div class="mb-3">
+            <label for="duracion_meses" class="form-label">Duración en Meses:</label>
+            <input type="number" class="form-control" id="duracion_meses" name="duracion_meses" readonly>
+        </div>
+        <button type="submit" class="btn btn-primary">Agregar al Carrito</button>
+    </form>
+</div>
+
+<!-- Sección de promociones -->
+<div class="promociones-container">
+    <h2>¡Aprovecha nuestras promociones!</h2>
+    <p>Si rentas este mueble, puedes obtener descuentos en otros productos o agregar más muebles.</p>
+    <div class="d-grid gap-3">
+        <a href="{% url 'muebles' %}" class="btn">Agregar más muebles</a>
+        <a href="#" class="btn">Oferta especial: 2x1 en sillas</a>
+        <a href="#" class="btn">Descuento del 20% en mesas</a>
+        <a href="#" class="btn">Paquete completo de sala</a>
     </div>
 </div>
 
-<script src="{% static 'muebles/js/rentar_mueble.js' %}"></script>
+<script>
+    // Script para calcular la duración en días y meses
+    document.getElementById('fecha_inicio').addEventListener('change', function() {
+        calcularDuracion();
+    });
+
+    document.getElementById('fecha_fin').addEventListener('change', function() {
+        calcularDuracion();
+    });
+
+    function calcularDuracion() {
+        const fechaInicio = new Date(document.getElementById('fecha_inicio').value);
+        const fechaFin = new Date(document.getElementById('fecha_fin').value);
+
+        if (fechaInicio && fechaFin) {
+            const diffTime = Math.abs(fechaFin - fechaInicio);
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            const diffMonths = Math.floor(diffDays / 30);
+
+            document.getElementById('duracion_dias').value = diffDays;
+            document.getElementById('duracion_meses').value = diffMonths;
+        }
+    }
+</script>
 {% endblock %}

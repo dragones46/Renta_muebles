@@ -4,6 +4,128 @@
 {% block titulo %}Perfil - Renta de Muebles{% endblock %}
 
 {% block contenedor %}
+<style>
+    /* Estilos generales */
+    body {
+        background-color: #1a1a1a;
+        /* Fondo oscuro */
+        color: #ffffff;
+        /* Texto blanco */
+    }
+
+    /* Estilos para la tarjeta de perfil */
+    .card {
+        background-color: #2a2a2a;
+        /* Fondo oscuro para la tarjeta */
+        border: 1px solid #444;
+        /* Borde sutil */
+        border-radius: 10px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+    }
+
+    .card-header {
+        background-color: #1a1a1a;
+        /* Fondo oscuro para el encabezado */
+        border-bottom: 1px solid #444;
+        /* Borde sutil */
+    }
+
+    .card-header h3 {
+        color: #ff8c00;
+        /* Texto naranja */
+    }
+
+    .card-body {
+        color: #ffffff;
+        /* Texto blanco */
+    }
+
+    .card-body p strong {
+        color: #ff8c00;
+        /* Texto naranja para las etiquetas */
+    }
+
+    /* Estilos para los botones "Editar Perfil" y "Cambiar Contraseña" */
+    .btn-primary {
+        background-color: #ff8c00;
+        /* Botón naranja */
+        border: none;
+        transition: background-color 0.3s ease;
+    }
+
+    .btn-primary:hover {
+        background-color: #e67600;
+        /* Naranja más oscuro al pasar el mouse */
+    }
+
+    .btn-primary:active,
+    .btn-primary:focus {
+        background-color: #cc6600 !important;
+        /* Naranja oscuro al hacer clic */
+        box-shadow: none !important;
+        /* Elimina el sombreado azul de Bootstrap */
+        border: none !important;
+        /* Elimina el borde azul de Bootstrap */
+    }
+
+    /* Estilos para la imagen de perfil */
+    .img-fluid.rounded-circle {
+        border: 3px solid #11ff00;
+        /* Borde naranja */
+    }
+
+    /* Estilos para los modales */
+    .modal-content {
+        background-color: #2a2a2a;
+        /* Fondo oscuro para los modales */
+        color: #ffffff;
+        /* Texto blanco */
+    }
+
+    .modal-header {
+        border-bottom: 1px solid #444;
+        /* Borde sutil */
+    }
+
+    .modal-title {
+        color: #ff8c00;
+        /* Texto naranja */
+    }
+
+    .btn-close {
+        filter: invert(1);
+        /* Icono de cierre en blanco */
+    }
+
+    .form-control {
+        background-color: #444;
+        /* Fondo oscuro para los inputs */
+        border: 1px solid #666;
+        /* Borde sutil */
+        color: #ffffff;
+        /* Texto blanco */
+    }
+
+    .form-control:focus {
+        background-color: #555;
+        /* Fondo más claro al enfocar */
+        border-color: #ff8c00;
+        /* Borde naranja al enfocar */
+        color: #ffffff;
+        /* Texto blanco */
+    }
+
+    .invalid-feedback {
+        color: #ff8c00;
+        /* Texto naranja para mensajes de error */
+    }
+
+    .was-validated .form-control:invalid {
+        border-color: #ff8c00;
+        /* Borde naranja para inputs inválidos */
+    }
+</style>
+
 <div class="container mt-5">
     <div class="row justify-content-center">
         <div class="col-md-6">
@@ -43,7 +165,8 @@
 </div>
 
 <!-- Modal para editar perfil -->
-<div class="modal fade" id="editarPerfilModal" tabindex="-1" aria-labelledby="editarPerfilModalLabel" aria-hidden="true">
+<div class="modal fade" id="editarPerfilModal" tabindex="-1" aria-labelledby="editarPerfilModalLabel"
+    aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
@@ -51,25 +174,29 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
-                <form id="editarPerfilForm" method="post" action="#" enctype="multipart/form-data" class="needs-validation" novalidate>
+                <form id="editarPerfilForm" method="post" action="#" enctype="multipart/form-data"
+                    class="needs-validation" novalidate>
                     {% csrf_token %}
                     <div class="mb-3">
                         <label for="nombre" class="form-label"><strong>Nombre:</strong></label>
-                        <input type="text" class="form-control" id="nombre" name="nombre" value="{{ user.nombre }}" required>
+                        <input type="text" class="form-control" id="nombre" name="nombre" value="{{ user.nombre }}"
+                            required>
                         <div class="invalid-feedback">
                             Este campo es obligatorio.
                         </div>
                     </div>
                     <div class="mb-3">
                         <label for="email" class="form-label"><strong>Correo:</strong></label>
-                        <input type="email" class="form-control" id="email" name="email" value="{{ user.email }}" required>
+                        <input type="email" class="form-control" id="email" name="email" value="{{ user.email }}"
+                            required>
                         <div class="invalid-feedback">
                             Este campo es obligatorio.
                         </div>
                     </div>
                     <div class="mb-3">
                         <label for="direccion" class="form-label"><strong>Dirección:</strong></label>
-                        <input type="text" class="form-control" id="direccion" name="direccion" value="{{ user.direccion }}" required>
+                        <input type="text" class="form-control" id="direccion" name="direccion"
+                            value="{{ user.direccion }}" required>
                         <div class="invalid-feedback">
                             Este campo es obligatorio.
                         </div>
@@ -84,7 +211,6 @@
         </div>
     </div>
 </div>
-
 
 <!-- Modal para cambiar contraseña -->
 <div class="modal fade" id="cambiarContrasenaModal" tabindex="-1" aria-labelledby="cambiarContrasenaModalLabel"

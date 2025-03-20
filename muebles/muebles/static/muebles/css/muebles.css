@@ -34,3 +34,34 @@ body {
     padding-bottom: 60px; /* Ajusta este valor según la altura de tu footer */
     box-sizing: border-box;
 }
+
+/* Estilos para las cartas */
+.card {
+    width: 100%; /* Asegura que todas las cartas tengan el mismo ancho */
+    height: 100%; /* Asegura que todas las cartas tengan la misma altura */
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+
+/* Estilos para las imágenes dentro de las cartas */
+.card-img-top {
+    width: 100%; /* Asegura que la imagen ocupe todo el ancho de la carta */
+    height: 200px; /* Establece una altura fija para todas las imágenes */
+    object-fit: cover; /* Asegura que la imagen cubra el espacio sin distorsionarse */
+}
+
+/* Estilos para el contenedor de las cartas */
+.row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px; /* Espacio entre las cartas */
+    justify-content: flex-start;
+}
+
+/* Estilos para cada columna */
+.col-md-4 {
+    flex: 0 0 calc(33.333% - 20px); /* Asegura que cada columna ocupe un tercio del espacio */
+    box-sizing: border-box;
+    margin-bottom: 20px; /* Espacio entre las filas */
+}

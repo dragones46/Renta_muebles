@@ -90,27 +90,26 @@ class Renta(models.Model):
     fecha_fin = models.DateField()  # Campo obligatorio
     usuario = models.ForeignKey(Usuario, on_delete=models.CASCADE)
     duracion_meses = models.IntegerField(default=0)  # Duración en meses
-    duracion_anios = models.IntegerField(default=0)  # Duración en años
+    duracion_dias = models.IntegerField(default=0)  # Duración en días
 
     def __str__(self):
         return f"Renta de {self.mueble.nombre} por {self.usuario.nombre}"
 
     def save(self, *args, **kwargs):
         # Calcular la fecha_fin en función de la duración
-        if self.fecha_inicio and (self.duracion_meses or self.duracion_anios):
+        if self.fecha_inicio and (self.duracion_meses or self.duracion_dias):
             self.fecha_fin = self.fecha_inicio + timedelta(
-                days=(self.duracion_meses * 30) + (self.duracion_anios * 365)
-            )
+                days=(self.duracion_meses * 30) + self.duracion_dias)
         super().save(*args, **kwargs)
 
 class RentaForm(forms.ModelForm):
     class Meta:
         model = Renta
-        fields = ['fecha_inicio', 'duracion_meses', 'duracion_anios']
+        fields = ['fecha_inicio', 'duracion_meses', 'duracion_dias']
         widgets = {
             'fecha_inicio': forms.DateInput(attrs={'type': 'date', 'required': True}),
             'duracion_meses': forms.NumberInput(attrs={'required': True, 'min': 0}),
-            'duracion_anios': forms.NumberInput(attrs={'required': True, 'min': 0}),
+            'duracion_dias': forms.NumberInput(attrs={'required': True, 'min': 0}),
         }
         
 class UsuarioForm(forms.ModelForm):
@@ -124,3 +123,25 @@ class UsuarioForm(forms.ModelForm):
             'rol': forms.Select(attrs={'required': True}),
             'estado': forms.Select(attrs={'required': True}),
         }
+
+
+class Carrito(models.Model):
+    usuario = models.OneToOneField(Usuario, on_delete=models.CASCADE, related_name='carrito')
+    fecha_creacion = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Carrito de {self.usuario.nombre}"
+
+    def calcular_total(self):
+        return sum(item.subtotal() for item in self.items.all())
+
+class ItemCarrito(models.Model):
+    carrito = models.ForeignKey(Carrito, on_delete=models.CASCADE, related_name='items')
+    mueble = models.ForeignKey(Mueble, on_delete=models.CASCADE)
+    cantidad = models.PositiveIntegerField(default=1)
+
+    def __str__(self):
+        return f"{self.cantidad} x {self.mueble.nombre}"
+
+    def subtotal(self):
+        return self.cantidad * self.mueble.precio_diario

@@ -3,6 +3,42 @@
 {% block titulo %}Registro - Renta de Muebles{% endblock %}
 
 {% block contenedor %}
+<style>
+    /* Estilos para el formulario de registro */
+    .card {
+        background-color: #2a2a2a; /* Fondo oscuro para la tarjeta */
+        border: 1px solid #444; /* Borde sutil */
+        border-radius: 10px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+    }
+
+    .card-title, .text-center, .form-label, .form-control, .btn-primary {
+        color: #ffffff !important; /* Texto blanco */
+    }
+
+    .form-control {
+        background-color: #444; /* Fondo oscuro para los inputs */
+        border: 1px solid #666; /* Borde sutil */
+        color: #ffffff; /* Texto blanco */
+    }
+
+    .form-control:focus {
+        background-color: #555; /* Fondo más claro al enfocar */
+        border-color: #ff8c00; /* Borde naranja al enfocar */
+        color: #ffffff; /* Texto blanco */
+    }
+
+    .btn-primary {
+        background-color: #ff8c00; /* Botón naranja */
+        border: none;
+        transition: background-color 0.3s ease;
+    }
+
+    .btn-primary:hover {
+        background-color: #e67600; /* Naranja más oscuro al pasar el mouse */
+    }
+</style>
+
 <div class="container mt-5">
     <div class="row justify-content-center">
         <div class="col-md-6">

@@ -21,4 +21,10 @@ urlpatterns = [
     path('logout/', views.logout, name='logout'),
     path('perfil/', views.perfil, name='perfil'),
 
-    ]
+#carrito de compras
+    path('agregar-al-carrito/<int:mueble_id>/', views.agregar_al_carrito, name='agregar_al_carrito'),
+    path('eliminar-del-carrito/<int:item_id>/', views.eliminar_del_carrito, name='eliminar_del_carrito'),
+    path('actualizar-cantidad/<int:item_id>/', views.actualizar_cantidad, name='actualizar_cantidad'),
+    path('ver-carrito/', views.ver_carrito, name='ver_carrito'),
+
+]

@@ -1,0 +1,115 @@
+{% extends 'muebles/barnav.html' %}
+{% block titulo %}Carrito de Compras{% endblock %}
+
+{% block contenedor %}
+<style>
+    .carrito-container {
+        background-color: #2a2a2a;
+        border-radius: 10px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+        padding: 20px;
+        max-width: 800px;
+        margin: 50px auto;
+    }
+
+    .carrito-container h1 {
+        color: #ffffff;
+        text-align: center;
+    }
+
+    .carrito-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 10px;
+        border-bottom: 1px solid #444;
+    }
+
+    .carrito-item img {
+        width: 100px;
+        height: 100px;
+        border-radius: 10px;
+    }
+
+    .carrito-item .info {
+        flex: 1;
+        margin-left: 20px;
+    }
+
+    .carrito-item .info h3 {
+        color: #ffffff;
+    }
+
+    .carrito-item .info p {
+        color: #cccccc;
+    }
+
+    .carrito-item .cantidad {
+        display: flex;
+        align-items: center;
+    }
+
+    .carrito-item .cantidad input {
+        width: 50px;
+        text-align: center;
+        margin: 0 10px;
+    }
+
+    .carrito-item .subtotal {
+        color: #ffffff;
+        font-weight: bold;
+    }
+
+    .carrito-total {
+        text-align: right;
+        margin-top: 20px;
+    }
+
+    .carrito-total h3 {
+        color: #ffffff;
+    }
+</style>
+
+<div class="carrito-container">
+    <h1>Carrito de Compras</h1>
+    {% for item in items %}
+    <div class="carrito-item">
+        <img src="{{ item.mueble.imagen.url }}" alt="{{ item.mueble.nombre }}">
+        <div class="info">
+            <h3>{{ item.mueble.nombre }}</h3>
+            <p>{{ item.mueble.descripcion }}</p>
+            <p>Precio: ${{ item.mueble.precio_diario }}/día</p>
+        </div>
+        <div class="cantidad">
+            <form method="post" action="{% url 'actualizar_cantidad' item.id %}">
+                {% csrf_token %}
+                <input type="number" name="cantidad" value="{{ item.cantidad }}" min="1" onchange="this.form.submit()">
+            </form>
+        </div>
+        <div class="subtotal">
+            ${{ item.subtotal }}
+        </div>
+        <a href="{% url 'eliminar_del_carrito' item.id %}" class="btn btn-danger">Eliminar</a>
+    </div>
+    {% endfor %}
+    <div class="carrito-total">
+        <h3>Total: ${{ total }}</h3>
+    </div>
+</div>
+
+<script>
+    function incrementar(itemId) {
+        const input = document.querySelector(`input[name="cantidad"][onchange*="${itemId}"]`);
+        input.value = parseInt(input.value) + 1;
+        input.onchange();
+    }
+
+    function decrementar(itemId) {
+        const input = document.querySelector(`input[name="cantidad"][onchange*="${itemId}"]`);
+        if (input.value > 1) {
+            input.value = parseInt(input.value) - 1;
+            input.onchange();
+        }
+    }
+</script>
+{% endblock %}

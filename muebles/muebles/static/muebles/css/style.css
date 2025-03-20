@@ -1,28 +1,37 @@
+/* Estilos generales */
 body {
     font-family: Arial, sans-serif;
-    background-color: #f8f9fa; /* Color de fondo claro para el contenido */
+    background-color: #1a1a1a; /* Fondo oscuro */
+    color: #ffffff; /* Texto blanco */
+    margin: 0;
+    padding: 0;
     position: relative;
     min-height: 100vh;
-    padding-bottom: 60px;
-    /* Ajusta este valor según la altura de tu footer */
+    padding-bottom: 60px; /* Ajusta este valor según la altura de tu footer */
     box-sizing: border-box;
 }
 
+/* Navbar */
 .navbar {
-    background-color: #000000 !important; /* Color negro */
+    background-color: #000000 !important; /* Navbar negro */
 }
 
 .navbar-brand {
     font-size: 1.5rem;
     font-weight: bold;
+    color: #ffffff !important; /* Texto blanco en el navbar */
 }
 
 .navbar a {
-    color: #f40000 !important; /* Color blanco para las letras */
+    color: #ffffff !important; /* Color blanco para las letras */
 }
 
 .navbar a:hover {
-    color: #0586f0 !important; /* Color naranja al pasar el mouse */
+    color: #0586f0 !important; /* Color azul al pasar el mouse */
+}
+
+.nav-link:hover {
+    color: #ff8c00 !important; /* Naranja al pasar el mouse */
 }
 
 .profile-image {
@@ -32,82 +41,50 @@ body {
     margin-left: 10px;
 }
 
-/* Estilos para el footer */
-footer {
-    background-color: #000000 !important; /* Color negro */
-    color: #f40000;
-    padding: 10px;
-    width: 100%;
-    position: absolute;
-    bottom: 0;
-    margin-top: 50px;
+/* Cards */
+.card {
+    background-color: #2a2a2a; /* Fondo oscuro para las cartas */
+    border: 1px solid #444; /* Borde sutil */
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
 
-.footer-content {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
+.card:hover {
+    transform: translateY(-5px); /* Efecto de elevación */
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.5);
 }
 
-.footer-info {
-    text-align: left;
+.card-img-top {
+    border-radius: 10px 10px 0 0; /* Bordes redondeados en la parte superior */
 }
 
-.footer-year {
-    text-align: right;
+.card-body {
+    padding: 20px;
 }
 
-
-/* Centrar textos en el interior */
-.content {
-    text-align: center;
-    margin-bottom: 100px;
+.card-title {
+    color: #ffffff; /* Texto blanco */
+    font-size: 1.5rem;
 }
 
-.content h1,
-.content p {
-    margin: 20px auto;
+.card-text {
+    color: #cccccc; /* Texto gris claro */
 }
 
-/* Estilos para las imágenes de los muebles */
-.mueble-item img {
-    width: 100%;
-    height: auto;
-    max-width: 300px;
-    /* Ajusta este valor según tus necesidades */
-    max-height: 300px;
-    /* Ajusta este valor según tus necesidades */
-    object-fit: cover;
+/* Botones */
+.btn-primary {
+    background-color: #ff8c00; /* Botón naranja */
+    border: none;
+    transition: background-color 0.3s ease;
 }
 
-/* Estilos para la sección de muebles */
-#muebles {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 20px;
-    justify-content: center;
+.btn-primary:hover {
+    background-color: #e67600; /* Naranja más oscuro al pasar el mouse */
 }
 
-.mueble-item {
-    flex: 1 1 calc(33.333% - 20px);
-    /* Ajusta este valor según tus necesidades */
-    box-sizing: border-box;
-    text-align: center;
-}
-
-.dropdown-menu .dropdown-item {
-    color: black;
-    transition: color 0.3s ease;
-}
-
-.dropdown-menu .dropdown-item:hover {
-    color: #0000ff;
-    background-color: transparent;
-}
-
-/* Estilos para los botones con efecto 3D */
 .btn-success-3d {
-    background-color: #f6fcf7;
+    background-color: #0059b1;
     border: 2px solid #d8d8ce;
     color: white;
     transition: all 0.3s ease;
@@ -132,4 +109,98 @@ footer {
     color: #ff8c00;
     border-color: #ff8c00;
     text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+/* Footer */
+footer {
+    background-color: #000000 !important; /* Color negro */
+    color: #ffffff !important; /* Texto blanco */
+    padding: 10px;
+    width: 100%;
+    position: absolute;
+    bottom: 0;
+    margin-top: 50px;
+}
+
+.footer-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.footer-info {
+    text-align: left;
+}
+
+.footer-year {
+    text-align: right;
+}
+
+.footer a {
+    color: #ff8c00; /* Enlaces naranja */
+}
+
+.footer a:hover {
+    color: #e67600; /* Naranja más oscuro al pasar el mouse */
+}
+
+/* Contenido centrado */
+.content {
+    text-align: center;
+    margin-bottom: 100px;
+}
+
+.content h1,
+.content p {
+    margin: 20px auto;
+}
+
+/* Sección de muebles */
+#muebles {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+    justify-content: center;
+}
+
+.mueble-item {
+    flex: 1 1 calc(33.333% - 20px);
+    box-sizing: border-box;
+    text-align: center;
+}
+
+.mueble-item img {
+    width: 100%;
+    height: auto;
+    max-width: 300px;
+    max-height: 300px;
+    object-fit: cover;
+}
+
+/* Dropdown */
+.dropdown-menu .dropdown-item {
+    color: black;
+    transition: color 0.3s ease;
+}
+
+.dropdown-menu .dropdown-item:hover {
+    color: #0000ff;
+    background-color: transparent;
+}
+
+/* Estilo para la imagen de perfil en el navbar */
+.navbar .profile-image {
+    border: 2px solid #11ff00; /* Borde verde */
+    border-radius: 50%; /* Hace que la imagen sea circular */
+    transition: border-color 0.3s ease; /* Transición suave al pasar el mouse */
+}
+
+/* Cambiar el color del borde al pasar el mouse */
+.navbar .profile-image:hover {
+    border-color: #218838; /* Verde más oscuro al pasar el mouse */
+}
+
+/* Estilo para el botón de cierre (X) en los mensajes de alerta */
+.alert .btn-close {
+    filter: invert(0); /* Cambia el ícono a negro */
 }

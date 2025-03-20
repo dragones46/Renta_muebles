@@ -96,19 +96,32 @@ def muebles_list(request):
 @login_requerido
 def rentar_mueble(request, mueble_id):
     mueble = get_object_or_404(Mueble, id=mueble_id)
+
     if request.method == 'POST':
         form = RentaForm(request.POST)
         if form.is_valid():
+            # Guardar la renta
             renta = form.save(commit=False)
             renta.mueble = mueble
             renta.usuario = request.user
             renta.save()
-            messages.success(request, "La renta ha sido registrada exitosamente.")
-            return redirect('index')
+
+            # Agregar el mueble al carrito
+            carrito, creado = Carrito.objects.get_or_create(usuario=request.user)
+            item, item_creado = ItemCarrito.objects.get_or_create(carrito=carrito, mueble=mueble)
+            if not item_creado:
+                item.cantidad += 1
+                item.save()
+
+            messages.success(request, f"{mueble.nombre} ha sido agregado al carrito.")
+            return redirect('ver_carrito')
     else:
         form = RentaForm(initial={'mueble': mueble})
 
-    return render(request, 'muebles/mueble/rentar_mueble.html', {'form': form, 'mueble': mueble})
+    return render(request, 'muebles/mueble/rentar_mueble.html', {
+        'form': form,
+        'mueble': mueble,
+    })
 
 #contacto
 def contacto(request):
@@ -230,3 +243,49 @@ def logout(request):
         messages.warning(request, "No hay sesión activa.")
     return redirect("index")
 
+def agregar_al_carrito(request, mueble_id):
+    mueble = get_object_or_404(Mueble, id=mueble_id)
+    carrito, creado = Carrito.objects.get_or_create(usuario=request.user)
+
+    # Verificar si el mueble ya está en el carrito
+    item, item_creado = ItemCarrito.objects.get_or_create(carrito=carrito, mueble=mueble)
+    if not item_creado:
+        item.cantidad += 1
+        item.save()
+        messages.success(request, f"Se ha incrementado la cantidad de {mueble.nombre} en el carrito.")
+    else:
+        messages.success(request, f"{mueble.nombre} ha sido agregado al carrito.")
+
+    return redirect('ver_carrito')
+
+def eliminar_del_carrito(request, item_id):
+    item = get_object_or_404(ItemCarrito, id=item_id)
+    item.delete()
+    messages.success(request, f"{item.mueble.nombre} ha sido eliminado del carrito.")
+    return redirect('ver_carrito')
+
+@login_requerido
+def actualizar_cantidad(request, item_id):
+    item = get_object_or_404(ItemCarrito, id=item_id)
+    cantidad = int(request.POST.get('cantidad', 1))
+
+    if cantidad > 0:
+        item.cantidad = cantidad
+        item.save()
+        messages.success(request, f"La cantidad de {item.mueble.nombre} ha sido actualizada a {cantidad}.")
+    else:
+        item.delete()
+        messages.success(request, f"{item.mueble.nombre} ha sido eliminado del carrito.")
+
+    return redirect('ver_carrito')
+
+@login_requerido
+def ver_carrito(request):
+    carrito, creado = Carrito.objects.get_or_create(usuario=request.user)
+    items = carrito.items.all()
+    total = carrito.calcular_total()
+
+    return render(request, 'muebles/carrito/ver_carrito.html', {
+        'items': items,
+        'total': total,
+    })

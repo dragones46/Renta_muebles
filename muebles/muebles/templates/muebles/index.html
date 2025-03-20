@@ -1,57 +1,163 @@
 {% extends 'muebles/barnav.html' %}
-{% load static %}
 {% block titulo %}Inicio - Renta de Muebles{% endblock %}
-
+{% load static %}
 {% block contenedor %}
 <style>
-    /* Estilos generales para centrar y mejorar la apariencia */
-    h1, h2, p {
-        text-align: center;
+    /* Estilos para el carrusel */
+    .carousel-item img {
+        height: 500px; /* Altura fija para las imágenes del carrusel */
+        object-fit: cover; /* Asegura que la imagen cubra el espacio sin distorsionarse */
     }
 
+    /* Estilos para la sección de muebles */
     .muebles-container {
         display: flex;
-        justify-content: center; /* Centra horizontalmente */
-        align-items: center;     /* Centra verticalmente */
-        gap: 30px;              /* Espacio entre los muebles */
-        flex-wrap: wrap;        /* Permite que los muebles se envuelvan en pantallas pequeñas */
-        padding: 20px;          /* Espaciado interno */
+        flex-wrap: wrap;
+        gap: 20px;
+        justify-content: center;
+        padding: 20px;
     }
 
     .mueble-item {
-        text-align: center;     /* Centra el texto dentro de cada mueble */
-        max-width: 300px;       /* Ancho máximo para cada mueble */
-        background-color: #f9f9f9; /* Fondo claro para resaltar los muebles */
-        border-radius: 10px;    /* Bordes redondeados */
-        padding: 15px;          /* Espaciado interno */
-        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* Sombra suave */
-        transition: transform 0.3s ease, box-shadow 0.3s ease; /* Efecto hover */
+        background-color: #2a2a2a;
+        border-radius: 10px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+        max-width: 300px;
+        text-align: center;
+        padding: 15px;
     }
 
     .mueble-item:hover {
-        transform: translateY(-5px); /* Efecto de elevación al pasar el mouse */
-        box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15); /* Sombra más pronunciada */
+        transform: translateY(-5px);
+        box-shadow: 0 6px 12px rgba(0, 0, 0, 0.5);
     }
 
     .mueble-item img {
-        border-radius: 10px;    /* Bordes redondeados para las imágenes */
-        max-width: 100%;       /* Asegura que la imagen no exceda el ancho del contenedor */
-        height: auto;          /* Mantiene la proporción de la imagen */
+        border-radius: 10px;
+        max-width: 100%;
+        height: auto;
+    }
+
+    .mueble-item h5 {
+        color: #ffffff;
+        font-size: 1.25rem;
+        margin-top: 10px;
     }
 
     .mueble-item p {
-        margin-top: 10px;      /* Espacio entre la imagen y el texto */
-        font-size: 16px;       /* Tamaño de fuente */
-        color: #333;           /* Color de texto */
+        color: #cccccc;
+        font-size: 1rem;
+    }
+
+    /* Estilos para la sección de bienvenida */
+    .welcome-section {
+        background-color: #1a1a1a;
+        padding: 50px 0;
+        text-align: center;
+    }
+
+    .welcome-section h1 {
+        color: #ffffff;
+        font-size: 2.5rem;
+        margin-bottom: 20px;
+    }
+
+    .welcome-section p {
+        color: #cccccc;
+        font-size: 1.2rem;
+    }
+
+    /* Estilos para la sección de servicios */
+    .services-section {
+        background-color: #2a2a2a;
+        padding: 50px 0;
+        text-align: center;
+    }
+
+    .services-section h2 {
+        color: #ffffff;
+        font-size: 2rem;
+        margin-bottom: 30px;
+    }
+
+    .service-item {
+        background-color: #1a1a1a;
+        border-radius: 10px;
+        padding: 20px;
+        margin: 10px;
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+
+    .service-item:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 6px 12px rgba(0, 0, 0, 0.5);
+    }
+
+    .service-item h3 {
+        color: #ffffff;
+        font-size: 1.5rem;
+        margin-bottom: 10px;
+    }
+
+    .service-item p {
+        color: #cccccc;
+        font-size: 1rem;
     }
 </style>
 
-<h1>Bienvenido a Renta de Muebles</h1>
-<p>Encuentra los mejores muebles para tu hogar temporal.</p>
-<img src="{% static 'muebles/img/banner.png' %}" alt="Banner de Muebles" class="img-fluid">
-<br><br><br><br><br><br>
+<!-- Carrusel de imágenes -->
+<div id="carouselExampleIndicators" class="carousel slide" data-bs-ride="carousel">
+    <div class="carousel-indicators">
+        <button type="button" data-bs-target="#carouselExampleIndicators" data-bs-slide-to="0" class="active" aria-current="true" aria-label="Slide 1"></button>
+        <button type="button" data-bs-target="#carouselExampleIndicators" data-bs-slide-to="1" aria-label="Slide 2"></button>
+        <button type="button" data-bs-target="#carouselExampleIndicators" data-bs-slide-to="2" aria-label="Slide 3"></button>
+    </div>
+    <div class="carousel-inner">
+        <div class="carousel-item active">
+            <img src="{% static 'muebles/img/carrusel1.png' %}" class="d-block w-100" alt="Carrusel 1">
+        </div>
+        <div class="carousel-item">
+            <img src="{% static 'muebles/img/carrusel2.png' %}" class="d-block w-100" alt="Carrusel 2">
+        </div>
+        <div class="carousel-item">
+            <img src="{% static 'muebles/img/carrusel3.png' %}" class="d-block w-100" alt="Carrusel 3">
+        </div>
+    </div>
+    <button class="carousel-control-prev" type="button" data-bs-target="#carouselExampleIndicators" data-bs-slide="prev">
+        <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+        <span class="visually-hidden">Anterior</span>
+    </button>
+    <button class="carousel-control-next" type="button" data-bs-target="#carouselExampleIndicators" data-bs-slide="next">
+        <span class="carousel-control-next-icon" aria-hidden="true"></span>
+        <span class="visually-hidden">Siguiente</span>
+    </button>
+</div>
 
-<!-- Sección de Muebles -->
+<!-- Sección de bienvenida -->
+<div class="welcome-section">
+    <h1>Bienvenido a Renta de Muebles</h1>
+    <p>Encuentra los mejores muebles para tu hogar temporal.</p>
+</div>
 
+
+<!-- Sección de servicios -->
+<div class="services-section">
+    <h2>Nuestros Servicios</h2>
+    <div class="d-flex justify-content-center flex-wrap">
+        <div class="service-item">
+            <h3>Renta de Muebles</h3>
+            <p>Ofrecemos una amplia variedad de muebles para rentar, desde sofás hasta mesas y sillas.</p>
+        </div>
+        <div class="service-item">
+            <h3>Entrega a Domicilio</h3>
+            <p>Realizamos entregas a domicilio en toda la ciudad para mayor comodidad.</p>
+        </div>
+        <div class="service-item">
+            <h3>Asesoría Personalizada</h3>
+            <p>Nuestro equipo está listo para ayudarte a elegir los muebles perfectos para tu hogar.</p>
+        </div>
+    </div>
+</div>
 
 {% endblock %}
