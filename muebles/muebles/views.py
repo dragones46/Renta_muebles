@@ -243,6 +243,7 @@ def logout(request):
         messages.warning(request, "No hay sesión activa.")
     return redirect("index")
 
+#carrito
 def agregar_al_carrito(request, mueble_id):
     mueble = get_object_or_404(Mueble, id=mueble_id)
     carrito, creado = Carrito.objects.get_or_create(usuario=request.user)
@@ -259,13 +260,23 @@ def agregar_al_carrito(request, mueble_id):
     return redirect('ver_carrito')
 
 def eliminar_del_carrito(request, item_id):
+    carrito = get_object_or_404(Carrito, usuario=request.user)
     item = get_object_or_404(ItemCarrito, id=item_id)
     item.delete()
-    messages.success(request, f"{item.mueble.nombre} ha sido eliminado del carrito.")
+    
+    # Verificar si quedan items en el carrito
+    if carrito.items.count() == 0:
+        carrito.domicilio = None  # Eliminar el domicilio si no hay items
+        carrito.save()
+        messages.success(request, "El carrito está vacío y se ha eliminado el domicilio.")
+    else:
+        messages.success(request, f"{item.mueble.nombre} ha sido eliminado del carrito.")
+    
     return redirect('ver_carrito')
 
 @login_requerido
 def actualizar_cantidad(request, item_id):
+    carrito = get_object_or_404(Carrito, usuario=request.user)
     item = get_object_or_404(ItemCarrito, id=item_id)
     cantidad = int(request.POST.get('cantidad', 1))
 
@@ -275,17 +286,336 @@ def actualizar_cantidad(request, item_id):
         messages.success(request, f"La cantidad de {item.mueble.nombre} ha sido actualizada a {cantidad}.")
     else:
         item.delete()
-        messages.success(request, f"{item.mueble.nombre} ha sido eliminado del carrito.")
+        # Verificar si quedan items en el carrito
+        if carrito.items.count() == 0:
+            carrito.domicilio = None  # Eliminar el domicilio si no hay items
+            carrito.save()
+            messages.success(request, "El carrito está vacío y se ha eliminado el domicilio.")
+        else:
+            messages.success(request, f"{item.mueble.nombre} ha sido eliminado del carrito.")
 
     return redirect('ver_carrito')
 
 @login_requerido
 def ver_carrito(request):
-    carrito, creado = Carrito.objects.get_or_create(usuario=request.user)
+    usuario = request.user if request.user.is_authenticated else None
+    carrito, creado = Carrito.objects.get_or_create(usuario=usuario)
+    
+    if request.method == 'POST':
+        form = DomicilioForm(request.POST)
+        if form.is_valid():
+            carrito.domicilio = form.cleaned_data['domicilio']
+            carrito.save()
+            return redirect('ver_carrito')
+    else:
+        form = DomicilioForm(initial={'domicilio': carrito.domicilio})
+
     items = carrito.items.all()
     total = carrito.calcular_total()
+    costo_domicilio = carrito.COSTO_DOMICILIO if carrito.domicilio else 0
 
     return render(request, 'muebles/carrito/ver_carrito.html', {
         'items': items,
         'total': total,
+        'form': form,
+        'carrito': carrito,
+        'costo_domicilio': costo_domicilio,
+    })
+
+#domicilio
+@login_requerido
+def eliminar_domicilio(request):
+    carrito = get_object_or_404(Carrito, usuario=request.user)
+    carrito.domicilio = None
+    carrito.save()
+    messages.success(request, "Domicilio eliminado correctamente.")
+    return redirect('ver_carrito')
+
+#pago
+@login_requerido
+def procesar_pago(request):
+    carrito = request.user.carrito
+    
+    if not carrito.items.exists():
+        messages.error(request, "Tu carrito está vacío")
+        return redirect('carrito')
+    
+    # Crear el pedido
+    pedido = Pedido.objects.create(
+        usuario=request.user,
+        total=carrito.calcular_total(),
+        direccion_entrega=carrito.domicilio or request.user.direccion,
+        estado='completado'
+    )
+    
+    # Crear los detalles del pedido
+    for item in carrito.items.all():
+        DetallePedido.objects.create(
+            pedido=pedido,
+            mueble=item.mueble,
+            cantidad=item.cantidad,
+            precio_unitario=item.mueble.precio_diario,
+            subtotal=item.subtotal()
+        )
+    
+    # Limpiar el carrito
+    carrito.items.all().delete()
+    carrito.domicilio = None
+    carrito.save()
+    
+    messages.success(request, "¡Pago exitoso! Tu pedido ha sido procesado.")
+    return redirect('index')
+
+#admin
+@rol_requerido([1])
+def admin_inicio(request):
+    if not request.session.get('logueo') or request.session.get('logueo').get('rol') != 1:
+        return redirect('login')
+    
+    # Estadísticas para el dashboard
+    total_muebles = Mueble.objects.count()
+    total_usuarios = Usuario.objects.count()
+    total_pedidos = Pedido.objects.count()
+    
+    context = {
+        'total_muebles': total_muebles,
+        'total_usuarios': total_usuarios,
+        'total_pedidos': total_pedidos,
+    }
+    return render(request, 'muebles/admin/inicio.html', context)
+
+
+#crud muebles
+# views.py
+
+def admin_muebles(request):
+    if not request.session.get('logueo') or request.session.get('logueo').get('rol') != 1:
+        messages.error(request, 'Acceso denegado. Debes ser administrador.')
+        return redirect('login')
+    
+    muebles = Mueble.objects.all()
+    propietarios = Propietario.objects.all()
+    return render(request, 'muebles/admin/muebles.html', {
+        'muebles': muebles,
+        'propietarios': propietarios
+    })
+
+def crear_mueble(request):
+    if not request.session.get('logueo') or request.session.get('logueo').get('rol') != 1:
+        messages.error(request, 'Acceso denegado. Debes ser administrador.')
+        return redirect('login')
+    
+    if request.method == 'POST':
+        try:
+            nombre = request.POST.get('nombre')
+            descripcion = request.POST.get('descripcion')
+            precio_diario = request.POST.get('precio_diario')
+            propietario_id = request.POST.get('propietario')
+            imagen = request.FILES.get('imagen')
+            
+            if not all([nombre, precio_diario, propietario_id]):
+                messages.error(request, 'Todos los campos obligatorios deben ser completados.')
+                return redirect('admin_muebles')
+            
+            propietario = Propietario.objects.get(id=propietario_id)
+            mueble = Mueble(
+                nombre=nombre,
+                descripcion=descripcion,
+                precio_diario=precio_diario,
+                propietario=propietario,
+                imagen=imagen
+            )
+            mueble.save()
+            messages.success(request, f'Mueble "{nombre}" creado exitosamente!')
+            return redirect('admin_muebles')
+            
+        except Exception as e:
+            messages.error(request, f'Error al crear el mueble: {str(e)}')
+            return redirect('admin_muebles')
+    
+    return redirect('admin_muebles')
+
+def editar_mueble(request, id):
+    if not request.session.get('logueo') or request.session.get('logueo').get('rol') != 1:
+        messages.error(request, 'Acceso denegado. Debes ser administrador.')
+        return redirect('login')
+    
+    try:
+        mueble = Mueble.objects.get(id=id)
+        
+        if request.method == 'POST':
+            nombre = request.POST.get('nombre')
+            descripcion = request.POST.get('descripcion')
+            precio_diario = request.POST.get('precio_diario')
+            propietario_id = request.POST.get('propietario')
+            
+            if not all([nombre, precio_diario, propietario_id]):
+                messages.error(request, 'Todos los campos obligatorios deben ser completados.')
+                return redirect('admin_muebles')
+            
+            mueble.nombre = nombre
+            mueble.descripcion = descripcion
+            mueble.precio_diario = precio_diario
+            mueble.propietario = Propietario.objects.get(id=propietario_id)
+            
+            if 'imagen' in request.FILES:
+                mueble.imagen = request.FILES['imagen']
+            
+            mueble.save()
+            messages.success(request, f'Mueble "{nombre}" actualizado exitosamente!')
+            return redirect('admin_muebles')
+            
+    except Mueble.DoesNotExist:
+        messages.error(request, 'El mueble que intentas editar no existe.')
+    except Exception as e:
+        messages.error(request, f'Error al actualizar el mueble: {str(e)}')
+    
+    return redirect('admin_muebles')
+
+def eliminar_mueble(request, id):
+    if not request.session.get('logueo') or request.session.get('logueo').get('rol') != 1:
+        messages.error(request, 'Acceso denegado. Debes ser administrador.')
+        return redirect('login')
+    
+    try:
+        mueble = Mueble.objects.get(id=id)
+        nombre = mueble.nombre
+        mueble.delete()
+        messages.success(request, f'Mueble "{nombre}" eliminado exitosamente!')
+    except Mueble.DoesNotExist:
+        messages.error(request, 'El mueble que intentas eliminar no existe.')
+    except Exception as e:
+        messages.error(request, f'Error al eliminar el mueble: {str(e)}')
+    
+    return redirect('admin_muebles')
+
+#crud usuarios
+# Vista para listar usuarios
+# views.py
+
+def admin_usuarios(request):
+    if not request.session.get('logueo') or request.session.get('logueo').get('rol') != 1:
+        messages.error(request, 'Acceso denegado. Debes ser administrador.')
+        return redirect('login')
+    
+    usuarios = Usuario.objects.all().order_by('-id')
+    return render(request, 'muebles/admin/usuarios.html', {
+        'usuarios': usuarios,
+        'roles': Usuario.ROLES,
+        'estados': Usuario.ESTADO
+    })
+
+def crear_usuario(request):
+    if not request.session.get('logueo') or request.session.get('logueo').get('rol') != 1:
+        messages.error(request, 'Acceso denegado. Debes ser administrador.')
+        return redirect('login')
+    
+    if request.method == 'POST':
+        form = UsuarioForm(request.POST, request.FILES)
+        if form.is_valid():
+            try:
+                usuario = form.save(commit=False)
+                usuario.set_password(form.cleaned_data['password'])
+                usuario.save()
+                messages.success(request, 'Usuario creado exitosamente!')
+                return redirect('admin_usuarios')
+            except Exception as e:
+                messages.error(request, f'Error al crear el usuario: {str(e)}')
+        else:
+            for field, errors in form.errors.items():
+                for error in errors:
+                    messages.error(request, f'{field}: {error}')
+    
+    else:
+        form = UsuarioForm()
+    
+    return render(request, 'muebles/admin/crear_usuario.html', {
+        'form': form,
+        'roles': Usuario.ROLES,
+        'estados': Usuario.ESTADO
+    })
+
+def editar_usuario(request, id):
+    if not request.session.get('logueo') or request.session.get('logueo').get('rol') != 1:
+        messages.error(request, 'Acceso denegado. Debes ser administrador.')
+        return redirect('login')
+    
+    try:
+        usuario = Usuario.objects.get(id=id)
+        
+        if request.method == 'POST':
+            form = UsuarioForm(request.POST, request.FILES, instance=usuario)
+            if form.is_valid():
+                try:
+                    # Solo actualiza la contraseña si se proporcionó una nueva
+                    if form.cleaned_data['password']:
+                        usuario.set_password(form.cleaned_data['password'])
+                    form.save()
+                    messages.success(request, 'Usuario actualizado exitosamente!')
+                    return redirect('admin_usuarios')
+                except Exception as e:
+                    messages.error(request, f'Error al actualizar el usuario: {str(e)}')
+            else:
+                for field, errors in form.errors.items():
+                    for error in errors:
+                        messages.error(request, f'{field}: {error}')
+        else:
+            form = UsuarioForm(instance=usuario)
+        
+        return render(request, 'muebles/admin/editar_usuario.html', {
+            'form': form,
+            'usuario': usuario,
+            'roles': Usuario.ROLES,
+            'estados': Usuario.ESTADO
+        })
+        
+    except Usuario.DoesNotExist:
+        messages.error(request, 'El usuario que intentas editar no existe.')
+        return redirect('admin_usuarios')
+
+def eliminar_usuario(request, id):
+    if not request.session.get('logueo') or request.session.get('logueo').get('rol') != 1:
+        messages.error(request, 'Acceso denegado. Debes ser administrador.')
+        return redirect('login')
+    
+    try:
+        usuario = Usuario.objects.get(id=id)
+        
+        # No permitir eliminar el propio usuario admin
+        if usuario.id == request.session.get('logueo').get('id'):
+            messages.error(request, 'No puedes eliminar tu propio usuario.')
+            return redirect('admin_usuarios')
+        
+        nombre = usuario.nombre
+        usuario.delete()
+        messages.success(request, f'Usuario "{nombre}" eliminado exitosamente!')
+        
+    except Usuario.DoesNotExist:
+        messages.error(request, 'El usuario que intentas eliminar no existe.')
+    except Exception as e:
+        messages.error(request, f'Error al eliminar el usuario: {str(e)}')
+    
+    return redirect('admin_usuarios')
+
+
+#pedidos
+# Vista para listar pedidos
+def admin_pedidos(request):
+    if not request.session.get('logueo') or request.session.get('logueo').get('rol') != 1:
+        return redirect('login')
+    
+    pedidos = Pedido.objects.all().order_by('-fecha')
+    return render(request, 'muebles/admin/pedidos/pedidos.html', {'pedidos': pedidos})
+
+# Vista para ver detalle de pedido
+def detalle_pedido(request, id):
+    if not request.session.get('logueo') or request.session.get('logueo').get('rol') != 1:
+        return redirect('login')
+    
+    pedido = get_object_or_404(Pedido, id=id)
+    detalles = DetallePedido.objects.filter(pedido=pedido)
+    
+    return render(request, 'muebles/admin/pedidos/detalles_pedidos.html', {
+        'pedido': pedido,
+        'detalles': detalles
     })

@@ -77,12 +77,24 @@ class Propietario(models.Model):
 class Mueble(models.Model):
     nombre = models.CharField(max_length=100)
     descripcion = models.TextField()
-    precio_diario = models.DecimalField(max_digits=10, decimal_places=2)
+    precio_diario = models.IntegerField(default=0)
     imagen = models.ImageField(upload_to='muebles/')
     propietario = models.ForeignKey(Propietario, on_delete=models.CASCADE)
 
     def __str__(self):
         return self.nombre
+
+class MuebleForm(forms.ModelForm):
+    class Meta:
+        model = Mueble
+        fields = '__all__'
+        widgets = {
+            'nombre': forms.TextInput(attrs={'class': 'form-control'}),
+            'descripcion': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+            'precio_diario': forms.NumberInput(attrs={'class': 'form-control'}),
+            'propietario': forms.Select(attrs={'class': 'form-control'}),
+            'imagen': forms.FileInput(attrs={'class': 'form-control'}),
+        }
 
 class Renta(models.Model):
     mueble = models.ForeignKey(Mueble, on_delete=models.CASCADE)
@@ -113,27 +125,50 @@ class RentaForm(forms.ModelForm):
         }
         
 class UsuarioForm(forms.ModelForm):
+    password = forms.CharField(
+        widget=forms.PasswordInput(attrs={'class': 'form-control'}),
+        required=False,
+        help_text="Dejar en blanco si no quieres cambiar la contraseña"
+    )
+    
     class Meta:
         model = Usuario
-        fields = ['nombre', 'email', 'direccion', 'rol', 'estado', 'foto']
+        fields = ['nombre', 'email', 'direccion', 'rol', 'estado', 'foto', 'password']
         widgets = {
-            'nombre': forms.TextInput(attrs={'required': True}),
-            'email': forms.EmailInput(attrs={'required': True}),
-            'direccion': forms.TextInput(attrs={'required': True}),
-            'rol': forms.Select(attrs={'required': True}),
-            'estado': forms.Select(attrs={'required': True}),
+            'nombre': forms.TextInput(attrs={'class': 'form-control'}),
+            'email': forms.EmailInput(attrs={'class': 'form-control'}),
+            'direccion': forms.TextInput(attrs={'class': 'form-control'}),
+            'rol': forms.Select(attrs={'class': 'form-control'}),
+            'estado': forms.Select(attrs={'class': 'form-control'}),
+            'foto': forms.FileInput(attrs={'class': 'form-control'}),
         }
 
 
 class Carrito(models.Model):
     usuario = models.OneToOneField(Usuario, on_delete=models.CASCADE, related_name='carrito')
+    domicilio = models.CharField(max_length=255, null=True, blank=True)
+    COSTO_DOMICILIO = 20000  # Constante para el costo
     fecha_creacion = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
         return f"Carrito de {self.usuario.nombre}"
 
     def calcular_total(self):
-        return sum(item.subtotal() for item in self.items.all())
+        total = sum(item.subtotal() for item in self.items.all())
+        if self.domicilio:
+            total += self.COSTO_DOMICILIO
+        return total
+
+class DomicilioForm(forms.Form):
+    domicilio = forms.CharField(
+        label='Dirección de entrega',
+        max_length=255,
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Ingrese su dirección completa'
+        }),
+        required=True
+    )
 
 class ItemCarrito(models.Model):
     carrito = models.ForeignKey(Carrito, on_delete=models.CASCADE, related_name='items')
@@ -145,3 +180,29 @@ class ItemCarrito(models.Model):
 
     def subtotal(self):
         return self.cantidad * self.mueble.precio_diario
+    
+class Pedido(models.Model):
+    ESTADOS = (
+        ('pendiente', 'Pendiente'),
+        ('completado', 'Completado'),
+        ('cancelado', 'Cancelado'),
+    )
+    
+    usuario = models.ForeignKey(Usuario, on_delete=models.CASCADE)
+    fecha = models.DateTimeField(auto_now_add=True)
+    estado = models.CharField(max_length=20, choices=ESTADOS, default='pendiente')
+    total = models.IntegerField(default=0)
+    direccion_entrega = models.CharField(max_length=255)
+    costo_domicilio = models.IntegerField(default=0)
+    def __str__(self):
+        return f"Pedido #{self.id} - {self.usuario.nombre}"
+
+class DetallePedido(models.Model):
+    pedido = models.ForeignKey(Pedido, on_delete=models.CASCADE, related_name='detalles')
+    mueble = models.ForeignKey(Mueble, on_delete=models.CASCADE)
+    cantidad = models.PositiveIntegerField()
+    precio_unitario = models.IntegerField(default=0)
+    subtotal = models.IntegerField(default=0)
+
+    def __str__(self):
+        return f"{self.cantidad} x {self.mueble.nombre} - ${self.subtotal}"

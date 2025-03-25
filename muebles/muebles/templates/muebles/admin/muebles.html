@@ -1,0 +1,281 @@
+{% extends 'muebles/barNavInicio.html' %}
+
+{% block titulo %}Administrar Muebles{% endblock %}
+
+{% block admin_contenido %}
+<style>
+    /* Estilos personalizados para mantener consistencia */
+    .card {
+        background-color: #1a1a1a;
+        border: 1px solid #333;
+        border-radius: 8px;
+        color: #fff;
+    }
+    
+    .card-header {
+        background-color: #2a2a2a;
+        border-bottom: 1px solid #333;
+    }
+    
+    .table {
+        color: #fff;
+    }
+    
+    .table th {
+        background-color: #2a2a2a;
+        color: #fff;
+        border-bottom: 1px solid #333;
+    }
+    
+    .table td {
+        border-top: 1px solid #333;
+        vertical-align: middle;
+    }
+    
+    .table-hover tbody tr:hover {
+        background-color: #2a2a2a;
+    }
+    
+    .btn-success {
+        background-color: #ff6b00; /* Naranja */
+        border: none;
+    }
+    
+    .btn-success:hover {
+        background-color: #e05d00;
+    }
+    
+    .btn-primary {
+        background-color: #ff6b00; /* Naranja */
+        border: none;
+    }
+    
+    .btn-primary:hover {
+        background-color: #e05d00;
+    }
+    
+    .btn-warning {
+        background-color: #ff6b00; /* Naranja */
+        border: none;
+        color: white;
+    }
+    
+    .btn-danger {
+        background-color: #dc3545;
+        border: none;
+    }
+    
+    .modal-content {
+        background-color: #1a1a1a;
+        color: #fff;
+    }
+    
+    .modal-header {
+        border-bottom: 1px solid #333;
+    }
+    
+    .modal-footer {
+        border-top: 1px solid #333;
+    }
+    
+    .form-control, .form-select {
+        background-color: #2a2a2a;
+        border: 1px solid #333;
+        color: #fff;
+    }
+    
+    .form-control:focus, .form-select:focus {
+        background-color: #2a2a2a;
+        color: #fff;
+        border-color: #ff6b00;
+        box-shadow: 0 0 0 0.25rem rgba(255, 107, 0, 0.25);
+    }
+    
+    .text-muted {
+        color: #6c757d !important;
+    }
+    
+
+</style>
+
+<div class="container mt-4">
+    <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h3 class="card-title m-0">
+                <i class="bi bi-box-seam"></i> Gestión de Muebles
+            </h3>
+            <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#crearMuebleModal">
+                <i class="bi bi-plus-circle"></i> Nuevo Mueble
+            </button>
+        </div>
+        
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-striped table-hover">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Nombre</th>
+                            <th>Precio</th>
+                            <th>Propietario</th>
+                            <th>Imagen</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for mueble in muebles %}
+                        <tr>
+                            <td>{{ mueble.id }}</td>
+                            <td>{{ mueble.nombre }}</td>
+                            <td>${{ mueble.precio_diario }}</td>
+                            <td>{{ mueble.propietario }}</td>
+                            <td>
+                                {% if mueble.imagen %}
+                                <img src="{{ mueble.imagen.url }}" width="50" height="50" class="img-thumbnail">
+                                {% else %}
+                                <span class="text-muted">Sin imagen</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <button class="btn btn-sm btn-warning" data-bs-toggle="modal" 
+                                        data-bs-target="#editarMuebleModal{{ mueble.id }}">
+                                    <i class="bi bi-pencil"></i>
+                                </button>
+                                <button class="btn btn-sm btn-danger" data-bs-toggle="modal" 
+                                        data-bs-target="#eliminarMuebleModal{{ mueble.id }}">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para Crear Mueble -->
+<div class="modal fade" id="crearMuebleModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Crear Nuevo Mueble</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="post" enctype="multipart/form-data" action="{% url 'crear_mueble' %}">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Nombre</label>
+                        <input type="text" class="form-control" name="nombre" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Descripción</label>
+                        <textarea class="form-control" name="descripcion" rows="3"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Precio Diario</label>
+                        <input type="number" class="form-control" name="precio_diario" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Propietario</label>
+                        <select class="form-select" name="propietario" required>
+                            {% for propietario in propietarios %}
+                            <option value="{{ propietario.id }}">{{ propietario.nombre }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Imagen</label>
+                        <input type="file" class="form-control" name="imagen">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Guardar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modales para Editar y Eliminar (uno por cada mueble) -->
+{% for mueble in muebles %}
+<!-- Modal Editar -->
+<div class="modal fade" id="editarMuebleModal{{ mueble.id }}" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Editar Mueble</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="post" enctype="multipart/form-data" action="{% url 'editar_mueble' mueble.id %}">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Nombre</label>
+                        <input type="text" class="form-control" name="nombre" value="{{ mueble.nombre }}" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Descripción</label>
+                        <textarea class="form-control" name="descripcion" rows="3">{{ mueble.descripcion }}</textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Precio Diario</label>
+                        <input type="number" class="form-control" name="precio_diario" value="{{ mueble.precio_diario }}" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Propietario</label>
+                        <select class="form-select" name="propietario" required>
+                            {% for propietario in propietarios %}
+                            <option value="{{ propietario.id }}" {% if propietario.id == mueble.propietario.id %}selected{% endif %}>
+                                {{ propietario.nombre }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Imagen</label>
+                        {% if mueble.imagen %}
+                        <div class="mb-2">
+                            <img src="{{ mueble.imagen.url }}" width="100" class="img-thumbnail">
+                        </div>
+                        {% endif %}
+                        <input type="file" class="form-control" name="imagen">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Guardar Cambios</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Eliminar -->
+<div class="modal fade" id="eliminarMuebleModal{{ mueble.id }}" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Confirmar Eliminación</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="post" action="{% url 'eliminar_mueble' mueble.id %}">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <p>¿Estás seguro de que deseas eliminar el mueble "{{ mueble.nombre }}"?</p>
+                    <p class="text-danger">Esta acción no se puede deshacer.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-danger">Eliminar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endfor %}
+
+{% endblock %}

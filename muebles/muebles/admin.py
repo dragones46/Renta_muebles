@@ -45,3 +45,17 @@ class RentaAdmin(admin.ModelAdmin):
     list_display = ('id','mueble', 'fecha_inicio', 'fecha_fin', 'usuario', 'duracion_meses', 'duracion_dias')
     search_fields = ('id','mueble__nombre', 'usuario__nombre')
     list_filter = ('fecha_inicio', 'fecha_fin')
+
+
+@admin.register(Pedido)
+class PedidoAdmin(admin.ModelAdmin):
+    list_display = ('id', 'usuario', 'fecha', 'estado', 'total', 'direccion_entrega')
+    list_filter = ('estado', 'fecha')
+    search_fields = ('usuario__nombre', 'id')
+    readonly_fields = ('fecha', 'total')
+    list_editable = ('estado',)
+
+@admin.register(DetallePedido)
+class DetallePedidoAdmin(admin.ModelAdmin):
+    list_display = ('id', 'pedido', 'mueble', 'cantidad', 'precio_unitario', 'subtotal')
+    search_fields = ('pedido__id', 'mueble__nombre')

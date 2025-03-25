@@ -26,5 +26,27 @@ urlpatterns = [
     path('eliminar-del-carrito/<int:item_id>/', views.eliminar_del_carrito, name='eliminar_del_carrito'),
     path('actualizar-cantidad/<int:item_id>/', views.actualizar_cantidad, name='actualizar_cantidad'),
     path('ver-carrito/', views.ver_carrito, name='ver_carrito'),
+    path('eliminar-domicilio/', views.eliminar_domicilio, name='eliminar_domicilio'),
+    path('procesar-pago/', views.procesar_pago, name='procesar_pago'),
 
-]
+#admin
+#inicio de admin
+    path('administracion/', views.admin_inicio, name='admin_inicio'),
+
+#crud muebles
+    path('administracion/muebles/', views.admin_muebles, name='admin_muebles'),
+    path('administracion/muebles/crear/', views.crear_mueble, name='crear_mueble'),
+    path('administracion/muebles/editar/<int:id>/', views.editar_mueble, name='editar_mueble'),
+    path('administracion/muebles/eliminar/<int:id>/', views.eliminar_mueble, name='eliminar_mueble'),
+
+#crud usuarios  
+    path('administracion/usuarios/', views.admin_usuarios, name='admin_usuarios'),
+    path('administracion/usuarios/crear/', views.crear_usuario, name='crear_usuario'),
+    path('administracion/usuarios/editar/<int:id>/', views.editar_usuario, name='editar_usuario'),
+    path('administracion/usuarios/eliminar/<int:id>/', views.eliminar_usuario, name='eliminar_usuario'),
+
+#pedidos    
+    path('administracion/pedidos/', views.admin_pedidos, name='admin_pedidos'),
+    path('administracion/pedidos/detalle/<int:id>/', views.detalle_pedido, name='detalle_pedido'),
+    
+    ]

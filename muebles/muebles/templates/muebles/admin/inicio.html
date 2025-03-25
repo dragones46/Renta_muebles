@@ -1,0 +1,52 @@
+<!-- templates/admin/inicio.html -->
+{% extends 'muebles/barNavInicio.html' %}
+
+{% block titulo %}Inicio - Administración{% endblock %}
+
+{% block admin_contenido %}
+<div class="admin-welcome">
+    <h1 class="text-center mb-4">Bienvenido, Administrador</h1>
+    
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="card text-white bg-primary mb-3">
+                <div class="card-body text-center">
+                    <h2>{{ total_muebles }}</h2>
+                    <p class="card-text">Muebles Registrados</p>
+                    <a href="{% url 'admin_muebles' %}" class="btn btn-light">Ver Muebles</a>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card text-white bg-success mb-3">
+                <div class="card-body text-center">
+                    <h2>{{ total_usuarios }}</h2>
+                    <p class="card-text">Usuarios Registrados</p>
+                    <a href="{% url 'admin_usuarios' %}" class="btn btn-light">Ver Usuarios</a>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card text-white bg-info mb-3">
+                <div class="card-body text-center">
+                    <h2>{{ total_pedidos }}</h2>
+                    <p class="card-text">Pedidos Realizados</p>
+                    <a href="{% url 'admin_pedidos' %}" class="btn btn-light">Ver Pedidos</a>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="card">
+        <div class="card-body">
+            <h5 class="card-title"><i class="bi bi-info-circle"></i> Instrucciones</h5>
+            <p class="card-text">Desde este panel podrás gestionar todos los aspectos importantes del sistema:</p>
+            <ul>
+                <li><strong>Muebles:</strong> Agrega, edita o elimina los muebles disponibles para renta</li>
+                <li><strong>Usuarios:</strong> Administra los usuarios registrados en el sistema</li>
+                <li><strong>Pedidos:</strong> Revisa y gestiona todos los pedidos realizados por los clientes</li>
+            </ul>
+        </div>
+    </div>
+</div>
+{% endblock %}

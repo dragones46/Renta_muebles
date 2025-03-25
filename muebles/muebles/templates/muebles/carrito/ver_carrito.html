@@ -1,4 +1,6 @@
 {% extends 'muebles/barnav.html' %}
+{% load static %}
+
 {% block titulo %}Carrito de Compras{% endblock %}
 
 {% block contenedor %}
@@ -21,14 +23,17 @@
         display: flex;
         justify-content: space-between;
         align-items: center;
-        padding: 10px;
-        border-bottom: 1px solid #444;
+        padding: 15px;
+        margin-bottom: 15px;
+        background-color: #333;
+        border-radius: 8px;
     }
 
     .carrito-item img {
         width: 100px;
         height: 100px;
         border-radius: 10px;
+        object-fit: cover;
     }
 
     .carrito-item .info {
@@ -53,32 +58,123 @@
         width: 50px;
         text-align: center;
         margin: 0 10px;
+        background-color: #444;
+        color: white;
+        border: 1px solid #555;
+        border-radius: 4px;
+        padding: 5px;
     }
 
     .carrito-item .subtotal {
         color: #ffffff;
         font-weight: bold;
+        min-width: 100px;
+        text-align: right;
     }
 
     .carrito-total {
         text-align: right;
         margin-top: 20px;
+        padding: 15px;
+        background-color: #3a3a3a;
+        border-radius: 8px;
     }
 
     .carrito-total h3 {
         color: #ffffff;
+        margin: 0;
+    }
+
+    .domicilio-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 15px;
+        margin-bottom: 15px;
+        background-color: #333;
+        border-radius: 8px;
+    }
+
+    .domicilio-info {
+        flex: 1;
+        margin-left: 20px;
+    }
+
+    .domicilio-info h3 {
+        color: #ffffff;
+    }
+
+    .domicilio-info p {
+        color: #cccccc;
+    }
+
+    .domicilio-imagen {
+        width: 100px;
+        height: 100px;
+        border-radius: 10px;
+        object-fit: cover;
+    }
+
+    .delivery-cost {
+        color: #4CAF50;
+        font-weight: bold;
+    }
+
+    .btn-primary {
+        background-color: #4CAF50;
+        border: none;
+        margin-top: 10px;
+    }
+
+    .btn-danger {
+        background-color: #f44336;
+        border: none;
+    }
+
+    .empty-cart {
+        text-align: center;
+        color: #ffffff;
+        padding: 30px;
+        background-color: #333;
+        border-radius: 8px;
+    }
+
+    .delivery-cost-amount {
+        font-weight: bold;
+        color: white;
+    }
+
+    .carrito-item .actions {
+        display: flex;
+        align-items: center;
+    }
+
+    .carrito-item .actions .btn-danger {
+        margin-left: 20px;
+    }
+
+    .domicilio-item .actions {
+        display: flex;
+        align-items: center;
+    }
+
+    .domicilio-item .actions .btn-danger {
+        margin-left: 20px;
     }
 </style>
 
 <div class="carrito-container">
     <h1>Carrito de Compras</h1>
+
+    {% if items or carrito.domicilio %}
+    <!-- Lista de items del carrito -->
     {% for item in items %}
     <div class="carrito-item">
         <img src="{{ item.mueble.imagen.url }}" alt="{{ item.mueble.nombre }}">
         <div class="info">
             <h3>{{ item.mueble.nombre }}</h3>
             <p>{{ item.mueble.descripcion }}</p>
-            <p>Precio: ${{ item.mueble.precio_diario }}/día</p>
+            <p>Precio: $<span class="price-number">{{ item.mueble.precio_diario }}</span>/día</p>
         </div>
         <div class="cantidad">
             <form method="post" action="{% url 'actualizar_cantidad' item.id %}">
@@ -87,29 +183,80 @@
             </form>
         </div>
         <div class="subtotal">
-            ${{ item.subtotal }}
+            $<span class="subtotal-number">{{ item.subtotal }}</span>
         </div>
-        <a href="{% url 'eliminar_del_carrito' item.id %}" class="btn btn-danger">Eliminar</a>
+        <div class="actions">
+            <a href="{% url 'eliminar_del_carrito' item.id %}" class="btn btn-danger"><i
+                    class="bi bi-trash-fill"></i></a>
+        </div>
     </div>
     {% endfor %}
-    <div class="carrito-total">
-        <h3>Total: ${{ total }}</h3>
+
+    <!-- Sección de domicilio dentro del cuadro de items -->
+    {% if carrito.domicilio %}
+    <div class="domicilio-item">
+        <img src="{% static 'muebles/img/iconoDomicilio.png' %}" alt="Domicilio" class="domicilio-imagen">
+        <div class="domicilio-info">
+            <h3>Servicio de Domicilio</h3>
+            <p><strong>Dirección:</strong> {{ carrito.domicilio }}</p>
+            <p class="delivery-cost">Costo: $20.000</p>
+        </div>
+        <div class="subtotal">
+            $<span class="delivery-cost-amount">20.000</span>
+        </div>
+        <div class="actions">
+            <a href="{% url 'eliminar_domicilio' %}" class="btn btn-danger"><i class="bi bi-trash-fill"></i></a>
+        </div>
     </div>
+    {% endif %}
+
+    <!-- Total del carrito -->
+    <div class="carrito-total">
+        <h3>
+            <div
+                style="display: flex; justify-content: space-between; margin-top: 8px; font-size: 1.3rem; color: #4CAF50;">
+                <strong>Total:</strong>
+                <strong>$<span class="final-total">{{ total }}</span></strong>
+            </div>
+        </h3>
+        {% if items %}
+        <form method="post" action="{% url 'procesar_pago' %}" style="margin-top: 15px;">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-success" style="width: 100%; padding: 10px; font-size: 1.1rem;">
+                <i class="bi bi-credit-card-fill"></i> Pagar ahora
+            </button>
+        </form>
+        {% endif %}
+    </div>
+    {% else %}
+    <!-- Mensaje cuando el carrito está vacío -->
+    <div class="empty-cart">
+        <h3>Tu carrito de compras está vacío</h3>
+        <p>¡Explora nuestros muebles y agrega productos!</p>
+        <a href="{% url 'muebles' %}" class="btn btn-primary">Ver Muebles</a>
+    </div>
+    {% endif %}
+
+    <!-- Formulario para agregar domicilio (solo si hay items) -->
+    {% if items %}
+    <div style="margin-top: 20px; background-color: #3a3a3a; padding: 15px; border-radius: 8px;">
+        <h3 style="color: #ffffff; margin-top: 0;">Agregar Dirección de Entrega</h3>
+        <form method="post">
+            {% csrf_token %}
+            <div class="form-group">
+                {{ form.domicilio }}
+            </div>
+            <button type="submit" class="btn btn-primary">
+                {% if carrito.domicilio %}
+                Actualizar Dirección
+                {% else %}
+                Agregar Dirección
+                {% endif %}
+            </button>
+        </form>
+    </div>
+    {% endif %}
 </div>
 
-<script>
-    function incrementar(itemId) {
-        const input = document.querySelector(`input[name="cantidad"][onchange*="${itemId}"]`);
-        input.value = parseInt(input.value) + 1;
-        input.onchange();
-    }
-
-    function decrementar(itemId) {
-        const input = document.querySelector(`input[name="cantidad"][onchange*="${itemId}"]`);
-        if (input.value > 1) {
-            input.value = parseInt(input.value) - 1;
-            input.onchange();
-        }
-    }
-</script>
+<script src="{% static 'muebles/js/numberFormatter.js' %}"></script>
 {% endblock %}
