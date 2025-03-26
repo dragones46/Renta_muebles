@@ -106,12 +106,25 @@
         </nav>
 
         <!-- Contenido -->
+        <!-- Contenido -->
         <div class="content container mt-5">
             {% if messages %}
             <div id="messages-container">
                 {% for message in messages %}
                 <div class="alert alert-{{ message.tags|default:'info' }} alert-dismissible fade show" role="alert">
-                    <strong>{{ message }}</strong>
+                    <div class="d-flex align-items-center">
+                        <!-- Iconos según el tipo de mensaje -->
+                        {% if message.tags == 'success' %}
+                        <i class="fas fa-check-circle me-2"></i>
+                        {% elif message.tags == 'error' or message.tags == 'danger' %}
+                        <i class="fas fa-exclamation-circle me-2"></i>
+                        {% elif message.tags == 'warning' %}
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        {% else %}
+                        <i class="fas fa-info-circle me-2"></i>
+                        {% endif %}
+                        <strong>{{ message }}</strong>
+                    </div>
                     <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                 </div>
                 {% endfor %}
@@ -139,7 +152,45 @@
             </div>
         </footer>
     </div>
-
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Obtener la ruta actual
+            const currentPath = window.location.pathname;
+            
+            // Seleccionar solo los items del menú principal (izquierda)
+            const navItems = document.querySelectorAll('.navbar-nav.me-auto .nav-item');
+            
+            // Función para activar el item actual
+            function setActiveNavItem() {
+                navItems.forEach(item => {
+                    const link = item.querySelector('a');
+                    if (link && link.getAttribute('href') === currentPath) {
+                        item.classList.add('active');
+                        
+                        // Si es el index, quitar después de 5 segundos
+                        if (currentPath === '/' || currentPath === '/index') {
+                            setTimeout(() => {
+                                item.classList.remove('active');
+                            }, 5000);
+                        }
+                    } else {
+                        item.classList.remove('active');
+                    }
+                });
+            }
+            
+            // Ejecutar al cargar
+            setActiveNavItem();
+            
+            // Manejar clicks manualmente
+            navItems.forEach(item => {
+                item.addEventListener('click', function() {
+                    navItems.forEach(nav => nav.classList.remove('active'));
+                    this.classList.add('active');
+                });
+            });
+        });
+        </script>
 
 </body>
 

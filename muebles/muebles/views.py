@@ -367,7 +367,7 @@ def procesar_pago(request):
     return redirect('index')
 
 #admin
-@rol_requerido([1])
+@login_requerido(roles_permitidos=[1])
 def admin_inicio(request):
     if not request.session.get('logueo') or request.session.get('logueo').get('rol') != 1:
         return redirect('login')

@@ -31,22 +31,22 @@ urlpatterns = [
 
 #admin
 #inicio de admin
-    path('administracion/', views.admin_inicio, name='admin_inicio'),
+    path('administradores/', views.admin_inicio, name='admin_inicio'),
 
 #crud muebles
-    path('administracion/muebles/', views.admin_muebles, name='admin_muebles'),
-    path('administracion/muebles/crear/', views.crear_mueble, name='crear_mueble'),
-    path('administracion/muebles/editar/<int:id>/', views.editar_mueble, name='editar_mueble'),
-    path('administracion/muebles/eliminar/<int:id>/', views.eliminar_mueble, name='eliminar_mueble'),
+    path('administradores/muebles/', views.admin_muebles, name='admin_muebles'),
+    path('administradores/muebles/crear/', views.crear_mueble, name='crear_mueble'),
+    path('administradores/muebles/editar/<int:id>/', views.editar_mueble, name='editar_mueble'),
+    path('administradores/muebles/eliminar/<int:id>/', views.eliminar_mueble, name='eliminar_mueble'),
 
 #crud usuarios  
-    path('administracion/usuarios/', views.admin_usuarios, name='admin_usuarios'),
-    path('administracion/usuarios/crear/', views.crear_usuario, name='crear_usuario'),
-    path('administracion/usuarios/editar/<int:id>/', views.editar_usuario, name='editar_usuario'),
-    path('administracion/usuarios/eliminar/<int:id>/', views.eliminar_usuario, name='eliminar_usuario'),
+    path('administradores/usuarios/', views.admin_usuarios, name='admin_usuarios'),
+    path('administradores/usuarios/crear/', views.crear_usuario, name='crear_usuario'),
+    path('administradores/usuarios/editar/<int:id>/', views.editar_usuario, name='editar_usuario'),
+    path('administradores/usuarios/eliminar/<int:id>/', views.eliminar_usuario, name='eliminar_usuario'),
 
 #pedidos    
-    path('administracion/pedidos/', views.admin_pedidos, name='admin_pedidos'),
-    path('administracion/pedidos/detalle/<int:id>/', views.detalle_pedido, name='detalle_pedido'),
+    path('administradores/pedidos/', views.admin_pedidos, name='admin_pedidos'),
+    path('administradores/pedidos/detalle/<int:id>/', views.detalle_pedido, name='detalle_pedido'),
     
     ]
