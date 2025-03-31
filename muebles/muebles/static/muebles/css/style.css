@@ -258,3 +258,608 @@ footer {
 .nav-item.with-indicator {
     position: static; /* Quita la posición relativa */
 }
+
+
+
+/* Estilo para el círculo de ayuda */
+.help-circle {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background-color: rgba(255, 255, 255, 0.2);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.9rem;
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+.help-circle:hover {
+    background-color: rgba(255, 255, 255, 0.3);
+    transform: scale(1.1);
+}
+
+/* Asegura espacio entre los elementos */
+.navbar-nav.ms-auto {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+/* Estilos para modales */
+.modal-content.bg-dark {
+    background-color: #2a2a2a !important;
+    border: 1px solid #444;
+}
+
+.modal-header.border-secondary, 
+.modal-footer.border-secondary {
+    border-color: #444 !important;
+}
+
+.btn-close-white {
+    filter: invert(1) brightness(100%);
+}
+
+.text-orange {
+    color: #ff8c00;
+}
+
+.btn-orange {
+    background-color: #ff8c00;
+    color: white;
+    border: none;
+}
+
+.btn-orange:hover {
+    background-color: #e67600;
+    color: white;
+}
+
+.btn-outline-orange {
+    color: #ff8c00;
+    border: 1px solid #ff8c00;
+    background-color: transparent;
+}
+
+.btn-outline-orange:hover {
+    background-color: #ff8c00;
+    color: white;
+}
+
+/* Asegurar que los modales se vean bien en móviles */
+@media (max-width: 576px) {
+    .modal-dialog {
+        margin: 0.5rem auto;
+    }
+}
+
+/* Estilo para el botón de política de privacidad */
+.btn-privacy-policy {
+    background: linear-gradient(135deg, #ff8c00, #e67600);
+    color: white;
+    border: none;
+    border-radius: 50px;
+    padding: 12px 25px;
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin-top: 20px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(255, 140, 0, 0.3);
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.btn-privacy-policy:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 20px rgba(255, 140, 0, 0.4);
+    background: linear-gradient(135deg, #e67600, #ff8c00);
+}
+
+.btn-privacy-policy i {
+    font-size: 1.2rem;
+}
+
+/* Efecto de pulso para llamar la atención */
+@keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
+}
+
+.btn-privacy-policy.pulse {
+    animation: pulse 2s infinite;
+}
+
+
+/* Estilos para el centro de ayuda */
+.ayuda-card {
+    transition: all 0.3s ease;
+    border: 1px solid #444;
+}
+
+.ayuda-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+}
+
+.accordion-button:not(.collapsed) {
+    background-color: rgba(255, 140, 0, 0.1);
+    color: #ff8c00;
+}
+
+.accordion-button:focus {
+    box-shadow: 0 0 0 0.25rem rgba(255, 140, 0, 0.25);
+}
+
+/* Estilos para el formulario de soporte */
+.form-control {
+    background-color: #2a2a2a;
+    border: 1px solid #444;
+    color: white;
+}
+
+.form-control:focus {
+    background-color: #2a2a2a;
+    color: white;
+    border-color: #ff8c00;
+    box-shadow: 0 0 0 0.25rem rgba(255, 140, 0, 0.25);
+}
+
+/* Estilos para las actualizaciones */
+.actualizacion-contenido {
+    line-height: 1.8;
+}
+
+.actualizacion-contenido img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 5px;
+    margin: 10px 0;
+}
+
+.ayuda-card {
+    transition: all 0.3s ease;
+    border: 1px solid #444;
+    background-color: #2a2a2a;
+}
+
+.ayuda-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 20px rgba(255, 140, 0, 0.1);
+    border-color: #ff8c00;
+}
+
+.ayuda-card .card-body {
+    display: flex;
+    flex-direction: column;
+}
+
+.ayuda-card .btn {
+    margin-top: auto;
+    align-self: center;
+    width: 80%;
+}
+
+/* Mejoras para los modales */
+.modal-lg .modal-body {
+    padding: 2rem;
+}
+
+.modal-lg .list-unstyled li {
+    padding: 8px 0;
+    border-bottom: 1px dashed #444;
+}
+
+.modal-lg .list-unstyled li:last-child {
+    border-bottom: none;
+}
+
+.btn-outline-orange.text-start {
+    text-align: left;
+    padding: 10px 15px;
+    margin-bottom: 10px;
+}
+
+.btn-outline-orange.text-start i {
+    width: 20px;
+    text-align: center;
+}
+
+/* Estilos para el modal de tratamiento de datos */
+.modal-xl {
+    max-width: 900px;
+}
+
+.border-orange {
+    border-color: #ff8c00 !important;
+}
+
+.border-bottom-orange {
+    border-bottom: 2px solid #ff8c00;
+}
+
+.border-top-orange {
+    border-top: 2px solid #ff8c00;
+}
+
+.bg-darker {
+    background-color: #1f1f1f;
+}
+
+.text-gradient {
+    background: linear-gradient(45deg, #ff8c00, #ffcc00);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    display: inline-block;
+}
+
+.protection-badge {
+    width: 100px;
+    height: 100px;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: rgba(255, 140, 0, 0.1);
+    border-radius: 50%;
+    border: 2px dashed #ff8c00;
+}
+
+.protection-item {
+    padding: 10px;
+    margin-bottom: 8px;
+    background-color: rgba(0, 0, 0, 0.2);
+    border-radius: 5px;
+    display: flex;
+    align-items: center;
+}
+
+.compliance-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 8px 15px;
+    background-color: rgba(255, 193, 7, 0.1);
+    border-radius: 20px;
+    border: 1px solid #ffc107;
+}
+
+.document-card {
+    display: flex;
+    align-items: center;
+    padding: 15px;
+    background-color: #2a2a2a;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+    border: 1px solid #444;
+    height: 100%;
+    text-decoration: none;
+    color: white;
+}
+
+.document-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+    border-color: #ff8c00;
+}
+
+.document-icon {
+    font-size: 1.8rem;
+    margin-right: 15px;
+    width: 50px;
+    text-align: center;
+}
+
+.document-info h5 {
+    margin-bottom: 5px;
+    font-size: 1rem;
+}
+
+.document-info small {
+    color: #aaa;
+    font-size: 0.8rem;
+}
+
+.rights-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+}
+
+.right-item {
+    padding: 12px;
+    background-color: rgba(0, 0, 0, 0.2);
+    border-radius: 5px;
+    display: flex;
+    align-items: center;
+}
+
+.right-item i {
+    font-size: 1.2rem;
+    margin-right: 10px;
+    width: 25px;
+    text-align: center;
+}
+
+/* Efecto de hover para elementos interactivos */
+.document-card:hover, .right-item:hover {
+    background-color: rgba(255, 140, 0, 0.1);
+}
+
+/* Responsive */
+@media (max-width: 992px) {
+    .rights-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 768px) {
+    .modal-xl {
+        max-width: 95%;
+    }
+    
+    .document-card {
+        flex-direction: column;
+        text-align: center;
+    }
+    
+    .document-icon {
+        margin-right: 0;
+        margin-bottom: 10px;
+    }
+}
+
+
+/* Estilos específicos para la Política de Tratamiento de Datos */
+
+/* Estilos mejorados para centrar y embellecer el modal */
+#tratamientoDatosModal .modal-dialog {
+    display: flex;
+    align-items: center;
+    min-height: calc(100% - 3.5rem);
+}
+
+#tratamientoDatosModal .modal-content {
+    width: 100%;
+    border-radius: 15px;
+    overflow: hidden;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    border: none;
+}
+
+#tratamientoDatosModal .modal-header {
+    background: linear-gradient(135deg, #2a2a2a, #1a1a1a);
+    border-bottom: 3px solid #ff8c00;
+    padding: 1.5rem;
+    text-align: center;
+}
+
+#tratamientoDatosModal .modal-title {
+    font-size: 1.8rem;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    width: 100%;
+}
+
+#tratamientoDatosModal .text-gradient {
+    background: linear-gradient(45deg, #ff8c00, #ffcc00);
+    -webkit-background-clip: text;
+    background-clip: text;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    display: inline-block;
+}
+
+#tratamientoDatosModal .modal-body {
+    padding: 2rem;
+    text-align: center;
+}
+
+#tratamientoDatosModal .row {
+    justify-content: center;
+}
+
+/* Estilos para la sección de protección de datos */
+#tratamientoDatosModal .protection-card {
+    background: linear-gradient(135deg, #252525, #1f1f1f);
+    border-radius: 10px;
+    border: 1px solid #444;
+    padding: 1.5rem;
+    height: 100%;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+}
+
+#tratamientoDatosModal .protection-badge {
+    width: 100px;
+    height: 100px;
+    background-color: rgba(255, 140, 0, 0.1);
+    border: 2px solid #ff8c00;
+    margin: 0 auto 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: all 0.3s ease;
+}
+
+#tratamientoDatosModal .protection-badge i {
+    font-size: 3rem;
+    color: #ff8c00;
+}
+
+#tratamientoDatosModal .protection-item {
+    padding: 0.8rem 1rem;
+    margin-bottom: 0.8rem;
+    background-color: rgba(0, 0, 0, 0.2);
+    border-radius: 8px;
+    border-left: 4px solid #ff8c00;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    text-align: left;
+}
+
+#tratamientoDatosModal .protection-item i {
+    font-size: 1.2rem;
+    margin-right: 0.8rem;
+    min-width: 25px;
+    text-align: center;
+    color: #4CAF50;
+}
+
+/* Estilos para documentos legales */
+#tratamientoDatosModal .document-card {
+    display: flex;
+    align-items: center;
+    padding: 1rem;
+    background: linear-gradient(135deg, #2a2a2a, #252525);
+    border-radius: 10px;
+    border: 1px solid #444;
+    margin-bottom: 1rem;
+    transition: all 0.3s ease;
+    color: white;
+    text-decoration: none;
+    text-align: left;
+}
+
+#tratamientoDatosModal .document-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 20px rgba(255, 140, 0, 0.2);
+    border-color: #ff8c00;
+}
+
+#tratamientoDatosModal .document-icon {
+    font-size: 1.8rem;
+    margin-right: 1rem;
+    min-width: 40px;
+    text-align: center;
+}
+
+/* Estilos para los derechos */
+#tratamientoDatosModal .rights-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+    margin-bottom: 1.5rem;
+}
+
+#tratamientoDatosModal .right-item {
+    padding: 0.8rem 1rem;
+    background-color: rgba(0, 0, 0, 0.2);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    transition: all 0.3s ease;
+    text-align: left;
+}
+
+#tratamientoDatosModal .right-item i {
+    font-size: 1.2rem;
+    margin-right: 0.8rem;
+    min-width: 25px;
+    text-align: center;
+}
+
+#tratamientoDatosModal .right-item:hover {
+    transform: translateY(-3px);
+    background-color: rgba(255, 140, 0, 0.1);
+}
+
+/* Botones */
+#tratamientoDatosModal .btn-container {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    margin-top: 1.5rem;
+}
+
+#tratamientoDatosModal .btn-orange {
+    background-color: #ff8c00;
+    color: white;
+    border: none;
+    padding: 0.8rem 1.5rem;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    border-radius: 8px;
+    text-align: center;
+}
+
+#tratamientoDatosModal .btn-orange:hover {
+    background-color: #e67600;
+    transform: translateY(-3px);
+    box-shadow: 0 5px 15px rgba(255, 140, 0, 0.3);
+}
+
+/* Responsive */
+@media (max-width: 992px) {
+    #tratamientoDatosModal .rights-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    #tratamientoDatosModal .protection-badge {
+        width: 80px;
+        height: 80px;
+    }
+    
+    #tratamientoDatosModal .protection-badge i {
+        font-size: 2.5rem;
+    }
+}
+
+@media (max-width: 768px) {
+    #tratamientoDatosModal .modal-body {
+        padding: 1.5rem;
+    }
+    
+    #tratamientoDatosModal .document-card {
+        flex-direction: column;
+        text-align: center;
+    }
+    
+    #tratamientoDatosModal .document-icon {
+        margin-right: 0;
+        margin-bottom: 0.5rem;
+    }
+}
+
+/* Estilos para el cookies */
+
+/* Agregar en tu archivo CSS */
+.legal-content {
+    line-height: 1.8;
+}
+
+.legal-content h3 {
+    border-bottom: 2px solid #ff8c00;
+    padding-bottom: 8px;
+    margin-bottom: 20px;
+}
+
+.cookie-card {
+    border-left: 4px solid;
+    transition: all 0.3s ease;
+}
+
+.cookie-card:hover {
+    transform: translateX(5px);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+}
+
+.bg-darker {
+    background-color: #1f1f1f;
+}
+
+.form-switch .form-check-input {
+    width: 3em;
+    height: 1.5em;
+    margin-right: 10px;
+}
+
+.form-switch .form-check-input:checked {
+    background-color: #ff8c00;
+    border-color: #ff8c00;
+}

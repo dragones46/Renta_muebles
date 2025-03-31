@@ -1,0 +1,277 @@
+{% extends 'muebles/barnav.html' %}
+{% block titulo %}Centro de Ayuda{% endblock %}
+{% load static %}
+{% block contenedor %}
+
+
+<div class="container my-5">
+    <h1 class="text-center mb-5">Centro de Ayuda</h1>
+
+    <div class="row">
+        <!-- Manual de Usuario (ahora Video Tutorial) -->
+        <div class="col-md-4 mb-4">
+            <div class="card h-100 ayuda-card">
+                <div class="card-body text-center">
+                    <i class="fas fa-film fa-3x mb-3 text-orange"></i> <!-- Icono de video -->
+                    <h3 class="card-title">Video Tutorial</h3>
+                    <p class="card-text">Aprende a usar la plataforma con este video.</p>
+                    <button class="btn btn-orange" data-bs-toggle="modal" data-bs-target="#manualUsuarioModal">
+                        <i class="fas fa-play me-2"></i> Ver Video
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tratamiento de Datos -->
+        <div class="col-md-4 mb-4">
+            <div class="card h-100 ayuda-card">
+                <div class="card-body text-center">
+                    <i class="fas fa-shield-alt fa-3x mb-3 text-orange"></i>
+                    <h3 class="card-title">Tratamiento de Datos</h3>
+                    <p class="card-text">Conoce cómo protegemos tu información.</p>
+                    <button class="btn btn-orange" data-bs-toggle="modal" data-bs-target="#tratamientoDatosModal">
+                        <i class="fas fa-eye me-2"></i> Ver Política
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Preguntas Frecuentes -->
+        <div class="col-md-4 mb-4">
+            <div class="card h-100 ayuda-card">
+                <div class="card-body text-center">
+                    <i class="fas fa-question-circle fa-3x mb-3 text-orange"></i>
+                    <h3 class="card-title">Preguntas Frecuentes</h3>
+                    <p class="card-text">Respuestas a las dudas más comunes.</p>
+                    <a href="{% url 'faq' %}" class="btn btn-orange">Ver FAQs</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Soporte Técnico -->
+        <div class="col-md-4 mb-4">
+            <div class="card h-100 ayuda-card">
+                <div class="card-body text-center">
+                    <i class="fas fa-headset fa-3x mb-3 text-orange"></i>
+                    <h3 class="card-title">Soporte Técnico</h3>
+                    <p class="card-text">Asistencia personalizada cuando la necesites.</p>
+                    <a href="{% url 'soporte' %}" class="btn btn-orange">Contactar</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Actualizaciones -->
+        <div class="col-md-4 mb-4">
+            <div class="card h-100 ayuda-card">
+                <div class="card-body text-center">
+                    <i class="fas fa-bullhorn fa-3x mb-3 text-orange"></i>
+                    <h3 class="card-title">Actualizaciones</h3>
+                    <p class="card-text">Últimas novedades de nuestra plataforma.</p>
+                    <a href="{% url 'actualizaciones' %}" class="btn btn-orange">Ver Novedades</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Contacto Directo -->
+        <div class="col-md-4 mb-4">
+            <div class="card h-100 ayuda-card">
+                <div class="card-body text-center">
+                    <i class="fas fa-envelope fa-3x mb-3 text-orange"></i>
+                    <h3 class="card-title">Contacto Directo</h3>
+                    <p class="card-text">Escríbenos a nuestro correo electrónico.</p>
+                    <a href="#" class="btn btn-orange"> <!-- Reemplaza ESTO CUANDO TENGA EL CORREO DE ELLOS -->
+                        <i class="fas fa-paper-plane me-2"></i> Email
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para Video Tutorial MP4 -->
+<div class="modal fade" id="manualUsuarioModal" tabindex="-1" aria-labelledby="manualUsuarioModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg"> <!-- Modal grande para mejor visualización -->
+        <div class="modal-content bg-dark text-white">
+            <div class="modal-header border-secondary">
+                <h5 class="modal-title text-orange" id="manualUsuarioModalLabel">
+                    <i class="fas fa-film me-2"></i> Video Tutorial
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <!-- Reproductor de video HTML5 (MP4) -->
+                <video controls class="w-100 rounded mb-3">
+                    <source src="{% static 'muebles/videos/tutorial.mp4' %}" type="video/mp4">
+                    Tu navegador no soporta videos HTML5.
+                </video>
+                <div class="alert alert-info mt-3">
+                    <i class="fas fa-info-circle me-2"></i>
+                    Este video explica cómo usar todas las funciones de la plataforma.
+                </div>
+            </div>
+            <div class="modal-footer border-secondary">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                <!-- Botón para descargar el MP4 -->
+                <a href="{% static 'muebles/videos/tutorial.mp4' %}" download class="btn btn-orange">
+                    <i class="fas fa-download me-2"></i> Descargar Video
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para Tratamiento de Datos -->
+<div class="modal fade" id="tratamientoDatosModal" tabindex="-1" aria-labelledby="tratamientoDatosModalLabel"
+    aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content bg-dark text-white">
+            <div class="modal-header">
+                <h3 class="modal-title w-100 text-center" id="tratamientoDatosModalLabel">
+                    <i class="fas fa-shield-alt me-2 text-orange"></i>
+                    <span class="text-gradient">Política de Tratamiento de Datos</span>
+                </h3>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                    aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row justify-content-center">
+                    <!-- Sección izquierda - Protección de datos -->
+                    <div class="col-lg-5 mb-4 mb-lg-0">
+                        <div class="protection-card h-100">
+                            <div class="text-center">
+                                <div class="protection-badge">
+                                    <i class="fas fa-lock"></i>
+                                </div>
+                                <h4 class="text-orange mb-3">Protección de Datos Personales</h4>
+                            </div>
+                            <div class="data-protection-list">
+                                <div class="protection-item">
+                                    <i class="fas fa-check-circle"></i>
+                                    <span>Encriptación avanzada de datos</span>
+                                </div>
+                                <div class="protection-item">
+                                    <i class="fas fa-check-circle"></i>
+                                    <span>Acceso restringido al personal autorizado</span>
+                                </div>
+                                <div class="protection-item">
+                                    <i class="fas fa-check-circle"></i>
+                                    <span>Cumplimiento con la normativa GDPR</span>
+                                </div>
+                                <div class="protection-item">
+                                    <i class="fas fa-check-circle"></i>
+                                    <span>Almacenamiento seguro en servidores certificados</span>
+                                </div>
+                            </div>
+                            <div class="text-center mt-4">
+                                <div class="compliance-badge d-inline-block">
+                                    <i class="fas fa-certificate text-warning me-2"></i>
+                                    <span>Certificación ISO 27001</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Sección derecha - Documentos y derechos -->
+                    <div class="col-lg-7">
+                        <div class="documents-section mb-4">
+                            <h4 class="text-orange text-center mb-3"><i class="fas fa-file-contract me-2"></i>Documentos
+                                Legales</h4>
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <a href="#" class="document-card">
+                                        <div class="d-flex align-items-center">
+                                            <div class="document-icon">
+                                                <i class="fas fa-file-pdf text-danger"></i>
+                                            </div>
+                                            <div class="document-info">
+                                                <h5>Política de Privacidad</h5>
+                                                <small>Última actualización: 31/03/2025</small>
+                                            </div>
+                                        </div>
+                                    </a>
+                                </div>
+                                <div class="col-md-6">
+                                    <a href="#" class="document-card">
+                                        <div class="d-flex align-items-center">
+                                            <div class="document-icon">
+                                                <i class="fas fa-file-signature text-primary"></i>
+                                            </div>
+                                            <div class="document-info">
+                                                <h5>Términos y Condiciones</h5>
+                                                <small>Versión 1.0 - Vigente desde 31/03/2025</small>
+                                            </div>
+                                        </div>
+                                    </a>
+                                </div>
+                                <div class="col-md-6">
+                                    <a href="{% url 'politica_cookies' %}" class="document-card">
+                                        <div class="d-flex align-items-center">
+                                            <div class="document-icon">
+                                                <i class="fas fa-cookie text-warning"></i>
+                                            </div>
+                                            <div class="document-info">
+                                                <h5>Política de Cookies</h5>
+                                                <small>Configuración de preferencias</small>
+                                            </div>
+                                        </div>
+                                    </a>
+                                </div>
+                                <div class="col-md-6">
+                                    <a href="#" class="document-card">
+                                        <div class="d-flex align-items-center">
+                                            <div class="document-icon">
+                                                <i class="fas fa-gavel text-info"></i>
+                                            </div>
+                                            <div class="document-info">
+                                                <h5>Aviso Legal</h5>
+                                                <small>Información legal completa</small>
+                                            </div>
+                                        </div>
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="rights-section">
+                            <h4 class="text-orange text-center mb-3"><i class="fas fa-user-shield me-2"></i>Tus Derechos
+                            </h4>
+                            <div class="rights-grid">
+                                <div class="right-item">
+                                    <i class="fas fa-eye text-info"></i>
+                                    <span>Derecho de acceso</span>
+                                </div>
+                                <div class="right-item">
+                                    <i class="fas fa-edit text-primary"></i>
+                                    <span>Derecho de rectificación</span>
+                                </div>
+                                <div class="right-item">
+                                    <i class="fas fa-trash-alt text-danger"></i>
+                                    <span>Derecho al olvido</span>
+                                </div>
+                                <div class="right-item">
+                                    <i class="fas fa-ban text-warning"></i>
+                                    <span>Derecho de oposición</span>
+                                </div>
+                            </div>
+
+                            <div class="btn-container">
+                                <a href="#"
+                                    class="btn btn-orange"><!--CAMBIAR ESTO CUANDO TENGA EL CORREO DE PROTECCION-->
+                                    <i class="fas fa-envelope me-2"></i> Contactar al Delegado de Protección de Datos
+                                </a>
+                                <a href="{% url 'configurar_cookies' %}" class="btn btn-outline-orange">
+                                    <i class="fas fa-user-cog me-2"></i> Configurar Preferencias de Privacidad
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer justify-content-center">
+                <small class="text-muted">© 2025 Renta de Muebles - Todos los derechos reservados</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

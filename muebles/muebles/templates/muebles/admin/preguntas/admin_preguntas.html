@@ -1,0 +1,78 @@
+{% extends 'muebles/barNavInicio.html' %}
+{% block titulo %}Administrar Preguntas{% endblock %}
+
+{% block contenedor %}
+<div class="container my-5">
+    <h1 class="text-center mb-5">Administrar Preguntas</h1>
+    
+    <div class="row">
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header bg-warning">
+                    <h3>Pendientes</h3>
+                </div>
+                <div class="card-body">
+                    {% for pregunta in preguntas_pendientes %}
+                    <div class="mb-3 border-bottom pb-2">
+                        <p>{{ pregunta.pregunta }}</p>
+                        <small class="text-muted">Por: {{ pregunta.usuario.nombre }}</small>
+                        <div class="mt-2">
+                            <a href="{% url 'responder_pregunta' pregunta.id %}" class="btn btn-sm btn-orange">
+                                Responder
+                            </a>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <p>No hay preguntas pendientes</p>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header bg-info text-white">
+                    <h3>Respondidas</h3>
+                </div>
+                <div class="card-body">
+                    {% for pregunta in preguntas_respondidas %}
+                    <div class="mb-3 border-bottom pb-2">
+                        <p>{{ pregunta.pregunta }}</p>
+                        <p class="text-success"><strong>Respuesta:</strong> {{ pregunta.respuestas.first.respuesta }}</p>
+                        <div class="mt-2">
+                            <form method="post" action="{% url 'marcar_como_faq' pregunta.id %}">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-sm btn-success">
+                                    Publicar en FAQ
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <p>No hay preguntas respondidas</p>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header bg-success text-white">
+                    <h3>Publicadas en FAQ</h3>
+                </div>
+                <div class="card-body">
+                    {% for pregunta in preguntas_publicadas %}
+                    <div class="mb-3 border-bottom pb-2">
+                        <p>{{ pregunta.pregunta }}</p>
+                        <p><strong>Respuesta:</strong> {{ pregunta.respuestas.first.respuesta }}</p>
+                        <small class="text-muted">Votos: {{ pregunta.votos }}</small>
+                    </div>
+                    {% empty %}
+                    <p>No hay preguntas publicadas</p>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

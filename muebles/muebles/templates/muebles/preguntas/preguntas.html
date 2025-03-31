@@ -1,0 +1,58 @@
+{% extends 'muebles/barnav.html' %}
+{% block titulo %}Haz tu Pregunta{% endblock %}
+
+{% block contenedor %}
+<div class="container my-5">
+    <h1 class="text-center mb-5">Haz tu Pregunta</h1>
+    
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-body">
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="mb-3">
+                            <label for="pregunta" class="form-label">Tu Pregunta</label>
+                            <textarea class="form-control" id="pregunta" name="pregunta" rows="3" required></textarea>
+                        </div>
+                        <div class="text-center">
+                            <button type="submit" class="btn btn-orange">Enviar Pregunta</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            
+            <div class="card mt-4">
+                <div class="card-header bg-dark text-white">
+                    <h2>Tus Preguntas Anteriores</h2>
+                </div>
+                <div class="card-body">
+                    {% if preguntas_usuario %}
+                        <div class="list-group">
+                            {% for pregunta in preguntas_usuario %}
+                            <div class="list-group-item">
+                                <div class="d-flex justify-content-between">
+                                    <h5>{{ pregunta.pregunta }}</h5>
+                                    <span class="badge bg-{% if pregunta.estado == 'respondida' %}success{% else %}warning{% endif %}">
+                                        {{ pregunta.get_estado_display }}
+                                    </span>
+                                </div>
+                                {% if pregunta.respuestas.all %}
+                                    <div class="mt-2 p-3 bg-light rounded">
+                                        <strong>Respuesta:</strong>
+                                        <p>{{ pregunta.respuestas.first.respuesta }}</p>
+                                    </div>
+                                {% endif %}
+                                <small class="text-muted">Enviada el {{ pregunta.fecha|date:"d/m/Y" }}</small>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <p>No has hecho ninguna pregunta aún.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

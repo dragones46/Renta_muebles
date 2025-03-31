@@ -2,6 +2,7 @@ from datetime import timedelta
 from django.db import models
 from django.contrib.auth.models import AbstractUser, BaseUserManager
 from django import forms
+from django.utils import timezone
 
 class CustomUserManager(BaseUserManager):
     def create_user(self, email, nombre, password=None, **extra_fields):
@@ -206,3 +207,115 @@ class DetallePedido(models.Model):
 
     def __str__(self):
         return f"{self.cantidad} x {self.mueble.nombre} - ${self.subtotal}"
+    
+
+#ayuda
+class FAQ(models.Model):
+    CATEGORIAS = [
+        ('CUENTA', 'Cuenta de usuario'),
+        ('PAGOS', 'Pagos y facturación'),
+        ('ENTREGAS', 'Entregas y logística'),
+        ('MUEBLES', 'Productos y muebles'),
+        ('sistema', 'sistema,mantenimiento y manejo'),
+        ('OTROS', 'Otros'),
+    ]
+    
+    pregunta = models.CharField(max_length=200)
+    respuesta = models.TextField()
+    categoria = models.CharField(max_length=20, choices=CATEGORIAS)
+    orden = models.PositiveIntegerField(default=0)
+    votos = models.PositiveIntegerField(default=0, help_text="Número de votos de utilidad")
+
+    class Meta:
+        ordering = ['-votos', 'orden', 'pregunta']
+        verbose_name = 'Pregunta frecuente'
+        verbose_name_plural = 'Preguntas frecuentes'
+    
+    def __str__(self):
+        return self.pregunta
+
+class Actualizacion(models.Model):
+    titulo = models.CharField(max_length=100)
+    contenido = models.TextField()
+    fecha = models.DateTimeField(default=timezone.now)
+    importante = models.BooleanField(default=False)
+    
+    class Meta:
+        ordering = ['-fecha']
+        verbose_name_plural = 'Actualizaciones'
+    
+    def __str__(self):
+        return self.titulo
+
+class SoporteForm(forms.Form):
+    nombre = forms.CharField(max_length=100, widget=forms.TextInput(attrs={
+        'class': 'form-control',
+        'placeholder': 'Tu nombre'
+    }))
+    email = forms.EmailField(widget=forms.EmailInput(attrs={
+        'class': 'form-control',
+        'placeholder': 'tu@email.com'
+    }))
+    mensaje = forms.CharField(widget=forms.Textarea(attrs={
+        'class': 'form-control',
+        'placeholder': 'Describe tu problema o consulta...',
+        'rows': 5
+    }))
+
+class Pregunta(models.Model):
+    ESTADOS = (
+        ('pendiente', 'Pendiente'),
+        ('respondida', 'Respondida'),
+        ('publicada', 'Publicada en FAQ'),
+    )
+    
+    usuario = models.ForeignKey('Usuario', on_delete=models.CASCADE)
+    pregunta = models.TextField()
+    fecha = models.DateTimeField(auto_now_add=True)
+    estado = models.CharField(max_length=20, choices=ESTADOS, default='pendiente')
+    votos = models.IntegerField(default=0)  # Para medir frecuencia
+    
+    class Meta:
+        ordering = ['-fecha']
+    
+    def __str__(self):
+        return f"Pregunta de {self.usuario.username}"
+
+class Respuesta(models.Model):
+    pregunta = models.ForeignKey(Pregunta, on_delete=models.CASCADE, related_name='respuestas')
+    administrador = models.ForeignKey('Usuario', on_delete=models.CASCADE)
+    respuesta = models.TextField()
+    fecha = models.DateTimeField(auto_now_add=True)
+    es_faq = models.BooleanField(default=False)  # Si pertenece a FAQs
+    
+    class Meta:
+        ordering = ['fecha']
+    
+    def __str__(self):
+        return f"Respuesta a {self.pregunta.id}"
+
+class PreguntaForm(forms.ModelForm):
+    class Meta:
+        model = Pregunta
+        fields = ['pregunta']
+        widgets = {
+            'pregunta': forms.Textarea(attrs={
+                'class': 'form-control',
+                'placeholder': 'Escribe tu pregunta aquí...',
+                'rows': 3
+            }),
+        }
+
+class RespuestaForm(forms.ModelForm):
+    class Meta:
+        model = Respuesta
+        fields = ['respuesta', 'es_faq']
+        widgets = {
+            'respuesta': forms.Textarea(attrs={
+                'class': 'form-control',
+                'rows': 3
+            }),
+            'es_faq': forms.CheckboxInput(attrs={
+                'class': 'form-check-input'
+            }),
+        }

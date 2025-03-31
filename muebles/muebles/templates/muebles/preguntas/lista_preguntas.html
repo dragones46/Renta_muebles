@@ -1,0 +1,40 @@
+{% extends 'muebles/barnav.html' %}
+{% block titulo %}Mis Preguntas{% endblock %}
+
+{% block contenedor %}
+<div class="container my-5">
+    <h1 class="text-center mb-5">Mis Preguntas</h1>
+    
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <a href="{% url 'hacer_pregunta' %}" class="btn btn-primary mb-3">Nueva Pregunta</a>
+            
+            {% if preguntas %}
+            <div class="list-group">
+                {% for pregunta in preguntas %}
+                <div class="list-group-item">
+                    <div class="d-flex justify-content-between">
+                        <h5>{{ pregunta.pregunta }}</h5>
+                        <span class="badge bg-{% if pregunta.estado == 'respondida' %}success{% else %}warning{% endif %}">
+                            {{ pregunta.get_estado_display }}
+                        </span>
+                    </div>
+                    {% if pregunta.respuestas.all %}
+                        <div class="mt-2 p-3 bg-light rounded">
+                            <strong>Respuesta:</strong>
+                            <p>{{ pregunta.respuestas.first.respuesta }}</p>
+                        </div>
+                    {% endif %}
+                    <small class="text-muted">Enviada el {{ pregunta.fecha|date:"d/m/Y" }}</small>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="alert alert-info">
+                No has hecho ninguna pregunta aún.
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

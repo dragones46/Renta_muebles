@@ -1,0 +1,34 @@
+{% extends 'muebles/barnav.html' %}
+{% block titulo %}Últimas Actualizaciones{% endblock %}
+
+{% block contenedor %}
+<div class="container my-5">
+    <h1 class="text-center mb-5">Últimas Actualizaciones</h1>
+    
+    {% for actualizacion in actualizaciones %}
+    <div class="card mb-4 {% if actualizacion.importante %}border-warning{% endif %}">
+        <div class="card-header {% if actualizacion.importante %}bg-warning{% else %}bg-dark{% endif %} text-white">
+            <h2 class="mb-0">
+                {{ actualizacion.titulo }}
+                {% if actualizacion.importante %}
+                <span class="badge bg-danger ms-2">Importante</span>
+                {% endif %}
+            </h2>
+        </div>
+        <div class="card-body">
+            <p class="text-muted">
+                <i class="far fa-calendar-alt me-2"></i>
+                {{ actualizacion.fecha|date:"d M Y H:i" }}
+            </p>
+            <div class="actualizacion-contenido">
+                {{ actualizacion.contenido|linebreaks }}
+            </div>
+        </div>
+    </div>
+    {% empty %}
+    <div class="alert alert-info text-center">
+        No hay actualizaciones recientes.
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}

@@ -1,0 +1,52 @@
+<!-- politica_cookies.html -->
+{% extends 'muebles/barnav.html' %}
+{% block titulo %}Política de Cookies{% endblock %}
+{% block contenedor %}
+
+<div class="container my-5">
+    <div class="card bg-dark text-white">
+        <div class="card-header bg-orange text-white">
+            <h2 class="text-center"><i class="fas fa-cookie me-2"></i>Política de Cookies</h2>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-8 mx-auto">
+                    <div class="legal-content">
+                        <h3 class="text-orange">1. ¿Qué son las cookies?</h3>
+                        <p>Las cookies son pequeños archivos de texto que los sitios web colocan en su dispositivo para almacenar información sobre su preferencias y actividad.</p>
+                        
+                        <h3 class="text-orange mt-4">2. Tipos de cookies que utilizamos</h3>
+                        <div class="cookie-types">
+                            <div class="cookie-card mb-3 p-3 bg-darker rounded">
+                                <h4><i class="fas fa-shield-alt text-info me-2"></i>Cookies Esenciales</h4>
+                                <p>Necesarias para el funcionamiento básico del sitio. No pueden desactivarse.</p>
+                            </div>
+                            <div class="cookie-card mb-3 p-3 bg-darker rounded">
+                                <h4><i class="fas fa-chart-line text-primary me-2"></i>Cookies Analíticas</h4>
+                                <p>Nos ayudan a entender cómo los visitantes interactúan con nuestro sitio.</p>
+                            </div>
+                            <div class="cookie-card mb-3 p-3 bg-darker rounded">
+                                <h4><i class="fas fa-ad text-warning me-2"></i>Cookies de Marketing</h4>
+                                <p>Utilizadas para mostrar anuncios relevantes a tus intereses.</p>
+                            </div>
+                        </div>
+                        
+                        <h3 class="text-orange mt-4">3. Cómo gestionar cookies</h3>
+                        <p>Puedes configurar tus preferencias en cualquier momento:</p>
+                        <a href="{% url 'configurar_cookies' %}" class="btn btn-orange">
+                            <i class="fas fa-user-cog me-2"></i> Configurar Preferencias
+                        </a>
+                        
+                        <h3 class="text-orange mt-4">4. Cambios en esta política</h3>
+                        <p>Nos reservamos el derecho de modificar esta política. La versión actual fue actualizada el 31/03/2025.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="card-footer text-muted text-center">
+            © 2025 Renta de Muebles - Todos los derechos reservados
+        </div>
+    </div>
+</div>
+
+{% endblock %}

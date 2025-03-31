@@ -5,8 +5,10 @@
 <style>
     /* Estilos para el carrusel */
     .carousel-item img {
-        height: 500px; /* Altura fija para las imágenes del carrusel */
-        object-fit: cover; /* Asegura que la imagen cubra el espacio sin distorsionarse */
+        height: 500px;
+        /* Altura fija para las imágenes del carrusel */
+        object-fit: cover;
+        /* Asegura que la imagen cubra el espacio sin distorsionarse */
     }
 
     /* Estilos para la sección de muebles */
@@ -109,9 +111,12 @@
 <!-- Carrusel de imágenes -->
 <div id="carouselExampleIndicators" class="carousel slide" data-bs-ride="carousel">
     <div class="carousel-indicators">
-        <button type="button" data-bs-target="#carouselExampleIndicators" data-bs-slide-to="0" class="active" aria-current="true" aria-label="Slide 1"></button>
-        <button type="button" data-bs-target="#carouselExampleIndicators" data-bs-slide-to="1" aria-label="Slide 2"></button>
-        <button type="button" data-bs-target="#carouselExampleIndicators" data-bs-slide-to="2" aria-label="Slide 3"></button>
+        <button type="button" data-bs-target="#carouselExampleIndicators" data-bs-slide-to="0" class="active"
+            aria-current="true" aria-label="Slide 1"></button>
+        <button type="button" data-bs-target="#carouselExampleIndicators" data-bs-slide-to="1"
+            aria-label="Slide 2"></button>
+        <button type="button" data-bs-target="#carouselExampleIndicators" data-bs-slide-to="2"
+            aria-label="Slide 3"></button>
     </div>
     <div class="carousel-inner">
         <div class="carousel-item active">
@@ -124,11 +129,13 @@
             <img src="{% static 'muebles/img/carrusel3.png' %}" class="d-block w-100" alt="Carrusel 3">
         </div>
     </div>
-    <button class="carousel-control-prev" type="button" data-bs-target="#carouselExampleIndicators" data-bs-slide="prev">
+    <button class="carousel-control-prev" type="button" data-bs-target="#carouselExampleIndicators"
+        data-bs-slide="prev">
         <span class="carousel-control-prev-icon" aria-hidden="true"></span>
         <span class="visually-hidden">Anterior</span>
     </button>
-    <button class="carousel-control-next" type="button" data-bs-target="#carouselExampleIndicators" data-bs-slide="next">
+    <button class="carousel-control-next" type="button" data-bs-target="#carouselExampleIndicators"
+        data-bs-slide="next">
         <span class="carousel-control-next-icon" aria-hidden="true"></span>
         <span class="visually-hidden">Siguiente</span>
     </button>
@@ -138,6 +145,10 @@
 <div class="welcome-section">
     <h1>Bienvenido a Renta de Muebles</h1>
     <p>Encuentra los mejores muebles para tu hogar temporal.</p>
+    <!-- Botón de Tratamiento de Datos -->
+    <button class="btn-privacy-policy" data-bs-toggle="modal" data-bs-target="#tratamientoDatosModal">
+        <i class="fas fa-shield-alt"></i> Política de Privacidad
+    </button>
 </div>
 
 

@@ -1,0 +1,60 @@
+{% extends 'muebles/barnav.html' %}
+{% block titulo %}Configurar Cookies{% endblock %}
+{% block contenedor %}
+
+<div class="container my-5">
+    <div class="card bg-dark text-white">
+        <div class="card-header bg-orange text-white">
+            <h2 class="text-center"><i class="fas fa-user-cog me-2"></i>Configuración de Cookies</h2>
+        </div>
+        <div class="card-body">
+            <div class="row justify-content-center">
+                <div class="col-md-8">
+                    <form method="post">
+                        {% csrf_token %}
+                        
+                        <div class="mb-4">
+                            <div class="form-check form-switch mb-3">
+                                <input class="form-check-input" type="checkbox" id="esenciales" name="esenciales" checked disabled>
+                                <label class="form-check-label" for="esenciales">
+                                    <strong>Cookies Esenciales</strong>
+                                    <small class="d-block text-muted">Necesarias para el funcionamiento básico del sitio</small>
+                                </label>
+                            </div>
+                            
+                            <div class="form-check form-switch mb-3">
+                                <input class="form-check-input" type="checkbox" id="analiticas" name="analiticas" {% if preferencias.analiticas %}checked{% endif %}>
+                                <label class="form-check-label" for="analiticas">
+                                    <strong>Cookies Analíticas</strong>
+                                    <small class="d-block text-muted">Nos ayudan a mejorar el sitio analizando el tráfico</small>
+                                </label>
+                            </div>
+                            
+                            <div class="form-check form-switch mb-3">
+                                <input class="form-check-input" type="checkbox" id="marketing" name="marketing" {% if preferencias.marketing %}checked{% endif %}>
+                                <label class="form-check-label" for="marketing">
+                                    <strong>Cookies de Marketing</strong>
+                                    <small class="d-block text-muted">Personalizan los anuncios según tus intereses</small>
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-center">
+                            <button type="submit" class="btn btn-orange me-md-2">
+                                <i class="fas fa-save me-2"></i>Guardar Preferencias
+                            </button>
+                            <a href="{% url 'politica_cookies' %}" class="btn btn-outline-orange">
+                                <i class="fas fa-info-circle me-2"></i>Ver Política Completa
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        <div class="card-footer text-muted text-center">
+            © 2023 Renta de Muebles - Todos los derechos reservados
+        </div>
+    </div>
+</div>
+
+{% endblock %}

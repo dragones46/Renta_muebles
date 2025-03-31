@@ -59,3 +59,19 @@ class PedidoAdmin(admin.ModelAdmin):
 class DetallePedidoAdmin(admin.ModelAdmin):
     list_display = ('id', 'pedido', 'mueble', 'cantidad', 'precio_unitario', 'subtotal')
     search_fields = ('pedido__id', 'mueble__nombre')
+
+
+@admin.register(FAQ)
+class FAQAdmin(admin.ModelAdmin):
+    list_display = ('pregunta', 'categoria', 'orden')
+    search_fields = ('pregunta', 'respuesta')
+    list_filter = ('categoria',)
+    list_editable = ('orden',)
+
+@admin.register(Actualizacion)
+class ActualizacionAdmin(admin.ModelAdmin):
+    list_display = ('titulo', 'fecha', 'importante')
+    search_fields = ('titulo', 'contenido')
+    list_filter = ('fecha', 'importante')
+    list_editable = ('importante',)
+    readonly_fields = ('fecha',)

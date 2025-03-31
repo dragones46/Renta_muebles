@@ -1,0 +1,42 @@
+{% extends 'muebles/barnav.html' %}
+{% block titulo %}Soporte Técnico{% endblock %}
+
+{% block contenedor %}
+<div class="container my-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header bg-dark text-white">
+                    <h2 class="mb-0">Contactar al Soporte Técnico</h2>
+                </div>
+                <div class="card-body">
+                    <form method="post">
+                        {% csrf_token %}
+                        {{ form.as_p }}
+                        <div class="text-center mt-4">
+                            <button type="submit" class="btn btn-orange btn-lg">
+                                <i class="fas fa-paper-plane me-2"></i> Enviar Solicitud
+                            </button>
+                        </div>
+                    </form>
+                    
+                    <hr class="my-4">
+                    
+                    <div class="text-center">
+                        <h4>O contáctanos directamente:</h4>
+                        <p class="mt-3">
+                            <i class="fas fa-phone-alt me-2"></i> Teléfono: +1 234 567 890
+                        </p>
+                        <p>
+                            <i class="fas fa-envelope me-2"></i> Email: soporte@rentamuebles.com
+                        </p>
+                        <p>
+                            <i class="fas fa-clock me-2"></i> Horario: Lunes a Viernes, 9am - 6pm
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

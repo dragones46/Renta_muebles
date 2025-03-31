@@ -18,7 +18,8 @@ from django.views.decorators.http import require_POST
 from django.db.models import Q
 
 #Para sacar totales de eventos.
-from django.db.models import Sum
+# En la sección de imports al inicio del archivo, agrega:
+from django.db.models import F, Sum, ExpressionWrapper, FloatField
 from django.shortcuts import render
 import locale
 
@@ -619,3 +620,185 @@ def detalle_pedido(request, id):
         'pedido': pedido,
         'detalles': detalles
     })
+
+# vistas para ayuda
+def ayuda_principal(request):
+    return render(request, 'muebles/ayuda/ayuda_principal.html')
+
+def faq(request):
+    # Obtener el total de votos para calcular porcentajes
+    total_votos = FAQ.objects.aggregate(total=Sum('votos'))['total'] or 1
+    
+    categorias = FAQ.objects.values_list('categoria', flat=True).distinct()
+    faqs = {}
+    
+    for categoria in categorias:
+        faqs_por_categoria = FAQ.objects.filter(categoria=categoria).annotate(
+            porcentaje=ExpressionWrapper(
+                F('votos') * 100 / total_votos,
+                output_field=FloatField()
+            )
+        ).order_by('-votos')
+        faqs[categoria] = faqs_por_categoria
+    
+    return render(request, 'muebles/ayuda/faq.html', {
+        'faqs': faqs,
+        'total_votos': total_votos
+    })
+
+def soporte(request):
+    if request.method == 'POST':
+        form = SoporteForm(request.POST)
+        if form.is_valid():
+            # Procesar el formulario
+            nombre = form.cleaned_data['nombre']
+            email = form.cleaned_data['email']
+            mensaje = form.cleaned_data['mensaje']
+            
+            # Enviar correo
+            send_mail(
+                f'Solicitud de soporte de {nombre}',
+                mensaje,
+                email,
+                [settings.EMAIL_SOPORTE],
+                fail_silently=False,
+            )
+            messages.success(request, 'Tu solicitud de soporte ha sido enviada. Nos pondremos en contacto contigo pronto.')
+            return redirect('soporte')
+    else:
+        form = SoporteForm()
+    
+    return render(request, 'muebles/ayuda/soporte.html', {'form': form})
+
+def actualizaciones(request):
+    actualizaciones = Actualizacion.objects.all().order_by('-fecha')
+    return render(request, 'muebles/ayuda/actualizaciones.html', {'actualizaciones': actualizaciones})
+
+def politica_cookies(request):
+    return render(request, 'muebles/legal/Cookies.html')
+
+def configurar_cookies(request):
+    if request.method == 'POST':
+        # Guardar las preferencias del usuario
+        request.session['cookie_preferences'] = {
+            'esenciales': 'esenciales' in request.POST,
+            'analiticas': 'analiticas' in request.POST,
+            'marketing': 'marketing' in request.POST
+        }
+        messages.success(request, "Tus preferencias de cookies han sido guardadas.")
+        return redirect('index')
+    
+    # Obtener las preferencias actuales si existen
+    preferencias = request.session.get('cookie_preferences', {
+        'esenciales': True,
+        'analiticas': False,
+        'marketing': False
+    })
+    
+    return render(request, 'muebles/legal/configurar_cookies.html', {'preferencias': preferencias})
+
+# PREGUNTAS
+@login_requerido
+def hacer_pregunta(request):
+    if request.method == 'POST':
+        form = PreguntaForm(request.POST)
+        if form.is_valid():
+            pregunta = form.save(commit=False)
+            pregunta.usuario = request.user
+            pregunta.save()
+            messages.success(request, 'Tu pregunta ha sido enviada. Te notificaremos cuando tengamos una respuesta.')
+            return redirect('lista_preguntas')  # Cambiado de 'preguntas' a 'lista_preguntas'
+    else:
+        form = PreguntaForm()
+    
+    return render(request, 'muebles/preguntas/preguntas.html', {'form': form})
+
+
+
+@login_requerido
+def responder_pregunta(request, pregunta_id):
+    pregunta = get_object_or_404(Pregunta, id=pregunta_id)
+    
+    if not request.user.is_staff:
+        messages.error(request, 'No tienes permiso para responder preguntas.')
+        return redirect('preguntas')
+    
+    if request.method == 'POST':
+        form = RespuestaForm(request.POST)
+        if form.is_valid():
+            respuesta = form.save(commit=False)
+            respuesta.pregunta = pregunta
+            respuesta.administrador = request.user
+            respuesta.save()
+            
+            # Actualizar estado de la pregunta
+            pregunta.estado = 'respondida'
+            if form.cleaned_data['es_faq']:
+                pregunta.estado = 'publicada'
+                pregunta.votos += 5  # Peso extra por ser marcada como FAQ
+            pregunta.save()
+            
+            messages.success(request, 'Respuesta enviada correctamente.')
+            return redirect('lista_preguntas')
+    else:
+        form = RespuestaForm()
+    
+    return render(request, 'muebles/preguntas/responder_pregunta.html', {
+        'pregunta': pregunta,
+        'form': form
+    })
+
+@login_requerido
+def lista_preguntas(request):
+    preguntas = Pregunta.objects.filter(usuario=request.user).order_by('-fecha')
+    return render(request, 'muebles/preguntas/lista_preguntas.html', {'preguntas': preguntas})
+
+def preguntas_frecuentes(request):
+    preguntas = Pregunta.objects.filter(estado='publicada').order_by('-votos')
+    return render(request, 'muebles/preguntas/preguntas_frecuentes.html', {'preguntas': preguntas})
+
+@login_requerido
+def votar_pregunta(request, pregunta_id):
+    pregunta = get_object_or_404(Pregunta, id=pregunta_id)
+    pregunta.votos += 1
+    pregunta.save()
+    
+    # Si alcanza cierto umbral, marcarla como frecuente
+    if pregunta.votos >= 10 and pregunta.estado != 'publicada':
+        pregunta.estado = 'publicada'
+        pregunta.save()
+    
+    messages.success(request, 'Gracias por tu voto. Esto nos ayuda a mejorar las FAQs.')
+    return redirect('preguntas_frecuentes')
+
+@login_requerido(roles_permitidos=[1])  # Solo administradores
+def admin_preguntas(request):
+    if not request.session.get('logueo') or request.session.get('logueo').get('rol') != 1:
+        return redirect('login')
+    
+    preguntas_pendientes = Pregunta.objects.filter(estado='pendiente').order_by('-fecha')
+    preguntas_respondidas = Pregunta.objects.filter(estado='respondida').order_by('-fecha')
+    preguntas_publicadas = Pregunta.objects.filter(estado='publicada').order_by('-votos')
+    
+    return render(request, 'muebles/admin/preguntas/admin_preguntas.html', {
+        'preguntas_pendientes': preguntas_pendientes,
+        'preguntas_respondidas': preguntas_respondidas,
+        'preguntas_publicadas': preguntas_publicadas
+    })
+
+@login_requerido(roles_permitidos=[1])
+def marcar_como_faq(request, pregunta_id):
+    pregunta = get_object_or_404(Pregunta, id=pregunta_id)
+    pregunta.estado = 'publicada'
+    pregunta.votos += 5  # Dar un boost inicial
+    pregunta.save()
+    messages.success(request, 'La pregunta ha sido publicada en las FAQs')
+    return redirect('admin_preguntas')
+
+@require_POST
+@login_requerido
+def votar_faq(request, faq_id):
+    faq = get_object_or_404(FAQ, id=faq_id)
+    faq.votos += 1
+    faq.save()
+    return JsonResponse({'votos': faq.votos})

@@ -48,5 +48,24 @@ urlpatterns = [
 #pedidos    
     path('administradores/pedidos/', views.admin_pedidos, name='admin_pedidos'),
     path('administradores/pedidos/detalle/<int:id>/', views.detalle_pedido, name='detalle_pedido'),
-    
-    ]
+
+#ayuda
+    path('ayuda/', views.ayuda_principal, name='ayuda'),
+    path('ayuda/faq/', views.faq, name='faq'),
+    path('ayuda/soporte/', views.soporte, name='soporte'),
+    path('ayuda/actualizaciones/', views.actualizaciones, name='actualizaciones'),
+
+#cookies
+    path('politica-cookies/', views.politica_cookies, name='politica_cookies'),
+    path('configurar-cookies/', views.configurar_cookies, name='configurar_cookies'),
+
+#preguntas
+    path('preguntas/nueva/', views.hacer_pregunta, name='hacer_pregunta'),
+    path('admin/preguntas/', views.admin_preguntas, name='admin_preguntas'),
+    path('admin/preguntas/responder/<int:pregunta_id>/', views.responder_pregunta, name='responder_pregunta'),
+    path('admin/preguntas/faq/<int:pregunta_id>/', views.marcar_como_faq, name='marcar_como_faq'),
+    path('faq/votar/<int:pregunta_id>/', views.votar_pregunta, name='votar_pregunta'),
+    path('preguntas/', views.lista_preguntas, name='lista_preguntas'),
+    path('preguntas/frecuentes/', views.preguntas_frecuentes, name='preguntas_frecuentes'),
+    path('faq/votar-faq/<int:faq_id>/', views.votar_faq, name='votar_faq'),
+]
