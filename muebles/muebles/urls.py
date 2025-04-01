@@ -60,12 +60,21 @@ urlpatterns = [
     path('configurar-cookies/', views.configurar_cookies, name='configurar_cookies'),
 
 #preguntas
-    path('preguntas/nueva/', views.hacer_pregunta, name='hacer_pregunta'),
-    path('admin/preguntas/', views.admin_preguntas, name='admin_preguntas'),
-    path('admin/preguntas/responder/<int:pregunta_id>/', views.responder_pregunta, name='responder_pregunta'),
-    path('admin/preguntas/faq/<int:pregunta_id>/', views.marcar_como_faq, name='marcar_como_faq'),
-    path('faq/votar/<int:pregunta_id>/', views.votar_pregunta, name='votar_pregunta'),
     path('preguntas/', views.lista_preguntas, name='lista_preguntas'),
-    path('preguntas/frecuentes/', views.preguntas_frecuentes, name='preguntas_frecuentes'),
-    path('faq/votar-faq/<int:faq_id>/', views.votar_faq, name='votar_faq'),
+    path('preguntas/nueva/', views.crear_pregunta, name='crear_pregunta'),
+    path('preguntas/<int:pregunta_id>/', views.detalle_pregunta, name='detalle_pregunta'),
+    
+# Admin preguntas
+    path('administradores/preguntas/', views.admin_lista_preguntas, name='admin_lista_preguntas'),
+    path('administradores/preguntas/<int:pregunta_id>/responder/', views.responder_pregunta, name='responder_pregunta'),
+
+# FAQ
+    path('faq/', views.faq_lista, name='faq_lista'),
+    path('faq/votar/<int:faq_id>/', views.votar_faq, name='votar_faq'),
+    
+# Admin FAQ
+    path('administradores/faq/', views.admin_faq_lista, name='admin_faq_lista'),
+    path('administradores/faq/editar/<int:pk>/', views.admin_editar_faq, name='editar_faq'),
+    path('administradores/faq/eliminar/<int:faq_id>/', views.admin_eliminar_faq, name='admin_eliminar_faq'),
+
 ]

@@ -3,27 +3,20 @@ from django.db import models
 from django.contrib.auth.models import AbstractUser, BaseUserManager
 from django import forms
 from django.utils import timezone
+from .authentication import CustomUserManager
+import os
+from django.contrib.auth.models import AbstractUser, AbstractBaseUser, BaseUserManager
+from django.db.models.signals import post_save
+from django.dispatch import receiver
+import qrcode
+import uuid
+from io import BytesIO
+from django.core.files import File
+import json
+import qrcode
+from django.core.files.base import ContentFile
+from django.conf import settings
 
-class CustomUserManager(BaseUserManager):
-    def create_user(self, email, nombre, password=None, **extra_fields):
-        if not email:
-            raise ValueError('El campo Email es obligatorio')
-        email = self.normalize_email(email)
-        user = self.model(email=email, nombre=nombre, **extra_fields)
-        user.set_password(password)
-        user.save(using=self._db)
-        return user
-
-    def create_superuser(self, email, nombre, password=None, **extra_fields):
-        extra_fields.setdefault('is_staff', True)
-        extra_fields.setdefault('is_superuser', True)
-
-        if extra_fields.get('is_staff') is not True:
-            raise ValueError('El superusuario debe tener is_staff=True.')
-        if extra_fields.get('is_superuser') is not True:
-            raise ValueError('El superusuario debe tener is_superuser=True.')
-
-        return self.create_user(email, nombre, password, **extra_fields)
 
 class Usuario(AbstractUser):
     nombre = models.CharField(max_length=100, blank=False, null=False)
@@ -216,7 +209,7 @@ class FAQ(models.Model):
         ('PAGOS', 'Pagos y facturación'),
         ('ENTREGAS', 'Entregas y logística'),
         ('MUEBLES', 'Productos y muebles'),
-        ('sistema', 'sistema,mantenimiento y manejo'),
+        ('SISTEMA', 'Sistema y mantenimiento'),
         ('OTROS', 'Otros'),
     ]
     
@@ -224,15 +217,48 @@ class FAQ(models.Model):
     respuesta = models.TextField()
     categoria = models.CharField(max_length=20, choices=CATEGORIAS)
     orden = models.PositiveIntegerField(default=0)
-    votos = models.PositiveIntegerField(default=0, help_text="Número de votos de utilidad")
+    votos = models.PositiveIntegerField(default=0)
+    activo = models.BooleanField(default=True)
+    fecha_creacion = models.DateTimeField(default=timezone.now)
+    fecha_actualizacion = models.DateTimeField(auto_now=True)
 
     class Meta:
-        ordering = ['-votos', 'orden', 'pregunta']
+        ordering = ['categoria', 'orden']
         verbose_name = 'Pregunta frecuente'
         verbose_name_plural = 'Preguntas frecuentes'
     
     def __str__(self):
         return self.pregunta
+    
+class FAQForm(forms.ModelForm):
+    class Meta:
+        model = FAQ
+        fields = '__all__'
+        widgets = {
+            'pregunta': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Ingrese la pregunta frecuente'
+            }),
+            'respuesta': forms.Textarea(attrs={
+                'class': 'form-control',
+                'rows': 4,
+                'placeholder': 'Ingrese la respuesta detallada'
+            }),
+            'categoria': forms.Select(attrs={
+                'class': 'form-control'
+            }),
+            'orden': forms.NumberInput(attrs={
+                'class': 'form-control',
+                'min': 0
+            }),
+            'votos': forms.NumberInput(attrs={
+                'class': 'form-control',
+                'min': 0
+            }),
+            'activo': forms.CheckboxInput(attrs={
+                'class': 'form-check-input'
+            }),
+        }
 
 class Actualizacion(models.Model):
     titulo = models.CharField(max_length=100)

@@ -1,0 +1,38 @@
+{% extends 'muebles/barNav.html' %}
+{% load static %}
+
+{% block contenedor %}
+<div class="container mt-4">
+    <div class="card mb-4">
+        <div class="card-header bg-{% if pregunta.estado == 'respondida' %}success{% elif pregunta.estado == 'pendiente' %}warning{% else %}info{% endif %} text-white">
+            <h4>Pregunta: {{ pregunta.get_estado_display }}</h4>
+        </div>
+        <div class="card-body">
+            <blockquote class="blockquote mb-0">
+                <p>{{ pregunta.pregunta }}</p>
+                <footer class="blockquote-footer">Enviada el {{ pregunta.fecha|date:"d/m/Y H:i" }}</footer>
+            </blockquote>
+        </div>
+    </div>
+    
+    {% if respuestas %}
+    <h4 class="mb-3">Respuestas:</h4>
+    {% for respuesta in respuestas %}
+    <div class="card mb-3">
+        <div class="card-header bg-light">
+            <strong>Administrador</strong> - {{ respuesta.fecha|date:"d/m/Y H:i" }}
+        </div>
+        <div class="card-body">
+            <p class="card-text">{{ respuesta.respuesta }}</p>
+        </div>
+    </div>
+    {% endfor %}
+    {% else %}
+    <div class="alert alert-info">Todavía no hay respuestas a tu pregunta.</div>
+    {% endif %}
+    
+    <a href="{% url 'lista_preguntas' %}" class="btn btn-secondary mt-3">
+        <i class="fas fa-arrow-left"></i> Volver a mis preguntas
+    </a>
+</div>
+{% endblock %}

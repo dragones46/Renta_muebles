@@ -299,7 +299,11 @@ def actualizar_cantidad(request, item_id):
 
 @login_requerido
 def ver_carrito(request):
-    usuario = request.user if request.user.is_authenticated else None
+    logueo = request.session.get("logueo", False)
+    if not logueo:
+        return redirect('login')
+    
+    usuario = Usuario.objects.get(id=logueo["id"])
     carrito, creado = Carrito.objects.get_or_create(usuario=usuario)
     
     if request.method == 'POST':
@@ -699,106 +703,198 @@ def configurar_cookies(request):
 
 # PREGUNTAS
 @login_requerido
-def hacer_pregunta(request):
+def lista_preguntas(request):
+    logueo = request.session.get("logueo", False)
+    if not logueo:
+        return redirect('login')
+    
+    usuario_id = logueo["id"]
+    preguntas = Pregunta.objects.filter(usuario_id=usuario_id).order_by('-fecha')
+    return render(request, 'muebles/preguntas/lista_preguntas.html', {'preguntas': preguntas})
+
+@login_requerido
+def crear_pregunta(request):
+    logueo = request.session.get("logueo", False)
+    if not logueo:
+        return redirect('login')
+    
     if request.method == 'POST':
         form = PreguntaForm(request.POST)
         if form.is_valid():
             pregunta = form.save(commit=False)
-            pregunta.usuario = request.user
+            pregunta.usuario_id = logueo["id"]
             pregunta.save()
             messages.success(request, 'Tu pregunta ha sido enviada. Te notificaremos cuando tengamos una respuesta.')
-            return redirect('lista_preguntas')  # Cambiado de 'preguntas' a 'lista_preguntas'
+            return redirect('lista_preguntas')
     else:
         form = PreguntaForm()
     
-    return render(request, 'muebles/preguntas/preguntas.html', {'form': form})
-
-
+    return render(request, 'muebles/preguntas/crear_pregunta.html', {'form': form})
 
 @login_requerido
-def responder_pregunta(request, pregunta_id):
-    pregunta = get_object_or_404(Pregunta, id=pregunta_id)
+def detalle_pregunta(request, pregunta_id):
+    logueo = request.session.get("logueo", False)
+    if not logueo:
+        return redirect('login')
     
-    if not request.user.is_staff:
-        messages.error(request, 'No tienes permiso para responder preguntas.')
-        return redirect('preguntas')
+    pregunta = get_object_or_404(Pregunta, id=pregunta_id, usuario_id=logueo["id"])
+    respuestas = pregunta.respuestas.all().order_by('fecha')
+    
+    return render(request, 'muebles/preguntas/detalle_pregunta.html', {
+        'pregunta': pregunta,
+        'respuestas': respuestas
+    })
+
+
+# Admin preguntas
+@login_requerido(roles_permitidos=[1])
+def admin_lista_preguntas(request):
+    logueo = request.session.get("logueo", False)
+    if not logueo or logueo.get('rol') != 1:
+        return redirect('login')
+    
+    preguntas = Pregunta.objects.all().order_by('-fecha')
+    return render(request, 'muebles/admin/preguntas/lista_preguntas.html', {'preguntas': preguntas})
+
+@login_requerido(roles_permitidos=[1])
+def responder_pregunta(request, pregunta_id):
+    logueo = request.session.get("logueo", False)
+    if not logueo or logueo.get('rol') != 1:
+        return redirect('login')
+    
+    pregunta = get_object_or_404(Pregunta, id=pregunta_id)
     
     if request.method == 'POST':
         form = RespuestaForm(request.POST)
         if form.is_valid():
             respuesta = form.save(commit=False)
             respuesta.pregunta = pregunta
-            respuesta.administrador = request.user
+            respuesta.administrador_id = logueo["id"]
             respuesta.save()
             
-            # Actualizar estado de la pregunta
-            pregunta.estado = 'respondida'
+            # Actualizar estado de la pregunta si es necesario
             if form.cleaned_data['es_faq']:
                 pregunta.estado = 'publicada'
-                pregunta.votos += 5  # Peso extra por ser marcada como FAQ
+            else:
+                pregunta.estado = 'respondida'
             pregunta.save()
             
             messages.success(request, 'Respuesta enviada correctamente.')
-            return redirect('lista_preguntas')
+            return redirect('admin_lista_preguntas')
     else:
         form = RespuestaForm()
     
-    return render(request, 'muebles/preguntas/responder_pregunta.html', {
+    return render(request, 'muebles/admin/preguntas/responder_pregunta.html', {
         'pregunta': pregunta,
         'form': form
     })
 
-@login_requerido
-def lista_preguntas(request):
-    preguntas = Pregunta.objects.filter(usuario=request.user).order_by('-fecha')
-    return render(request, 'muebles/preguntas/lista_preguntas.html', {'preguntas': preguntas})
-
-def preguntas_frecuentes(request):
-    preguntas = Pregunta.objects.filter(estado='publicada').order_by('-votos')
-    return render(request, 'muebles/preguntas/preguntas_frecuentes.html', {'preguntas': preguntas})
-
-@login_requerido
-def votar_pregunta(request, pregunta_id):
-    pregunta = get_object_or_404(Pregunta, id=pregunta_id)
-    pregunta.votos += 1
-    pregunta.save()
+#FAQ
+# Vistas públicas
+def faq_lista(request):
+    categorias = FAQ.objects.values_list('categoria', flat=True).distinct()
+    faqs_por_categoria = {}
     
-    # Si alcanza cierto umbral, marcarla como frecuente
-    if pregunta.votos >= 10 and pregunta.estado != 'publicada':
-        pregunta.estado = 'publicada'
-        pregunta.save()
+    for categoria in categorias:
+        faqs_por_categoria[categoria] = FAQ.objects.filter(
+            categoria=categoria,
+            activo=True
+        ).order_by('orden')
     
-    messages.success(request, 'Gracias por tu voto. Esto nos ayuda a mejorar las FAQs.')
-    return redirect('preguntas_frecuentes')
+    return render(request, 'muebles/ayuda/faq_lista.html', {
+        'faqs_por_categoria': faqs_por_categoria
+    })
 
-@login_requerido(roles_permitidos=[1])  # Solo administradores
-def admin_preguntas(request):
-    if not request.session.get('logueo') or request.session.get('logueo').get('rol') != 1:
+def votar_faq(request, faq_id):
+    faq = get_object_or_404(FAQ, id=faq_id, activo=True)
+    
+    # Usar sesión para evitar votos múltiples
+    if 'votos_faq' not in request.session:
+        request.session['votos_faq'] = []
+    
+    if faq_id not in request.session['votos_faq']:
+        faq.votos += 1
+        faq.save()
+        request.session['votos_faq'].append(faq_id)
+        request.session.modified = True
+        messages.success(request, '¡Gracias por tu voto!')
+    else:
+        messages.warning(request, 'Ya has votado por esta pregunta')
+    
+    return redirect('faq_lista')
+
+# Vistas de administración
+@login_requerido(roles_permitidos=[1])
+def admin_faq_lista(request):
+    logueo = request.session.get("logueo", False)
+    if not logueo or logueo.get('rol') != 1:
         return redirect('login')
     
-    preguntas_pendientes = Pregunta.objects.filter(estado='pendiente').order_by('-fecha')
-    preguntas_respondidas = Pregunta.objects.filter(estado='respondida').order_by('-fecha')
-    preguntas_publicadas = Pregunta.objects.filter(estado='publicada').order_by('-votos')
+    faqs = FAQ.objects.all().order_by('categoria', 'orden')
     
-    return render(request, 'muebles/admin/preguntas/admin_preguntas.html', {
-        'preguntas_pendientes': preguntas_pendientes,
-        'preguntas_respondidas': preguntas_respondidas,
-        'preguntas_publicadas': preguntas_publicadas
+    # Obtener las opciones de categoría del modelo FAQ
+    categorias = FAQ.CATEGORIAS  # Esto asume que tienes CATEGORIAS definido en tu modelo
+    
+    # Manejar formulario de creación/edición
+    faq = None
+    form = FAQForm()
+    
+    if 'editar_id' in request.GET:
+        faq = get_object_or_404(FAQ, id=request.GET.get('editar_id'))
+        form = FAQForm(instance=faq)
+    
+    if request.method == 'POST':
+        if 'guardar' in request.POST:
+            if 'faq_id' in request.POST:  # Es una edición
+                faq = get_object_or_404(FAQ, id=request.POST.get('faq_id'))
+                form = FAQForm(request.POST, instance=faq)
+            else:  # Es una creación
+                form = FAQForm(request.POST)
+            
+            if form.is_valid():
+                form.save()
+                messages.success(request, 'Pregunta frecuente guardada exitosamente.')
+                return redirect('admin_faq_lista')
+    
+    return render(request, 'muebles/admin/faq/lista.html', {
+        'faqs': faqs,
+        'form': form,
+        'faq_editando': faq,
+        'categorias': categorias  # Pasar las categorías al template
     })
 
 @login_requerido(roles_permitidos=[1])
-def marcar_como_faq(request, pregunta_id):
-    pregunta = get_object_or_404(Pregunta, id=pregunta_id)
-    pregunta.estado = 'publicada'
-    pregunta.votos += 5  # Dar un boost inicial
-    pregunta.save()
-    messages.success(request, 'La pregunta ha sido publicada en las FAQs')
-    return redirect('admin_preguntas')
+def admin_editar_faq(request, pk):
+    logueo = request.session.get("logueo", False)
+    if not logueo or logueo.get('rol') != 1:
+        return redirect('login')
+    
+    faq = get_object_or_404(FAQ, id=pk)
+    
+    if request.method == 'POST':
+        form = FAQForm(request.POST, instance=faq)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'FAQ actualizada exitosamente.')
+            return redirect('admin_faq_lista')
+    else:
+        form = FAQForm(instance=faq)
+    
+    return render(request, 'muebles/admin/faq/editar.html', {
+        'form': form,
+        'faq': faq
+    })
 
-@require_POST
-@login_requerido
-def votar_faq(request, faq_id):
+@login_requerido(roles_permitidos=[1])
+def admin_eliminar_faq(request, faq_id):
+    logueo = request.session.get("logueo", False)
+    if not logueo or logueo.get('rol') != 1:
+        return redirect('login')
+    
     faq = get_object_or_404(FAQ, id=faq_id)
-    faq.votos += 1
-    faq.save()
-    return JsonResponse({'votos': faq.votos})
+    
+    if request.method == 'POST':
+        faq.delete()
+        messages.success(request, 'Pregunta frecuente eliminada exitosamente.')
+    
+    return redirect('admin_faq_lista')

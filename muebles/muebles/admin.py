@@ -75,3 +75,58 @@ class ActualizacionAdmin(admin.ModelAdmin):
     list_filter = ('fecha', 'importante')
     list_editable = ('importante',)
     readonly_fields = ('fecha',)
+
+
+# Preguntas y Respuestas
+class RespuestaInline(admin.TabularInline):
+    model = Respuesta
+    extra = 1
+    fields = ('administrador', 'respuesta', 'es_faq', 'fecha')
+    readonly_fields = ('fecha',)
+    
+    def formfield_for_foreignkey(self, db_field, request, **kwargs):
+        if db_field.name == "administrador":
+            kwargs["queryset"] = db_field.related_model.objects.filter(rol=1)
+        return super().formfield_for_foreignkey(db_field, request, **kwargs)
+
+@admin.register(Pregunta)
+class PreguntaAdmin(admin.ModelAdmin):
+    list_display = ('pregunta_resumida', 'usuario', 'estado', 'fecha', 'cantidad_respuestas')
+    list_filter = ('estado', 'fecha')
+    search_fields = ('pregunta', 'usuario__nombre')
+    inlines = [RespuestaInline]
+    actions = ['marcar_como_respondidas', 'marcar_como_faq']
+    
+    def pregunta_resumida(self, obj):
+        return obj.pregunta[:50] + '...' if len(obj.pregunta) > 50 else obj.pregunta
+    pregunta_resumida.short_description = 'Pregunta'
+    
+    def cantidad_respuestas(self, obj):
+        return obj.respuestas.count()
+    cantidad_respuestas.short_description = 'Respuestas'
+    
+    def marcar_como_respondidas(self, request, queryset):
+        updated = queryset.update(estado='respondida')
+        self.message_user(request, f"{updated} preguntas marcadas como respondidas")
+    marcar_como_respondidas.short_description = "Marcar como respondidas"
+    
+    def marcar_como_faq(self, request, queryset):
+        updated = queryset.update(estado='publicada')
+        self.message_user(request, f"{updated} preguntas marcadas como FAQ")
+    marcar_como_faq.short_description = "Marcar como FAQ"
+
+@admin.register(Respuesta)
+class RespuestaAdmin(admin.ModelAdmin):
+    list_display = ('id', 'pregunta_resumida', 'administrador', 'fecha', 'es_faq')
+    list_filter = ('es_faq', 'fecha')
+    search_fields = ('respuesta', 'pregunta__pregunta')
+    readonly_fields = ('fecha',)
+    
+    def pregunta_resumida(self, obj):
+        return obj.pregunta.pregunta[:50] + '...' if len(obj.pregunta.pregunta) > 50 else obj.pregunta.pregunta
+    pregunta_resumida.short_description = 'Pregunta'
+    
+    def formfield_for_foreignkey(self, db_field, request, **kwargs):
+        if db_field.name == "administrador":
+            kwargs["queryset"] = db_field.related_model.objects.filter(rol=1)
+        return super().formfield_for_foreignkey(db_field, request, **kwargs)

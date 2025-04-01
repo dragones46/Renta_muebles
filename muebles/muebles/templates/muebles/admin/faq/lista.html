@@ -1,0 +1,333 @@
+{% extends 'muebles/barNavInicio.html' %}
+{% load static %}
+
+{% block admin_contenido %}
+<style>
+    /* Estilos consistentes con el otro template */
+    .card {
+        background-color: #1a1a1a;
+        border: 1px solid #333;
+        border-radius: 8px;
+        color: #fff;
+    }
+    
+    .card-header {
+        background-color: #2a2a2a;
+        border-bottom: 1px solid #333;
+    }
+    
+    .table {
+        color: #fff;
+    }
+    
+    .table th {
+        background-color: #2a2a2a;
+        color: #fff;
+        border-bottom: 1px solid #333;
+    }
+    
+    .table td {
+        border-top: 1px solid #333;
+        vertical-align: middle;
+    }
+    
+    .table-hover tbody tr:hover {
+        background-color: #2a2a2a;
+    }
+    
+    .btn-primary {
+        background-color: #ff6b00; /* Naranja */
+        border: none;
+    }
+    
+    .btn-primary:hover {
+        background-color: #e05d00;
+    }
+    
+    .btn-warning {
+        background-color: #ff6b00; /* Naranja */
+        border: none;
+        color: white;
+    }
+    
+    .btn-danger {
+        background-color: #dc3545;
+        border: none;
+    }
+    
+    .modal-content {
+        background-color: #1a1a1a;
+        color: #fff;
+    }
+    
+    .modal-header {
+        border-bottom: 1px solid #333;
+    }
+    
+    .modal-footer {
+        border-top: 1px solid #333;
+    }
+    
+    .form-control, .form-select {
+        background-color: #2a2a2a;
+        border: 1px solid #333;
+        color: #fff;
+    }
+    
+    .form-control:focus, .form-select:focus {
+        background-color: #2a2a2a;
+        color: #fff;
+        border-color: #ff6b00;
+        box-shadow: 0 0 0 0.25rem rgba(255, 107, 0, 0.25);
+    }
+    
+    .text-muted {
+        color: #6c757d !important;
+    }
+    
+    .badge.bg-success {
+        background-color: #28a745 !important;
+    }
+    
+    .badge.bg-danger {
+        background-color: #dc3545 !important;
+    }
+    
+    .close {
+        color: #fff;
+        opacity: 1;
+    }
+    
+    .btn-orange {
+        background-color: #ff6b00;
+        color: white;
+    }
+    
+    .btn-orange:hover {
+        background-color: #e05d00;
+        color: white;
+    }
+    
+    .border-orange {
+        border-color: #ff6b00 !important;
+    }
+</style>
+
+<div class="container mt-4">
+    <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h3 class="card-title m-0">
+                <i class="fas fa-question-circle"></i> Preguntas Frecuentes
+            </h3>
+            <button class="btn btn-orange" data-toggle="modal" data-target="#faqModal">
+                <i class="fas fa-plus"></i> Nueva FAQ
+            </button>
+        </div>
+        
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-striped table-hover">
+                    <thead>
+                        <tr>
+                            <th>Pregunta</th>
+                            <th>Categoría</th>
+                            <th>Orden</th>
+                            <th>Votos</th>
+                            <th>Estado</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for faq in faqs %}
+                        <tr>
+                            <td>{{ faq.pregunta|truncatewords:5 }}</td>
+                            <td>{{ faq.get_categoria_display }}</td>
+                            <td>{{ faq.orden }}</td>
+                            <td>{{ faq.votos }}</td>
+                            <td>
+                                <span class="badge bg-{% if faq.activo %}success{% else %}danger{% endif %}">
+                                    {% if faq.activo %}Activo{% else %}Inactivo{% endif %}
+                                </span>
+                            </td>
+                            <td>
+                                <button class="btn btn-sm btn-warning" data-toggle="modal" 
+                                        data-target="#editarFaqModal{{ faq.id }}">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button class="btn btn-sm btn-danger" data-toggle="modal" 
+                                        data-target="#eliminarFaqModal{{ faq.id }}">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="6" class="text-center">No hay preguntas frecuentes registradas</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para Crear -->
+<div class="modal fade" id="faqModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header border-orange">
+                <h5 class="modal-title text-orange">
+                    <i class="fas fa-plus"></i> Crear Pregunta Frecuente
+                </h5>
+                <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <form method="post">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label class="form-label">Pregunta</label>
+                        <input type="text" class="form-control" name="pregunta" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Respuesta</label>
+                        <textarea class="form-control" name="respuesta" rows="3" required></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Categoría</label>
+                        <select class="form-select" name="categoria" required>
+                            {% for cat in categorias %}
+                            <option value="{{ cat.0 }}">{{ cat.1 }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Orden</label>
+                        <input type="number" class="form-control" name="orden" required>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" name="activo" id="activoCheck" checked>
+                        <label class="form-check-label" for="activoCheck">
+                            Activo
+                        </label>
+                    </div>
+                </div>
+                <div class="modal-footer border-orange">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">
+                        <i class="fas fa-times"></i> Cancelar
+                    </button>
+                    <button type="submit" name="guardar" class="btn btn-orange">
+                        <i class="fas fa-save"></i> Guardar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modales para Editar y Eliminar (uno por cada FAQ) -->
+{% for faq in faqs %}
+<!-- Modal Editar -->
+<div class="modal fade" id="editarFaqModal{{ faq.id }}" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header border-orange">
+                <h5 class="modal-title text-orange">
+                    <i class="fas fa-edit"></i> Editar Pregunta Frecuente
+                </h5>
+                <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <form method="post" action="{% url 'editar_faq' faq.id %}">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label class="form-label">Pregunta</label>
+                        <input type="text" class="form-control" name="pregunta" value="{{ faq.pregunta }}" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Respuesta</label>
+                        <textarea class="form-control" name="respuesta" rows="3" required>{{ faq.respuesta }}</textarea>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Categoría</label>
+                        <select class="form-select" name="categoria" required>
+                            {% for cat in categorias %}
+                            <option value="{{ cat.0 }}" {% if cat.0 == faq.categoria %}selected{% endif %}>{{ cat.1 }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Orden</label>
+                        <input type="number" class="form-control" name="orden" value="{{ faq.orden }}" required>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" name="activo" id="activoCheck{{ faq.id }}" {% if faq.activo %}checked{% endif %}>
+                        <label class="form-check-label" for="activoCheck{{ faq.id }}">
+                            Activo
+                        </label>
+                    </div>
+                </div>
+                <div class="modal-footer border-orange">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">
+                        <i class="fas fa-times"></i> Cancelar
+                    </button>
+                    <button type="submit" class="btn btn-orange">
+                        <i class="fas fa-save"></i> Guardar Cambios
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Eliminar -->
+<div class="modal fade" id="eliminarFaqModal{{ faq.id }}" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">
+                    <i class="fas fa-trash"></i> Eliminar Pregunta Frecuente
+                </h5>
+                <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <form method="post" action="{% url 'admin_eliminar_faq' faq.id %}">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <p>¿Estás seguro que deseas eliminar la siguiente pregunta frecuente?</p>
+                    <blockquote class="blockquote">
+                        <p class="text-orange">{{ faq.pregunta }}</p>
+                    </blockquote>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">
+                        <i class="fas fa-times"></i> Cancelar
+                    </button>
+                    <button type="submit" class="btn btn-danger">
+                        <i class="fas fa-trash"></i> Confirmar Eliminación
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endfor %}
+
+<script>
+    $(document).ready(function () {
+        // Mostrar modal de creación si hay errores en el form
+        {% if form.errors and not faq_editando %}
+        $('#faqModal').modal('show');
+        {% endif %}
+        
+        // Inicializar tooltips
+        $('[data-toggle="tooltip"]').tooltip();
+    });
+</script>
+
+{% endblock %}

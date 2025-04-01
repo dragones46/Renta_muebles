@@ -1,0 +1,45 @@
+{% extends 'muebles/barNavInicio.html' %}
+{% load static %}
+
+{% block admin_contenido %}
+<div class="container mt-4">
+    <h2 class="mb-4">Preguntas de Usuarios</h2>
+    
+    <div class="table-responsive">
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>Usuario</th>
+                    <th>Pregunta</th>
+                    <th>Estado</th>
+                    <th>Fecha</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for pregunta in preguntas %}
+                <tr>
+                    <td>{{ pregunta.usuario.nombre }}</td>
+                    <td>{{ pregunta.pregunta|truncatewords:5 }}</td>
+                    <td>
+                        <span class="badge bg-{% if pregunta.estado == 'respondida' %}success{% elif pregunta.estado == 'pendiente' %}warning{% else %}info{% endif %}">
+                            {{ pregunta.get_estado_display }}
+                        </span>
+                    </td>
+                    <td>{{ pregunta.fecha|date:"d/m/Y H:i" }}</td>
+                    <td>
+                        <a href="{% url 'responder_pregunta' pregunta.id %}" class="btn btn-sm btn-primary">
+                            <i class="fas fa-reply"></i> Responder
+                        </a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="5" class="text-center">No hay preguntas pendientes.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

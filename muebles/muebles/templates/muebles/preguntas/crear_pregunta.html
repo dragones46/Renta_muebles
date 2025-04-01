@@ -1,0 +1,27 @@
+{% extends 'muebles/barNav.html' %}
+{% load static %}
+
+{% block contenedor %}
+<div class="container mt-4">
+    <h2 class="mb-4">Nueva Pregunta</h2>
+    
+    <div class="card">
+        <div class="card-body">
+            <form method="post">
+                {% csrf_token %}
+                <div class="mb-3">
+                    <label for="{{ form.pregunta.id_for_label }}" class="form-label">Tu pregunta:</label>
+                    {{ form.pregunta }}
+                    {% if form.pregunta.errors %}
+                    <div class="invalid-feedback d-block">
+                        {{ form.pregunta.errors }}
+                    </div>
+                    {% endif %}
+                </div>
+                <button type="submit" class="btn btn-primary">Enviar Pregunta</button>
+                <a href="{% url 'lista_preguntas' %}" class="btn btn-secondary">Cancelar</a>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

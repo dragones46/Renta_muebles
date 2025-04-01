@@ -7,13 +7,32 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block titulo %}Panel de Administración{% endblock %}</title>
 
-    <!-- Los mismos estilos que en tu base.html original -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="{% static 'muebles/css/style.css' %}">
-    <link rel="stylesheet" href="{% static 'muebles/css/admin.css' %}">
-    <link rel="icon" type="image/png" sizes="32x32" href="{% static 'img/favicon-32x32.png' %}">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.0/font/bootstrap-icons.css" rel="stylesheet">
+        <!-- Bootstrap y estilos -->
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+        <link href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css" rel="stylesheet">
+        <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    
+        <!-- Estilos personalizados -->
+        <link href="{% static './muebles/css/style.css' %}" rel="stylesheet">
+        <link href="{% static 'muebles/css/muebles.css' %}" rel="stylesheet">
+        <link href="{% static 'muebles/js/style.js' %}" rel="stylesheet">
+        <link href="{% static 'muebles/css/admin.css' %}" rel="stylesheet">
+    
+        <!-- Icono de pestaña de la página -->
+        <link rel="icon" type="image/png" sizes="32x32" href="{% static 'img/favicon-32x32.png' %}">
+    
+        <!-- Scripts -->
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+        <script src="{% static 'muebles/js/jquery-3.7.1.min.js' %}"></script>
+    
+        <!-- Scripts adicionales -->
+        <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+        <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.bundle.min.js"></script>
+    
+        <!--iconos de boostrap-->
+        <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.0/font/bootstrap-icons.css" rel="stylesheet">
 </head>
 
 <body>
@@ -47,37 +66,15 @@
                             <i class="bi bi-house-door"></i> Volver al Inicio
                         </a>
                     </li>
-                    <!-- Dentro del navbar-collapse, después de los otros items -->
-                    <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" id="faqDropdown" role="button"
-                            data-bs-toggle="dropdown" aria-expanded="false">
-                            <i class="fas fa-question-circle"></i> FAQs
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'admin_lista_preguntas' %}">
+                            <i class="fas fa-question-circle"></i> Preguntas
                         </a>
-                        <ul class="dropdown-menu" aria-labelledby="faqDropdown">
-                            {% for categoria, items in faqs.items %}
-                            <li>
-                                <h6 class="dropdown-header">{{ items.0.get_categoria_display }}</h6>
-                            </li>
-                            {% for faq in items|slice:":3" %}
-                            <li>
-                                <a class="dropdown-item" href="{% url 'faq' %}#faq-{{ faq.id }}">
-                                    {{ faq.pregunta|truncatewords:5 }}
-                                    <span class="badge bg-primary float-end">
-                                        {{ faq.votos }} votos
-                                    </span>
-                                </a>
-                            </li>
-                            {% endfor %}
-                            {% endfor %}
-                            <li>
-                                <hr class="dropdown-divider">
-                            </li>
-                            <li>
-                                <a class="dropdown-item text-center" href="{% url 'faq' %}">
-                                    <strong>Ver todas</strong>
-                                </a>
-                            </li>
-                        </ul>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'admin_faq_lista' %}">
+                            <i class="fas fa-cog"></i> Administrar FAQs
+                        </a>
                     </li>
                 </ul>
                 <ul class="navbar-nav ms-auto">
@@ -151,9 +148,7 @@
         </div>
     </footer>
 
-    <!-- Scripts -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-
+    
 </body>
 
 </html>

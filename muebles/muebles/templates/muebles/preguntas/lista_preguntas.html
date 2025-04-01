@@ -1,40 +1,35 @@
-{% extends 'muebles/barnav.html' %}
-{% block titulo %}Mis Preguntas{% endblock %}
+{% extends 'muebles/barNav.html' %}
+{% load static %}
 
 {% block contenedor %}
-<div class="container my-5">
-    <h1 class="text-center mb-5">Mis Preguntas</h1>
+<div class="container mt-4">
+    <h2 class="mb-4">Mis Preguntas</h2>
     
-    <div class="row justify-content-center">
-        <div class="col-md-8">
-            <a href="{% url 'hacer_pregunta' %}" class="btn btn-primary mb-3">Nueva Pregunta</a>
-            
-            {% if preguntas %}
-            <div class="list-group">
-                {% for pregunta in preguntas %}
-                <div class="list-group-item">
-                    <div class="d-flex justify-content-between">
-                        <h5>{{ pregunta.pregunta }}</h5>
-                        <span class="badge bg-{% if pregunta.estado == 'respondida' %}success{% else %}warning{% endif %}">
-                            {{ pregunta.get_estado_display }}
-                        </span>
-                    </div>
-                    {% if pregunta.respuestas.all %}
-                        <div class="mt-2 p-3 bg-light rounded">
-                            <strong>Respuesta:</strong>
-                            <p>{{ pregunta.respuestas.first.respuesta }}</p>
-                        </div>
-                    {% endif %}
-                    <small class="text-muted">Enviada el {{ pregunta.fecha|date:"d/m/Y" }}</small>
-                </div>
-                {% endfor %}
+    <a href="{% url 'crear_pregunta' %}" class="btn btn-primary mb-3">
+        <i class="fas fa-plus"></i> Nueva Pregunta
+    </a>
+    
+    <div class="list-group">
+        {% for pregunta in preguntas %}
+        <a href="{% url 'detalle_pregunta' pregunta.id %}" class="list-group-item list-group-item-action">
+            <div class="d-flex w-100 justify-content-between">
+                <h5 class="mb-1">{{ pregunta.pregunta|truncatewords:10 }}</h5>
+                <small class="text-{% if pregunta.estado == 'respondida' %}success{% elif pregunta.estado == 'pendiente' %}warning{% else %}info{% endif %}">
+                    {{ pregunta.get_estado_display }}
+                </small>
             </div>
-            {% else %}
-            <div class="alert alert-info">
-                No has hecho ninguna pregunta aún.
+            <small>Enviada el {{ pregunta.fecha|date:"d/m/Y H:i" }}</small>
+            {% if pregunta.respuestas.exists %}
+            <div class="mt-2">
+                <span class="badge bg-success">
+                    <i class="fas fa-check-circle"></i> Respondida
+                </span>
             </div>
             {% endif %}
-        </div>
+        </a>
+        {% empty %}
+        <div class="alert alert-info">No has hecho ninguna pregunta aún.</div>
+        {% endfor %}
     </div>
 </div>
 {% endblock %}
