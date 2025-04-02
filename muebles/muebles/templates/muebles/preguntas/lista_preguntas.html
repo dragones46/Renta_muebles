@@ -3,33 +3,193 @@
 
 {% block contenedor %}
 <div class="container mt-4">
-    <h2 class="mb-4">Mis Preguntas</h2>
-    
-    <a href="{% url 'crear_pregunta' %}" class="btn btn-primary mb-3">
-        <i class="fas fa-plus"></i> Nueva Pregunta
-    </a>
-    
-    <div class="list-group">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="mb-0">Mis Preguntas</h2>
+        <div>
+            <a href="{% url 'crear_pregunta' %}" class="btn btn-primary me-2">
+                <i class="fas fa-plus"></i> Nueva Pregunta
+            </a>
+            <form method="post" action="{% url 'eliminar_preguntas_respondidas' %}" class="d-inline">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-danger">
+                    <i class="fas fa-trash"></i> Borrar Respondidas
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Filtros y búsqueda -->
+    <div class="card mb-4 bg-dark">
+        <div class="card-body">
+            <form method="get" class="row g-3">
+                <div class="col-md-6">
+                    <input type="text" name="q" class="form-control" placeholder="Buscar preguntas..."
+                           value="{{ busqueda }}">
+                </div>
+                <div class="col-md-4">
+                    <select name="estado" class="form-select">
+                        <option value="">Todos los estados</option>
+                        <option value="pendiente" {% if estado_seleccionado == 'pendiente' %}selected{% endif %}>Pendientes</option>
+                        <option value="respondida" {% if estado_seleccionado == 'respondida' %}selected{% endif %}>Respondidas</option>
+                        <option value="publicada" {% if estado_seleccionado == 'publicada' %}selected{% endif %}>Publicadas en FAQ</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="fas fa-filter"></i> Filtrar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Lista de preguntas - Diseño mejorado -->
+    {% if preguntas %}
+    <div class="grid-container">
         {% for pregunta in preguntas %}
-        <a href="{% url 'detalle_pregunta' pregunta.id %}" class="list-group-item list-group-item-action">
-            <div class="d-flex w-100 justify-content-between">
-                <h5 class="mb-1">{{ pregunta.pregunta|truncatewords:10 }}</h5>
-                <small class="text-{% if pregunta.estado == 'respondida' %}success{% elif pregunta.estado == 'pendiente' %}warning{% else %}info{% endif %}">
-                    {{ pregunta.get_estado_display }}
-                </small>
+        <div class="grid-item">
+            <div class="card h-100 border-0 shadow-sm bg-secondary text-white">
+                <div class="card-header d-flex justify-content-between align-items-center bg-gray-700">
+                    <h5 class="mb-0">
+                        <span class="badge bg-{% if pregunta.estado == 'respondida' %}success{% elif pregunta.estado == 'pendiente' %}warning{% else %}info{% endif %}">
+                            {{ pregunta.get_estado_display }}
+                        </span>
+                    </h5>
+                    <small>{{ pregunta.fecha|date:"d/m/Y H:i" }}</small>
+                </div>
+                <div class="card-body">
+                    <p class="card-text">{{ pregunta.pregunta|truncatechars:150 }}</p>
+                    {% if pregunta.fecha_eliminacion and pregunta.estado == 'respondida' %}
+                    <small class="text-muted">Se eliminará el {{ pregunta.fecha_eliminacion|date:"d/m/Y" }}</small>
+                    {% endif %}
+                </div>
+                <div class="card-footer bg-gray-800 d-flex justify-content-between align-items-center">
+                    <a href="{% url 'detalle_pregunta' pregunta.id %}" class="btn btn-sm btn-outline-light">
+                        <i class="fas fa-eye"></i> Ver Detalle
+                    </a>
+                    {% if pregunta.respuestas.exists %}
+                    <span class="badge bg-success">
+                        <i class="fas fa-check-circle"></i> Respondida
+                    </span>
+                    {% endif %}
+                </div>
             </div>
-            <small>Enviada el {{ pregunta.fecha|date:"d/m/Y H:i" }}</small>
-            {% if pregunta.respuestas.exists %}
-            <div class="mt-2">
-                <span class="badge bg-success">
-                    <i class="fas fa-check-circle"></i> Respondida
-                </span>
-            </div>
-            {% endif %}
-        </a>
-        {% empty %}
-        <div class="alert alert-info">No has hecho ninguna pregunta aún.</div>
+        </div>
         {% endfor %}
     </div>
+
+    <!-- Paginación -->
+    <nav aria-label="Page navigation">
+        <ul class="pagination justify-content-center">
+            {% if preguntas.has_previous %}
+            <li class="page-item">
+                <a class="page-link" href="?page=1&q={{ busqueda }}&estado={{ estado_seleccionado }}">
+                    <i class="fas fa-angle-double-left"></i>
+                </a>
+            </li>
+            <li class="page-item">
+                <a class="page-link" href="?page={{ preguntas.previous_page_number }}&q={{ busqueda }}&estado={{ estado_seleccionado }}">
+                    <i class="fas fa-angle-left"></i>
+                </a>
+            </li>
+            {% endif %}
+
+            {% for num in preguntas.paginator.page_range %}
+            {% if preguntas.number == num %}
+            <li class="page-item active"><a class="page-link" href="#">{{ num }}</a></li>
+            {% elif num > preguntas.number|add:'-3' and num < preguntas.number|add:'3' %}
+            <li class="page-item">
+                <a class="page-link" href="?page={{ num }}&q={{ busqueda }}&estado={{ estado_seleccionado }}">{{ num }}</a>
+            </li>
+            {% endif %}
+            {% endfor %}
+
+            {% if preguntas.has_next %}
+            <li class="page-item">
+                <a class="page-link" href="?page={{ preguntas.next_page_number }}&q={{ busqueda }}&estado={{ estado_seleccionado }}">
+                    <i class="fas fa-angle-right"></i>
+                </a>
+            </li>
+            <li class="page-item">
+                <a class="page-link" href="?page={{ preguntas.paginator.num_pages }}&q={{ busqueda }}&estado={{ estado_seleccionado }}">
+                    <i class="fas fa-angle-double-right"></i>
+                </a>
+            </li>
+            {% endif %}
+        </ul>
+    </nav>
+    {% else %}
+    <div class="alert alert-info text-center">
+        <i class="fas fa-info-circle me-2"></i> No se encontraron preguntas con los filtros aplicados.
+    </div>
+    {% endif %}
 </div>
+
+<style>
+    .bg-gray-700 {
+        background-color: #495057;
+    }
+    .bg-gray-800 {
+        background-color: #343a40;
+    }
+    .bg-secondary {
+        background-color: #6c757d !important;
+    }
+    .card {
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    .card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+    }
+    .grid-container {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        gap: 20px;
+    }
+    .grid-item {
+        break-inside: avoid;
+    }
+</style>
+<script>
+    async function eliminarPreguntasAntiguas() {
+      try {
+        const response = await fetch('/eliminar-preguntas-antiguas/', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCookie('csrftoken') // Asegúrate de incluir el token CSRF
+          },
+        });
+  
+        if (response.ok) {
+          const data = await response.json();
+          console.log(data.mensaje);
+        } else {
+          console.error('Error al eliminar preguntas antiguas');
+        }
+      } catch (error) {
+        console.error('Error de red:', error);
+      }
+    }
+  
+    function getCookie(name) {
+      let cookieValue = null;
+      if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+          const cookie = cookies[i].trim();
+          if (cookie.substring(0, name.length + 1) === (name + '=')) {
+            cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+            break;
+          }
+        }
+      }
+      return cookieValue;
+    }
+  
+    // Llamar a la función para eliminar preguntas antiguas
+    setInterval(eliminarPreguntasAntiguas, 86400000);
+</script>
+  
 {% endblock %}

@@ -58,15 +58,22 @@
         background-color: #2a2a2a;
         border-radius: 8px;
         padding: 20px;
-        margin-bottom: 20px;
+        margin: 0 auto;
+        max-width: 500px;
     }
     
     .info-item {
-        margin-bottom: 10px;
+        margin-bottom: 12px;
+        text-align: center;
     }
     
     .info-item strong {
         color: #ff6b00;
+    }
+    
+    .divider {
+        border-top: 1px solid #444;
+        margin: 20px 0;
     }
 </style>
 
@@ -82,36 +89,38 @@
 
     <div class="card mb-4">
         <div class="card-header">
-            <h4 class="card-title m-0">
+            <h4 class="card-title m-0 text-center">
                 <i class="bi bi-info-circle"></i> Información del Pedido
             </h4>
         </div>
         <div class="card-body">
-            <div class="row">
-                <div class="col-md-6">
-                    <div class="info-item">
-                        <strong>Usuario:</strong> {{ pedido.usuario.nombre }}
-                    </div>
-                    <div class="info-item">
-                        <strong>Email:</strong> {{ pedido.usuario.email }}
-                    </div>
-                    <div class="info-item">
-                        <strong>Fecha:</strong> {{ pedido.fecha|date:"d/m/Y H:i" }}
-                    </div>
+            <div class="info-pedido">
+                <div class="info-item">
+                    <strong>Usuario:</strong> {{ pedido.usuario.nombre }}
                 </div>
-                <div class="col-md-6">
-                    <div class="info-item">
-                        <strong>Estado:</strong>
-                        <span class="badge bg-{% if pedido.estado == 'completado' %}success{% elif pedido.estado == 'cancelado' %}danger{% else %}warning{% endif %}">
-                            {{ pedido.get_estado_display }}
-                        </span>
-                    </div>
-                    <div class="info-item">
-                        <strong>Total:</strong> ${{ pedido.total }}
-                    </div>
-                    <div class="info-item">
-                        <strong>Dirección de entrega:</strong> {{ pedido.direccion_entrega }}
-                    </div>
+                <div class="info-item">
+                    <strong>Email:</strong> {{ pedido.usuario.email }}
+                </div>
+                
+                <div class="divider"></div>
+                
+                <div class="info-item">
+                    <strong>Fecha:</strong> {{ pedido.fecha|date:"d/m/Y H:i" }}
+                </div>
+                <div class="info-item">
+                    <strong>Estado:</strong>
+                    <span class="badge bg-{% if pedido.estado == 'completado' %}success{% elif pedido.estado == 'cancelado' %}danger{% else %}warning{% endif %}">
+                        {{ pedido.get_estado_display }}
+                    </span>
+                </div>
+                
+                <div class="divider"></div>
+                
+                <div class="info-item">
+                    <strong>Total:</strong> ${{ pedido.total }}
+                </div>
+                <div class="info-item">
+                    <strong>Dirección de entrega:</strong> {{ pedido.direccion_entrega }}
                 </div>
             </div>
         </div>

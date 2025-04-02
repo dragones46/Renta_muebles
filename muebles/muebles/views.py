@@ -14,108 +14,92 @@ from django.contrib.auth.decorators import login_required
 from django.core.files.base import ContentFile
 from django.contrib.auth.hashers import make_password
 from django.views.decorators.http import require_POST
-
+from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from django.db.models import Q
-
-#Para sacar totales de eventos.
-# En la sección de imports al inicio del archivo, agrega:
 from django.db.models import F, Sum, ExpressionWrapper, FloatField
 from django.shortcuts import render
 import locale
-
-
-
 from django.db.models import F
 from collections import defaultdict
-
 from django.utils import timezone
 from datetime import timedelta
-
-# Para tomar el from desde el settings
 from django.conf import settings
 from django.core.mail import EmailMessage, send_mail
 import threading
-
-# Para que muestre más detalles de un error
 import traceback
-
-# Importamos todos los modelos de la base de datos
 from django.db import IntegrityError, transaction
 from django.http import JsonResponse
 import json
-
 from django.utils import timezone
-
-#APIVIEW
 from rest_framework.views import APIView
 from rest_framework.permissions import AllowAny
-
-
-#PARA EL PDF
 from xhtml2pdf import pisa
 from django.template.loader import render_to_string
 import os
 import tempfile
 from django.core.files import File
-
 from django.urls import reverse
-
-
 from rest_framework import viewsets
-
 from .serializers import *
 from rest_framework import viewsets
-
-
-#Importar el crypt
 from .crypt import *
-
-#Importar todos los modelos de la base de datos.
 from .models import *
-
-#Validar la fecha de Nacimiento
+from .forms import *
 from datetime import datetime
 import uuid
 from io import BytesIO
-
-# Para restringir las vistas
 from .decorators import *
 
-# Create your views here.
+# ==================== VISTAS PÚBLICAS ====================
 
-#inicio
 def index(request):
-    muebles = Mueble.objects.all()  # Obtén todos los muebles disponibles
+    muebles = Mueble.objects.all()
     return render(request, 'muebles/index.html', {'muebles': muebles})
 
-
-#muebles
 def muebles_list(request):
     muebles = Mueble.objects.all()
     return render(request, 'muebles/mueble/muebles_list.html', {'muebles': muebles})
 
+# ==================== RENTA DE MUEBLES ====================
+
 @login_requerido
 def rentar_mueble(request, mueble_id):
+    logueo = request.session.get("logueo")
+    usuario = Usuario.objects.get(id=logueo["id"])
     mueble = get_object_or_404(Mueble, id=mueble_id)
 
     if request.method == 'POST':
         form = RentaForm(request.POST)
         if form.is_valid():
-            # Guardar la renta
-            renta = form.save(commit=False)
-            renta.mueble = mueble
-            renta.usuario = request.user
-            renta.save()
+            try:
+                # Guardar la renta
+                renta = form.save(commit=False)
+                renta.mueble = mueble
+                renta.usuario = usuario
+                renta.save()
 
-            # Agregar el mueble al carrito
-            carrito, creado = Carrito.objects.get_or_create(usuario=request.user)
-            item, item_creado = ItemCarrito.objects.get_or_create(carrito=carrito, mueble=mueble)
-            if not item_creado:
-                item.cantidad += 1
-                item.save()
+                # Agregar el mueble al carrito
+                carrito, creado = Carrito.objects.get_or_create(usuario=usuario)
+                item, item_creado = ItemCarrito.objects.get_or_create(
+                    carrito=carrito, 
+                    mueble=mueble
+                )
+                
+                if not item_creado:
+                    item.cantidad += 1
+                    item.save()
 
-            messages.success(request, f"{mueble.nombre} ha sido agregado al carrito.")
-            return redirect('ver_carrito')
+                # Actualizar la sesión
+                if "logueo" in request.session:
+                    request.session["logueo"]["carrito"]["items_count"] = carrito.items.count()
+                    request.session.modified = True
+
+                messages.success(request, f"{mueble.nombre} ha sido agregado al carrito.")
+                return redirect('ver_carrito')
+                
+            except Exception as e:
+                messages.error(request, f"Error al procesar la renta: {str(e)}")
+                return redirect('rentar_mueble', mueble_id=mueble_id)
     else:
         form = RentaForm(initial={'mueble': mueble})
 
@@ -124,53 +108,10 @@ def rentar_mueble(request, mueble_id):
         'mueble': mueble,
     })
 
-#contacto
 def contacto(request):
     return render(request, 'muebles/contacto/contacto.html')
 
-
-#usuario
-@login_requerido
-def perfil(request):
-    logueo = request.session.get("logueo", False)
-    if not logueo:
-        return redirect('login')
-
-    user = Usuario.objects.get(id=logueo["id"])
-
-    if request.method == 'POST':
-        nombre = request.POST.get('nombre')
-        email = request.POST.get('email')
-        direccion = request.POST.get('direccion')
-        foto = request.FILES.get('foto')
-
-        # Validar si el correo ya está registrado (excluyendo el usuario actual)
-        if Usuario.objects.filter(email=email).exclude(id=user.id).exists():
-            messages.warning(request, "El correo ya está registrado.")
-            return redirect('perfil')
-
-        user.nombre = nombre
-        user.email = email
-        user.direccion = direccion
-
-        if foto:
-            user.foto = foto
-
-        user.save()
-
-        # Actualizar la sesión con los nuevos datos del usuario
-        request.session["logueo"] = {
-            "id": user.id,
-            "nombre": user.nombre,
-            "rol": user.rol,
-            "nombre_rol": user.get_rol_display(),
-            "foto": user.foto.url if user.foto else None
-        }
-
-        messages.success(request, "Perfil actualizado exitosamente.")
-        return redirect('perfil')
-
-    return render(request, 'muebles/perfil/perfil.html', {'user': user})
+# ==================== AUTENTICACIÓN ====================
 
 def login(request):
     if request.method == 'POST':
@@ -178,20 +119,26 @@ def login(request):
         password = request.POST.get('password')
 
         try:
-            # Buscar el usuario por su correo electrónico
             user = Usuario.objects.get(email=email)
-
-            # Verificar la contraseña
+            
             if verify_password(password, user.password):
-                # Almacenar información del usuario en la sesión
+                # Obtener el carrito del usuario
+                carrito, created = Carrito.objects.get_or_create(usuario=user)
+                
                 request.session["logueo"] = {
                     "id": user.id,
                     "nombre": user.nombre,
+                    "email": user.email,
                     "rol": user.rol,
                     "nombre_rol": user.get_rol_display(),
-                    "foto": user.foto.url if user.foto else None
+                    "foto": user.foto.url if user.foto else None,
+                    "carrito": {
+                        "id": carrito.id,
+                        "items_count": carrito.items.count()  # Asegurarse de contar los items actuales
+                    }
                 }
-                messages.success(request, "Has iniciado sesión exitosamente.")
+                request.session.modified = True  # Importante para guardar los cambios
+                messages.success(request, "Bienvenido " + user.nombre)
                 return redirect("index")
             else:
                 messages.warning(request, "Contraseña incorrecta.")
@@ -207,32 +154,38 @@ def registro(request):
         direccion = request.POST.get('direccion')
         password = request.POST.get('password')
 
-        # Validación de nombre: solo letras y espacios
         if not re.match("^[A-Za-z\\s]+$", nombre):
             messages.warning(request, "El nombre solo puede contener letras y espacios.")
             return redirect("registro")
 
-        # Validación de correo electrónico
         if not re.match(r"[^@]+@[^@]+\.[^@]+", email):
             messages.warning(request, "Por favor, ingrese un correo electrónico válido.")
             return redirect("registro")
 
-        # Validar si el correo ya existe
         if Usuario.objects.filter(email=email).exists():
             messages.warning(request, "El correo electrónico ya está registrado.")
             return redirect("registro")
 
-        # Crear el usuario con contraseña encriptada
-        Usuario.objects.create(
-            nombre=nombre,
-            email=email,
-            username=email,  # Usar el email como nombre de usuario
-            direccion=direccion,
-            password=make_password(password)  # Encriptar la contraseña
-        )
-
-        messages.success(request, "Usuario creado exitosamente. Por favor, inicia sesión.")
-        return redirect("login")
+        try:
+            with transaction.atomic():
+                user = Usuario.objects.create(
+                    nombre=nombre,
+                    email=email,
+                    username=email,
+                    direccion=direccion,
+                    password=make_password(password),
+                    rol=2  # Rol de cliente por defecto
+                )
+                
+                # Crear carrito para el nuevo usuario
+                Carrito.objects.create(usuario=user)
+                
+                messages.success(request, "Usuario creado exitosamente. Por favor, inicia sesión.")
+                return redirect("login")
+                
+        except Exception as e:
+            messages.error(request, f"Error al registrar usuario: {str(e)}")
+            return redirect("registro")
 
     return render(request, 'muebles/perfil/registrarse.html')
 
@@ -240,17 +193,64 @@ def logout(request):
     if "logueo" in request.session:
         del request.session["logueo"]
         messages.success(request, "Sesión cerrada correctamente.")
-    else:
-        messages.warning(request, "No hay sesión activa.")
     return redirect("index")
 
-#carrito
-def agregar_al_carrito(request, mueble_id):
-    mueble = get_object_or_404(Mueble, id=mueble_id)
-    carrito, creado = Carrito.objects.get_or_create(usuario=request.user)
+# ==================== PERFIL DE USUARIO ====================
 
-    # Verificar si el mueble ya está en el carrito
-    item, item_creado = ItemCarrito.objects.get_or_create(carrito=carrito, mueble=mueble)
+@login_requerido
+def perfil(request):
+    logueo = request.session.get("logueo")
+    user = Usuario.objects.get(id=logueo["id"])
+
+    if request.method == 'POST':
+        nombre = request.POST.get('nombre')
+        email = request.POST.get('email')
+        direccion = request.POST.get('direccion')
+        foto = request.FILES.get('foto')
+
+        if Usuario.objects.filter(email=email).exclude(id=user.id).exists():
+            messages.warning(request, "El correo ya está registrado.")
+            return redirect('perfil')
+
+        user.nombre = nombre
+        user.email = email
+        user.direccion = direccion
+
+        if foto:
+            user.foto = foto
+
+        user.save()
+
+        # Actualizar sesión
+        request.session["logueo"] = {
+            "id": user.id,
+            "nombre": user.nombre,
+            "email": user.email,
+            "rol": user.rol,
+            "nombre_rol": user.get_rol_display(),
+            "foto": user.foto.url if user.foto else None
+        }
+
+        messages.success(request, "Perfil actualizado exitosamente.")
+        return redirect('perfil')
+
+    return render(request, 'muebles/perfil/perfil.html', {'user': user})
+
+# ==================== CARRITO DE COMPRAS ====================
+
+@login_requerido
+def agregar_al_carrito(request, mueble_id):
+    logueo = request.session.get("logueo")
+    mueble = get_object_or_404(Mueble, id=mueble_id)
+    
+    usuario = Usuario.objects.get(id=logueo["id"])
+    carrito, creado = Carrito.objects.get_or_create(usuario=usuario)
+
+    item, item_creado = ItemCarrito.objects.get_or_create(
+        carrito=carrito, 
+        mueble=mueble
+    )
+    
     if not item_creado:
         item.cantidad += 1
         item.save()
@@ -258,27 +258,51 @@ def agregar_al_carrito(request, mueble_id):
     else:
         messages.success(request, f"{mueble.nombre} ha sido agregado al carrito.")
 
-    return redirect('ver_carrito')
+    # Actualizar la sesión con el nuevo conteo
+    if "logueo" in request.session:
+        request.session["logueo"]["carrito"]["items_count"] = carrito.items.count()
+        request.session.modified = True  # Esto es importante para guardar los cambios
 
+    # Redirigir según la fuente de la solicitud
+    if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+        return JsonResponse({
+            'success': True,
+            'cart_count': carrito.items.count(),
+            'message': messages.get_messages(request)[0].message if messages.get_messages(request) else ''
+        })
+    else:
+        return redirect('ver_carrito')
+    
+@login_requerido
 def eliminar_del_carrito(request, item_id):
-    carrito = get_object_or_404(Carrito, usuario=request.user)
-    item = get_object_or_404(ItemCarrito, id=item_id)
+    logueo = request.session.get("logueo")
+    usuario = Usuario.objects.get(id=logueo["id"])
+    carrito = get_object_or_404(Carrito, usuario=usuario)
+    
+    item = get_object_or_404(ItemCarrito, id=item_id, carrito=carrito)
+    nombre_mueble = item.mueble.nombre
     item.delete()
     
-    # Verificar si quedan items en el carrito
+    # Actualizar la sesión
+    request.session["logueo"]["carrito"]["items_count"] = carrito.items.count()
+    request.session.modified = True
+    
     if carrito.items.count() == 0:
-        carrito.domicilio = None  # Eliminar el domicilio si no hay items
+        carrito.domicilio = None
         carrito.save()
         messages.success(request, "El carrito está vacío y se ha eliminado el domicilio.")
     else:
-        messages.success(request, f"{item.mueble.nombre} ha sido eliminado del carrito.")
+        messages.success(request, f"{nombre_mueble} ha sido eliminado del carrito.")
     
     return redirect('ver_carrito')
 
 @login_requerido
 def actualizar_cantidad(request, item_id):
-    carrito = get_object_or_404(Carrito, usuario=request.user)
-    item = get_object_or_404(ItemCarrito, id=item_id)
+    logueo = request.session.get("logueo")
+    usuario = Usuario.objects.get(id=logueo["id"])
+    carrito = get_object_or_404(Carrito, usuario=usuario)
+    item = get_object_or_404(ItemCarrito, id=item_id, carrito=carrito)
+    
     cantidad = int(request.POST.get('cantidad', 1))
 
     if cantidad > 0:
@@ -287,22 +311,22 @@ def actualizar_cantidad(request, item_id):
         messages.success(request, f"La cantidad de {item.mueble.nombre} ha sido actualizada a {cantidad}.")
     else:
         item.delete()
-        # Verificar si quedan items en el carrito
         if carrito.items.count() == 0:
-            carrito.domicilio = None  # Eliminar el domicilio si no hay items
+            carrito.domicilio = None
             carrito.save()
             messages.success(request, "El carrito está vacío y se ha eliminado el domicilio.")
         else:
             messages.success(request, f"{item.mueble.nombre} ha sido eliminado del carrito.")
 
+    # Actualizar la sesión en cualquier caso
+    request.session["logueo"]["carrito"]["items_count"] = carrito.items.count()
+    request.session.modified = True
+
     return redirect('ver_carrito')
 
 @login_requerido
 def ver_carrito(request):
-    logueo = request.session.get("logueo", False)
-    if not logueo:
-        return redirect('login')
-    
+    logueo = request.session.get("logueo")
     usuario = Usuario.objects.get(id=logueo["id"])
     carrito, creado = Carrito.objects.get_or_create(usuario=usuario)
     
@@ -311,12 +335,13 @@ def ver_carrito(request):
         if form.is_valid():
             carrito.domicilio = form.cleaned_data['domicilio']
             carrito.save()
+            messages.success(request, "Dirección de envío actualizada correctamente.")
             return redirect('ver_carrito')
     else:
         form = DomicilioForm(initial={'domicilio': carrito.domicilio})
 
     items = carrito.items.all()
-    total = carrito.calcular_total()
+    total = sum(item.subtotal() for item in items)
     costo_domicilio = carrito.COSTO_DOMICILIO if carrito.domicilio else 0
 
     return render(request, 'muebles/carrito/ver_carrito.html', {
@@ -327,57 +352,77 @@ def ver_carrito(request):
         'costo_domicilio': costo_domicilio,
     })
 
-#domicilio
 @login_requerido
 def eliminar_domicilio(request):
-    carrito = get_object_or_404(Carrito, usuario=request.user)
+    logueo = request.session.get("logueo")
+    usuario = Usuario.objects.get(id=logueo["id"])
+    carrito = get_object_or_404(Carrito, usuario=usuario)
+    
     carrito.domicilio = None
     carrito.save()
     messages.success(request, "Domicilio eliminado correctamente.")
     return redirect('ver_carrito')
 
-#pago
+# ==================== PROCESO DE PAGO ====================
+
 @login_requerido
 def procesar_pago(request):
-    carrito = request.user.carrito
-    
+    logueo = request.session.get("logueo")
+    usuario = Usuario.objects.get(id=logueo["id"])
+    carrito = get_object_or_404(Carrito, usuario=usuario)
+
     if not carrito.items.exists():
         messages.error(request, "Tu carrito está vacío")
-        return redirect('carrito')
-    
-    # Crear el pedido
-    pedido = Pedido.objects.create(
-        usuario=request.user,
-        total=carrito.calcular_total(),
-        direccion_entrega=carrito.domicilio or request.user.direccion,
-        estado='completado'
-    )
-    
-    # Crear los detalles del pedido
-    for item in carrito.items.all():
-        DetallePedido.objects.create(
-            pedido=pedido,
-            mueble=item.mueble,
-            cantidad=item.cantidad,
-            precio_unitario=item.mueble.precio_diario,
-            subtotal=item.subtotal()
-        )
-    
-    # Limpiar el carrito
-    carrito.items.all().delete()
-    carrito.domicilio = None
-    carrito.save()
-    
-    messages.success(request, "¡Pago exitoso! Tu pedido ha sido procesado.")
-    return redirect('index')
+        return redirect('ver_carrito')
 
-#admin
+    try:
+        with transaction.atomic():
+            # Crear el pedido
+            pedido = Pedido.objects.create(
+                usuario=usuario,
+                total=carrito.calcular_total(),
+                direccion_entrega=carrito.domicilio or usuario.direccion,
+                estado='pendiente',
+                costo_domicilio=carrito.COSTO_DOMICILIO if carrito.domicilio else 0
+            )
+
+            # Crear los detalles del pedido
+            for item in carrito.items.all():
+                DetallePedido.objects.create(
+                    pedido=pedido,
+                    mueble=item.mueble,
+                    cantidad=item.cantidad,
+                    precio_unitario=item.mueble.precio_diario,
+                    subtotal=item.subtotal()
+                )
+
+            # Limpiar el carrito
+            carrito.items.all().delete()
+            carrito.domicilio = None
+            carrito.save()
+
+            # Actualizar la sesión
+            request.session["logueo"]["carrito"]["items_count"] = 0
+            request.session.modified = True
+
+            messages.success(request, "¡Pago exitoso! Tu pedido ha sido procesado.")
+            return redirect('mis_pedidos')
+            
+    except Exception as e:
+        messages.error(request, f"Error al procesar el pago: {str(e)}")
+        return redirect('ver_carrito')
+
+@login_requerido
+def mis_pedidos(request):
+    logueo = request.session.get("logueo")
+    usuario = Usuario.objects.get(id=logueo["id"])
+    pedidos = Pedido.objects.filter(usuario=usuario).order_by('-fecha')
+    return render(request, 'muebles/pedidos/mis_pedidos.html', {'pedidos': pedidos})
+
+# ==================== VISTAS DE ADMINISTRACIÓN ====================
+
 @login_requerido(roles_permitidos=[1])
 def admin_inicio(request):
-    if not request.session.get('logueo') or request.session.get('logueo').get('rol') != 1:
-        return redirect('login')
-    
-    # Estadísticas para el dashboard
     total_muebles = Mueble.objects.count()
     total_usuarios = Usuario.objects.count()
     total_pedidos = Pedido.objects.count()
@@ -389,27 +434,18 @@ def admin_inicio(request):
     }
     return render(request, 'muebles/admin/inicio.html', context)
 
-
-#crud muebles
-# views.py
-
+# CRUD Muebles
+@login_requerido(roles_permitidos=[1])
 def admin_muebles(request):
-    if not request.session.get('logueo') or request.session.get('logueo').get('rol') != 1:
-        messages.error(request, 'Acceso denegado. Debes ser administrador.')
-        return redirect('login')
-    
     muebles = Mueble.objects.all()
     propietarios = Propietario.objects.all()
-    return render(request, 'muebles/admin/muebles.html', {
+    return render(request, 'muebles/admin/muebles/muebles.html', {
         'muebles': muebles,
         'propietarios': propietarios
     })
 
+@login_requerido(roles_permitidos=[1])
 def crear_mueble(request):
-    if not request.session.get('logueo') or request.session.get('logueo').get('rol') != 1:
-        messages.error(request, 'Acceso denegado. Debes ser administrador.')
-        return redirect('login')
-    
     if request.method == 'POST':
         try:
             nombre = request.POST.get('nombre')
@@ -440,11 +476,8 @@ def crear_mueble(request):
     
     return redirect('admin_muebles')
 
+@login_requerido(roles_permitidos=[1])
 def editar_mueble(request, id):
-    if not request.session.get('logueo') or request.session.get('logueo').get('rol') != 1:
-        messages.error(request, 'Acceso denegado. Debes ser administrador.')
-        return redirect('login')
-    
     try:
         mueble = Mueble.objects.get(id=id)
         
@@ -477,11 +510,8 @@ def editar_mueble(request, id):
     
     return redirect('admin_muebles')
 
+@login_requerido(roles_permitidos=[1])
 def eliminar_mueble(request, id):
-    if not request.session.get('logueo') or request.session.get('logueo').get('rol') != 1:
-        messages.error(request, 'Acceso denegado. Debes ser administrador.')
-        return redirect('login')
-    
     try:
         mueble = Mueble.objects.get(id=id)
         nombre = mueble.nombre
@@ -494,27 +524,18 @@ def eliminar_mueble(request, id):
     
     return redirect('admin_muebles')
 
-#crud usuarios
-# Vista para listar usuarios
-# views.py
-
+# CRUD Usuarios
+@login_requerido(roles_permitidos=[1])
 def admin_usuarios(request):
-    if not request.session.get('logueo') or request.session.get('logueo').get('rol') != 1:
-        messages.error(request, 'Acceso denegado. Debes ser administrador.')
-        return redirect('login')
-    
     usuarios = Usuario.objects.all().order_by('-id')
-    return render(request, 'muebles/admin/usuarios.html', {
+    return render(request, 'muebles/admin/usuarios/usuarios.html', {
         'usuarios': usuarios,
         'roles': Usuario.ROLES,
         'estados': Usuario.ESTADO
     })
 
+@login_requerido(roles_permitidos=[1])
 def crear_usuario(request):
-    if not request.session.get('logueo') or request.session.get('logueo').get('rol') != 1:
-        messages.error(request, 'Acceso denegado. Debes ser administrador.')
-        return redirect('login')
-    
     if request.method == 'POST':
         form = UsuarioForm(request.POST, request.FILES)
         if form.is_valid():
@@ -522,6 +543,10 @@ def crear_usuario(request):
                 usuario = form.save(commit=False)
                 usuario.set_password(form.cleaned_data['password'])
                 usuario.save()
+                
+                # Crear carrito para el nuevo usuario
+                Carrito.objects.create(usuario=usuario)
+                
                 messages.success(request, 'Usuario creado exitosamente!')
                 return redirect('admin_usuarios')
             except Exception as e:
@@ -534,17 +559,14 @@ def crear_usuario(request):
     else:
         form = UsuarioForm()
     
-    return render(request, 'muebles/admin/crear_usuario.html', {
+    return render(request, 'muebles/admin/usuarios/crear_usuario.html', {
         'form': form,
         'roles': Usuario.ROLES,
         'estados': Usuario.ESTADO
     })
 
+@login_requerido(roles_permitidos=[1])
 def editar_usuario(request, id):
-    if not request.session.get('logueo') or request.session.get('logueo').get('rol') != 1:
-        messages.error(request, 'Acceso denegado. Debes ser administrador.')
-        return redirect('login')
-    
     try:
         usuario = Usuario.objects.get(id=id)
         
@@ -552,7 +574,6 @@ def editar_usuario(request, id):
             form = UsuarioForm(request.POST, request.FILES, instance=usuario)
             if form.is_valid():
                 try:
-                    # Solo actualiza la contraseña si se proporcionó una nueva
                     if form.cleaned_data['password']:
                         usuario.set_password(form.cleaned_data['password'])
                     form.save()
@@ -567,7 +588,7 @@ def editar_usuario(request, id):
         else:
             form = UsuarioForm(instance=usuario)
         
-        return render(request, 'muebles/admin/editar_usuario.html', {
+        return render(request, 'muebles/admin/usuarios/editar_usuario.html', {
             'form': form,
             'usuario': usuario,
             'roles': Usuario.ROLES,
@@ -578,16 +599,15 @@ def editar_usuario(request, id):
         messages.error(request, 'El usuario que intentas editar no existe.')
         return redirect('admin_usuarios')
 
+@login_requerido(roles_permitidos=[1])
 def eliminar_usuario(request, id):
-    if not request.session.get('logueo') or request.session.get('logueo').get('rol') != 1:
-        messages.error(request, 'Acceso denegado. Debes ser administrador.')
-        return redirect('login')
+    logueo = request.session.get("logueo")
     
     try:
         usuario = Usuario.objects.get(id=id)
         
-        # No permitir eliminar el propio usuario admin
-        if usuario.id == request.session.get('logueo').get('id'):
+        # No permitir que un admin se elimine a sí mismo
+        if usuario.id == logueo["id"]:
             messages.error(request, 'No puedes eliminar tu propio usuario.')
             return redirect('admin_usuarios')
         
@@ -602,64 +622,35 @@ def eliminar_usuario(request, id):
     
     return redirect('admin_usuarios')
 
-
-#pedidos
-# Vista para listar pedidos
+# Pedidos
+@login_requerido(roles_permitidos=[1])
 def admin_pedidos(request):
-    if not request.session.get('logueo') or request.session.get('logueo').get('rol') != 1:
-        return redirect('login')
-    
     pedidos = Pedido.objects.all().order_by('-fecha')
     return render(request, 'muebles/admin/pedidos/pedidos.html', {'pedidos': pedidos})
 
-# Vista para ver detalle de pedido
+@login_requerido(roles_permitidos=[1])
 def detalle_pedido(request, id):
-    if not request.session.get('logueo') or request.session.get('logueo').get('rol') != 1:
-        return redirect('login')
-    
     pedido = get_object_or_404(Pedido, id=id)
     detalles = DetallePedido.objects.filter(pedido=pedido)
     
-    return render(request, 'muebles/admin/pedidos/detalles_pedidos.html', {
+    return render(request, 'muebles/admin/pedidos/detalle_pedido.html', {
         'pedido': pedido,
         'detalles': detalles
     })
 
-# vistas para ayuda
+# ==================== AYUDA Y SOPORTE ====================
+
 def ayuda_principal(request):
     return render(request, 'muebles/ayuda/ayuda_principal.html')
-
-def faq(request):
-    # Obtener el total de votos para calcular porcentajes
-    total_votos = FAQ.objects.aggregate(total=Sum('votos'))['total'] or 1
-    
-    categorias = FAQ.objects.values_list('categoria', flat=True).distinct()
-    faqs = {}
-    
-    for categoria in categorias:
-        faqs_por_categoria = FAQ.objects.filter(categoria=categoria).annotate(
-            porcentaje=ExpressionWrapper(
-                F('votos') * 100 / total_votos,
-                output_field=FloatField()
-            )
-        ).order_by('-votos')
-        faqs[categoria] = faqs_por_categoria
-    
-    return render(request, 'muebles/ayuda/faq.html', {
-        'faqs': faqs,
-        'total_votos': total_votos
-    })
 
 def soporte(request):
     if request.method == 'POST':
         form = SoporteForm(request.POST)
         if form.is_valid():
-            # Procesar el formulario
             nombre = form.cleaned_data['nombre']
             email = form.cleaned_data['email']
             mensaje = form.cleaned_data['mensaje']
             
-            # Enviar correo
             send_mail(
                 f'Solicitud de soporte de {nombre}',
                 mensaje,
@@ -678,89 +669,145 @@ def actualizaciones(request):
     actualizaciones = Actualizacion.objects.all().order_by('-fecha')
     return render(request, 'muebles/ayuda/actualizaciones.html', {'actualizaciones': actualizaciones})
 
-def politica_cookies(request):
-    return render(request, 'muebles/legal/Cookies.html')
+# ==================== PREGUNTAS Y FAQ ====================
 
-def configurar_cookies(request):
-    if request.method == 'POST':
-        # Guardar las preferencias del usuario
-        request.session['cookie_preferences'] = {
-            'esenciales': 'esenciales' in request.POST,
-            'analiticas': 'analiticas' in request.POST,
-            'marketing': 'marketing' in request.POST
-        }
-        messages.success(request, "Tus preferencias de cookies han sido guardadas.")
-        return redirect('index')
-    
-    # Obtener las preferencias actuales si existen
-    preferencias = request.session.get('cookie_preferences', {
-        'esenciales': True,
-        'analiticas': False,
-        'marketing': False
-    })
-    
-    return render(request, 'muebles/legal/configurar_cookies.html', {'preferencias': preferencias})
-
-# PREGUNTAS
 @login_requerido
 def lista_preguntas(request):
-    logueo = request.session.get("logueo", False)
-    if not logueo:
-        return redirect('login')
+    logueo = request.session.get("logueo")
+    usuario = Usuario.objects.get(id=logueo["id"])
     
-    usuario_id = logueo["id"]
-    preguntas = Pregunta.objects.filter(usuario_id=usuario_id).order_by('-fecha')
-    return render(request, 'muebles/preguntas/lista_preguntas.html', {'preguntas': preguntas})
+    estado = request.GET.get('estado', '')
+    busqueda = request.GET.get('q', '')
+    
+    preguntas = Pregunta.objects.filter(usuario=usuario)
+    
+    if estado:
+        preguntas = preguntas.filter(estado=estado)
+    if busqueda:
+        preguntas = preguntas.filter(pregunta__icontains=busqueda)
+    
+    paginator = Paginator(preguntas.order_by('-fecha'), 6)
+    page = request.GET.get('page')
+    
+    try:
+        preguntas_pagina = paginator.page(page)
+    except PageNotAnInteger:
+        preguntas_pagina = paginator.page(1)
+    except EmptyPage:
+        preguntas_pagina = paginator.page(paginator.num_pages)
+    
+    return render(request, 'muebles/preguntas/lista_preguntas.html', {
+        'preguntas': preguntas_pagina,
+        'estado_seleccionado': estado,
+        'busqueda': busqueda
+    })
 
 @login_requerido
 def crear_pregunta(request):
-    logueo = request.session.get("logueo", False)
-    if not logueo:
-        return redirect('login')
-    
     if request.method == 'POST':
         form = PreguntaForm(request.POST)
         if form.is_valid():
+            logueo = request.session.get("logueo")
+            usuario = Usuario.objects.get(id=logueo["id"])
+            
             pregunta = form.save(commit=False)
-            pregunta.usuario_id = logueo["id"]
+            pregunta.usuario = usuario
             pregunta.save()
-            messages.success(request, 'Tu pregunta ha sido enviada. Te notificaremos cuando tengamos una respuesta.')
+            messages.success(request, 'Pregunta enviada correctamente.')
             return redirect('lista_preguntas')
     else:
         form = PreguntaForm()
     
-    return render(request, 'muebles/preguntas/crear_pregunta.html', {'form': form})
+    return render(request, 'muebles/preguntas/crear_pregunta.html', {
+        'form': form,
+        'max_palabras': 100
+    })
 
 @login_requerido
 def detalle_pregunta(request, pregunta_id):
-    logueo = request.session.get("logueo", False)
-    if not logueo:
-        return redirect('login')
+    logueo = request.session.get("logueo")
+    usuario = Usuario.objects.get(id=logueo["id"])
     
-    pregunta = get_object_or_404(Pregunta, id=pregunta_id, usuario_id=logueo["id"])
+    pregunta = get_object_or_404(Pregunta, id=pregunta_id, usuario=usuario)
     respuestas = pregunta.respuestas.all().order_by('fecha')
     
     return render(request, 'muebles/preguntas/detalle_pregunta.html', {
         'pregunta': pregunta,
-        'respuestas': respuestas
+        'respuestas': respuestas,
+        'titulo_pagina': f'Detalle de Pregunta #{pregunta.id}'
     })
 
+@login_requerido
+def eliminar_preguntas_respondidas(request):
+    logueo = request.session.get("logueo")
+    usuario = Usuario.objects.get(id=logueo["id"])
+    
+    if request.method == 'POST':
+        try:
+            preguntas = Pregunta.objects.filter(
+                usuario=usuario,
+                estado='respondida'
+            )
+            count = preguntas.count()
+            preguntas.delete()
+            
+            messages.success(request, f'Se eliminaron {count} preguntas respondidas.')
+            return redirect('lista_preguntas')
+        except Exception as e:
+            messages.error(request, f'Error al eliminar preguntas: {str(e)}')
+            return redirect('lista_preguntas')
+    
+    return redirect('lista_preguntas')
 
-# Admin preguntas
+@login_requerido
+def eliminar_preguntas_antiguas(request):
+    if request.method == 'POST':
+        try:
+            fecha_limite_30 = timezone.now() - timedelta(days=30)
+            fecha_limite_3 = timezone.now() - timedelta(days=3)
+
+            # Eliminar preguntas respondidas hace más de 30 días
+            preguntas_30 = Pregunta.objects.filter(
+                estado='respondida', 
+                fecha_eliminacion__lte=fecha_limite_30
+            )
+            count_30 = preguntas_30.count()
+            preguntas_30.delete()
+
+            # Eliminar preguntas respondidas hace más de 3 días
+            preguntas_3 = Pregunta.objects.filter(
+                estado='respondida', 
+                fecha_eliminacion__lte=fecha_limite_3
+            )
+            count_3 = preguntas_3.count()
+            preguntas_3.delete()
+
+            return JsonResponse({
+                'status': 'success',
+                'message': f'Eliminadas {count_30 + count_3} preguntas antiguas',
+                'count_30': count_30,
+                'count_3': count_3
+            })
+        except Exception as e:
+            return JsonResponse({
+                'status': 'error',
+                'message': str(e)
+            }, status=500)
+    
+    return JsonResponse({
+        'status': 'error',
+        'message': 'Método no permitido'
+    }, status=405)
+# Admin Preguntas
 @login_requerido(roles_permitidos=[1])
 def admin_lista_preguntas(request):
-    logueo = request.session.get("logueo", False)
-    if not logueo or logueo.get('rol') != 1:
-        return redirect('login')
-    
     preguntas = Pregunta.objects.all().order_by('-fecha')
     return render(request, 'muebles/admin/preguntas/lista_preguntas.html', {'preguntas': preguntas})
 
 @login_requerido(roles_permitidos=[1])
 def responder_pregunta(request, pregunta_id):
-    logueo = request.session.get("logueo", False)
-    if not logueo or logueo.get('rol') != 1:
-        return redirect('login')
+    logueo = request.session.get("logueo")
+    admin = Usuario.objects.get(id=logueo["id"])
     
     pregunta = get_object_or_404(Pregunta, id=pregunta_id)
     
@@ -769,10 +816,9 @@ def responder_pregunta(request, pregunta_id):
         if form.is_valid():
             respuesta = form.save(commit=False)
             respuesta.pregunta = pregunta
-            respuesta.administrador_id = logueo["id"]
+            respuesta.administrador = admin
             respuesta.save()
             
-            # Actualizar estado de la pregunta si es necesario
             if form.cleaned_data['es_faq']:
                 pregunta.estado = 'publicada'
             else:
@@ -789,17 +835,18 @@ def responder_pregunta(request, pregunta_id):
         'form': form
     })
 
-#FAQ
-# Vistas públicas
+# FAQ
 def faq_lista(request):
-    categorias = FAQ.objects.values_list('categoria', flat=True).distinct()
+    faqs = FAQ.objects.filter(activo=True)
     faqs_por_categoria = {}
     
-    for categoria in categorias:
-        faqs_por_categoria[categoria] = FAQ.objects.filter(
-            categoria=categoria,
-            activo=True
-        ).order_by('orden')
+    for faq in faqs:
+        categoria_nombre = faq.get_categoria_display()
+        
+        if categoria_nombre not in faqs_por_categoria:
+            faqs_por_categoria[categoria_nombre] = []
+        
+        faqs_por_categoria[categoria_nombre].append(faq)
     
     return render(request, 'muebles/ayuda/faq_lista.html', {
         'faqs_por_categoria': faqs_por_categoria
@@ -808,7 +855,6 @@ def faq_lista(request):
 def votar_faq(request, faq_id):
     faq = get_object_or_404(FAQ, id=faq_id, activo=True)
     
-    # Usar sesión para evitar votos múltiples
     if 'votos_faq' not in request.session:
         request.session['votos_faq'] = []
     
@@ -823,78 +869,168 @@ def votar_faq(request, faq_id):
     
     return redirect('faq_lista')
 
-# Vistas de administración
+# Admin FAQ
 @login_requerido(roles_permitidos=[1])
 def admin_faq_lista(request):
-    logueo = request.session.get("logueo", False)
-    if not logueo or logueo.get('rol') != 1:
-        return redirect('login')
+    faq_editando = None
+    editar_id = request.GET.get('editar_id')
     
-    faqs = FAQ.objects.all().order_by('categoria', 'orden')
-    
-    # Obtener las opciones de categoría del modelo FAQ
-    categorias = FAQ.CATEGORIAS  # Esto asume que tienes CATEGORIAS definido en tu modelo
-    
-    # Manejar formulario de creación/edición
-    faq = None
-    form = FAQForm()
-    
-    if 'editar_id' in request.GET:
-        faq = get_object_or_404(FAQ, id=request.GET.get('editar_id'))
-        form = FAQForm(instance=faq)
+    if editar_id:
+        try:
+            faq_editando = FAQ.objects.get(id=editar_id)
+        except FAQ.DoesNotExist:
+            messages.error(request, 'La FAQ que intentas editar no existe.')
     
     if request.method == 'POST':
-        if 'guardar' in request.POST:
-            if 'faq_id' in request.POST:  # Es una edición
-                faq = get_object_or_404(FAQ, id=request.POST.get('faq_id'))
-                form = FAQForm(request.POST, instance=faq)
-            else:  # Es una creación
-                form = FAQForm(request.POST)
+        try:
+            faq_id = request.POST.get('faq_id')
             
-            if form.is_valid():
-                form.save()
-                messages.success(request, 'Pregunta frecuente guardada exitosamente.')
+            if faq_id:  # Edición
+                faq = FAQ.objects.get(id=faq_id)
+                accion = "editada"
+            else:  # Creación
+                faq = FAQ()
+                accion = "creada"
+                faq.votos = 0
+                faq.fecha_creacion = timezone.now()
+            
+            faq.pregunta = request.POST.get('pregunta')
+            faq.respuesta = request.POST.get('respuesta')
+            faq.categoria = request.POST.get('categoria')
+            faq.activo = request.POST.get('activo') == 'on'
+            
+            if not all([faq.pregunta, faq.respuesta, faq.categoria]):
+                messages.error(request, 'Todos los campos obligatorios deben ser completados.')
                 return redirect('admin_faq_lista')
+            
+            faq.save()
+            messages.success(request, f'FAQ {accion} exitosamente!')
+            return redirect('admin_faq_lista')
+            
+        except Exception as e:
+            messages.error(request, f'Error al guardar la FAQ: {str(e)}')
+            return redirect('admin_faq_lista')
     
+    faqs = FAQ.objects.all()
     return render(request, 'muebles/admin/faq/lista.html', {
         'faqs': faqs,
-        'form': form,
-        'faq_editando': faq,
-        'categorias': categorias  # Pasar las categorías al template
+        'categorias': FAQ.CATEGORIAS,
+        'faq_editando': faq_editando
+    })
+
+# ==================== ADMIN FAQ ====================
+
+@login_requerido(roles_permitidos=[1])
+def admin_crear_faq(request):
+    logueo = request.session.get("logueo")
+    
+    if request.method == 'POST':
+        try:
+            pregunta = request.POST.get('pregunta')
+            respuesta = request.POST.get('respuesta')
+            categoria = request.POST.get('categoria')
+            orden = request.POST.get('orden', 0)
+            activo = request.POST.get('activo') == 'on'
+            
+            if not all([pregunta, respuesta, categoria]):
+                messages.error(request, 'Los campos pregunta, respuesta y categoría son obligatorios.')
+                return redirect('admin_faq_lista')
+            
+            FAQ.objects.create(
+                pregunta=pregunta,
+                respuesta=respuesta,
+                categoria=categoria,
+                orden=orden,
+                activo=activo,
+                votos=0,
+                fecha_creacion=timezone.now()
+            )
+            
+            messages.success(request, 'FAQ creada exitosamente!')
+            return redirect('admin_faq_lista')
+            
+        except Exception as e:
+            messages.error(request, f'Error al crear la FAQ: {str(e)}')
+            return redirect('admin_faq_lista')
+    
+    return render(request, 'muebles/admin/faq/crear.html', {
+        'categorias': FAQ.CATEGORIAS
     })
 
 @login_requerido(roles_permitidos=[1])
 def admin_editar_faq(request, pk):
-    logueo = request.session.get("logueo", False)
-    if not logueo or logueo.get('rol') != 1:
-        return redirect('login')
+    logueo = request.session.get("logueo")
     
-    faq = get_object_or_404(FAQ, id=pk)
+    try:
+        faq = FAQ.objects.get(id=pk)
+        
+        if request.method == 'POST':
+            try:
+                pregunta = request.POST.get('pregunta')
+                respuesta = request.POST.get('respuesta')
+                categoria = request.POST.get('categoria')
+                orden = request.POST.get('orden', faq.orden)
+                activo = request.POST.get('activo') == 'on'
+                
+                if not all([pregunta, respuesta, categoria]):
+                    messages.error(request, 'Los campos pregunta, respuesta y categoría son obligatorios.')
+                    return redirect('admin_editar_faq', pk=pk)
+                
+                faq.pregunta = pregunta
+                faq.respuesta = respuesta
+                faq.categoria = categoria
+                faq.orden = orden
+                faq.activo = activo
+                faq.save()
+                
+                messages.success(request, 'FAQ actualizada exitosamente!')
+                return redirect('admin_faq_lista')
+                
+            except Exception as e:
+                messages.error(request, f'Error al actualizar la FAQ: {str(e)}')
+                return redirect('admin_editar_faq', pk=pk)
+        
+        return render(request, 'muebles/admin/faq/editar.html', {
+            'faq': faq,
+            'categorias': FAQ.CATEGORIAS
+        })
+        
+    except FAQ.DoesNotExist:
+        messages.error(request, 'La FAQ que intentas editar no existe.')
+        return redirect('admin_faq_lista')
     
-    if request.method == 'POST':
-        form = FAQForm(request.POST, instance=faq)
-        if form.is_valid():
-            form.save()
-            messages.success(request, 'FAQ actualizada exitosamente.')
-            return redirect('admin_faq_lista')
-    else:
-        form = FAQForm(instance=faq)
-    
-    return render(request, 'muebles/admin/faq/editar.html', {
-        'form': form,
-        'faq': faq
-    })
-
 @login_requerido(roles_permitidos=[1])
 def admin_eliminar_faq(request, faq_id):
-    logueo = request.session.get("logueo", False)
-    if not logueo or logueo.get('rol') != 1:
-        return redirect('login')
-    
-    faq = get_object_or_404(FAQ, id=faq_id)
-    
-    if request.method == 'POST':
+    try:
+        faq = FAQ.objects.get(id=faq_id)
         faq.delete()
-        messages.success(request, 'Pregunta frecuente eliminada exitosamente.')
+        messages.success(request, 'FAQ eliminada exitosamente!')
+    except FAQ.DoesNotExist:
+        messages.error(request, 'La FAQ que intentas eliminar no existe.')
+    except Exception as e:
+        messages.error(request, f'Error al eliminar la FAQ: {str(e)}')
     
     return redirect('admin_faq_lista')
+
+# ==================== POLÍTICAS Y LEGAL ====================
+
+def politica_cookies(request):
+    return render(request, 'muebles/legal/Cookies.html')
+
+def configurar_cookies(request):
+    if request.method == 'POST':
+        request.session['cookie_preferences'] = {
+            'esenciales': 'esenciales' in request.POST,
+            'analiticas': 'analiticas' in request.POST,
+            'marketing': 'marketing' in request.POST
+        }
+        messages.success(request, "Tus preferencias de cookies han sido guardadas.")
+        return redirect('index')
+    
+    preferencias = request.session.get('cookie_preferences', {
+        'esenciales': True,
+        'analiticas': False,
+        'marketing': False
+    })
+    
+    return render(request, 'muebles/legal/configurar_cookies.html', {'preferencias': preferencias})

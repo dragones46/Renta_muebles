@@ -164,3 +164,5 @@ EMAIL_USE_TLS = True
 EMAIL_HOST_USER = 'deivysarrazola@gmail.com'
 EMAIL_HOST_PASSWORD = 'djxs pwum lert nmas'
 EMAIL_SOPORTE = 'soporte@rentamuebles.com'
+
+

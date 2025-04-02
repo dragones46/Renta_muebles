@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.utils.html import mark_safe
 from .models import *
-
+from .forms import *
 
 # Registrar el modelo Usuario con un formulario personalizado
 @admin.register(Usuario)
@@ -63,10 +63,16 @@ class DetallePedidoAdmin(admin.ModelAdmin):
 
 @admin.register(FAQ)
 class FAQAdmin(admin.ModelAdmin):
-    list_display = ('pregunta', 'categoria', 'orden')
+    list_display = ('pregunta', 'categoria', 'votos', 'activo')
     search_fields = ('pregunta', 'respuesta')
-    list_filter = ('categoria',)
-    list_editable = ('orden',)
+    list_filter = ('categoria', 'activo')
+    list_editable = ('activo',)
+    
+    fieldsets = (
+        (None, {
+            'fields': ('pregunta', 'respuesta', 'categoria', 'activo')
+        }),
+    )
 
 @admin.register(Actualizacion)
 class ActualizacionAdmin(admin.ModelAdmin):

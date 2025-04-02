@@ -3,36 +3,68 @@
 
 {% block contenedor %}
 <div class="container mt-4">
-    <div class="card mb-4">
-        <div class="card-header bg-{% if pregunta.estado == 'respondida' %}success{% elif pregunta.estado == 'pendiente' %}warning{% else %}info{% endif %} text-white">
-            <h4>Pregunta: {{ pregunta.get_estado_display }}</h4>
+    <!-- Pregunta -->
+    <div class="card mb-4 border-0 shadow">
+        <div class="card-header bg-{% if pregunta.estado == 'respondida' %}success{% elif pregunta.estado == 'pendiente' %}warning{% else %}info{% endif %}">
+            <div class="d-flex justify-content-between align-items-center">
+                <h4 class="mb-0 text-dark">Pregunta: {{ pregunta.get_estado_display }}</h4>
+                <small class="text-dark">Enviada el {{ pregunta.fecha|date:"d/m/Y H:i" }}</small>
+            </div>
         </div>
-        <div class="card-body">
-            <blockquote class="blockquote mb-0">
-                <p>{{ pregunta.pregunta }}</p>
-                <footer class="blockquote-footer">Enviada el {{ pregunta.fecha|date:"d/m/Y H:i" }}</footer>
-            </blockquote>
+        <div class="card-body bg-dark">
+            <div class="pregunta-contenido text-white">
+                {{ pregunta.pregunta|linebreaks }}
+            </div>
         </div>
     </div>
     
+    <!-- Respuestas -->
     {% if respuestas %}
-    <h4 class="mb-3">Respuestas:</h4>
+    <h4 class="mb-3 text-white">Respuestas:</h4>
+    
     {% for respuesta in respuestas %}
-    <div class="card mb-3">
-        <div class="card-header bg-light">
-            <strong>Administrador</strong> - {{ respuesta.fecha|date:"d/m/Y H:i" }}
+    <div class="card mb-3 border-0 shadow">
+        <div class="card-header bg-light d-flex justify-content-between align-items-center">
+            <strong class="text-dark">Administrador</strong>
+            <small class="text-dark">{{ respuesta.fecha|date:"d/m/Y H:i" }}</small>
         </div>
-        <div class="card-body">
-            <p class="card-text">{{ respuesta.respuesta }}</p>
+        <div class="card-body bg-secondary">
+            <div class="respuesta-contenido text-white">
+                {{ respuesta.respuesta|linebreaks }}
+            </div>
         </div>
     </div>
     {% endfor %}
+    
     {% else %}
-    <div class="alert alert-info">Todavía no hay respuestas a tu pregunta.</div>
+    <div class="alert alert-info text-center">
+        <i class="fas fa-info-circle me-2"></i> Todavía no hay respuestas a tu pregunta.
+    </div>
     {% endif %}
     
-    <a href="{% url 'lista_preguntas' %}" class="btn btn-secondary mt-3">
-        <i class="fas fa-arrow-left"></i> Volver a mis preguntas
-    </a>
+    <!-- Botón Volver -->
+    <div class="text-center mt-4">
+        <a href="{% url 'lista_preguntas' %}" class="btn btn-secondary">
+            <i class="fas fa-arrow-left me-2"></i> Volver a mis preguntas
+        </a>
+    </div>
 </div>
+
+<style>
+    .pregunta-contenido, .respuesta-contenido {
+        white-space: pre-wrap;
+        word-wrap: break-word;
+    }
+    .card {
+        border-radius: 0.5rem;
+        overflow: hidden;
+    }
+    .bg-dark {
+        background-color: #343a40 !important;
+    }
+    .bg-secondary {
+        background-color: #495057 !important;
+    }
+
+</style>
 {% endblock %}

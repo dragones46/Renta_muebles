@@ -147,6 +147,46 @@
             </div>
         </div>
     </footer>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            // Obtener la ruta actual
+            const currentPath = window.location.pathname;
+
+            // Seleccionar solo los items del menú principal (izquierda)
+            const navItems = document.querySelectorAll('.navbar-nav.me-auto .nav-item');
+
+            // Función para activar el item actual
+            function setActiveNavItem() {
+                navItems.forEach(item => {
+                    const link = item.querySelector('a');
+                    if (link && link.getAttribute('href') === currentPath) {
+                        item.classList.add('active');
+
+                        // Si es el index, quitar después de 5 segundos
+                        if (currentPath === '/' || currentPath === '/index') {
+                            setTimeout(() => {
+                                item.classList.remove('active');
+                            }, 5000);
+                        }
+                    } else {
+                        item.classList.remove('active');
+                    }
+                });
+            }
+
+            // Ejecutar al cargar
+            setActiveNavItem();
+
+            // Manejar clicks manualmente
+            navItems.forEach(item => {
+                item.addEventListener('click', function () {
+                    navItems.forEach(nav => nav.classList.remove('active'));
+                    this.classList.add('active');
+                });
+            });
+        });
+    </script>
 
     
 </body>

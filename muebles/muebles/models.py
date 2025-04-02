@@ -78,17 +78,7 @@ class Mueble(models.Model):
     def __str__(self):
         return self.nombre
 
-class MuebleForm(forms.ModelForm):
-    class Meta:
-        model = Mueble
-        fields = '__all__'
-        widgets = {
-            'nombre': forms.TextInput(attrs={'class': 'form-control'}),
-            'descripcion': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
-            'precio_diario': forms.NumberInput(attrs={'class': 'form-control'}),
-            'propietario': forms.Select(attrs={'class': 'form-control'}),
-            'imagen': forms.FileInput(attrs={'class': 'form-control'}),
-        }
+
 
 class Renta(models.Model):
     mueble = models.ForeignKey(Mueble, on_delete=models.CASCADE)
@@ -108,34 +98,8 @@ class Renta(models.Model):
                 days=(self.duracion_meses * 30) + self.duracion_dias)
         super().save(*args, **kwargs)
 
-class RentaForm(forms.ModelForm):
-    class Meta:
-        model = Renta
-        fields = ['fecha_inicio', 'duracion_meses', 'duracion_dias']
-        widgets = {
-            'fecha_inicio': forms.DateInput(attrs={'type': 'date', 'required': True}),
-            'duracion_meses': forms.NumberInput(attrs={'required': True, 'min': 0}),
-            'duracion_dias': forms.NumberInput(attrs={'required': True, 'min': 0}),
-        }
-        
-class UsuarioForm(forms.ModelForm):
-    password = forms.CharField(
-        widget=forms.PasswordInput(attrs={'class': 'form-control'}),
-        required=False,
-        help_text="Dejar en blanco si no quieres cambiar la contraseña"
-    )
-    
-    class Meta:
-        model = Usuario
-        fields = ['nombre', 'email', 'direccion', 'rol', 'estado', 'foto', 'password']
-        widgets = {
-            'nombre': forms.TextInput(attrs={'class': 'form-control'}),
-            'email': forms.EmailInput(attrs={'class': 'form-control'}),
-            'direccion': forms.TextInput(attrs={'class': 'form-control'}),
-            'rol': forms.Select(attrs={'class': 'form-control'}),
-            'estado': forms.Select(attrs={'class': 'form-control'}),
-            'foto': forms.FileInput(attrs={'class': 'form-control'}),
-        }
+
+
 
 
 class Carrito(models.Model):
@@ -153,16 +117,7 @@ class Carrito(models.Model):
             total += self.COSTO_DOMICILIO
         return total
 
-class DomicilioForm(forms.Form):
-    domicilio = forms.CharField(
-        label='Dirección de entrega',
-        max_length=255,
-        widget=forms.TextInput(attrs={
-            'class': 'form-control',
-            'placeholder': 'Ingrese su dirección completa'
-        }),
-        required=True
-    )
+
 
 class ItemCarrito(models.Model):
     carrito = models.ForeignKey(Carrito, on_delete=models.CASCADE, related_name='items')
@@ -215,50 +170,21 @@ class FAQ(models.Model):
     
     pregunta = models.CharField(max_length=200)
     respuesta = models.TextField()
-    categoria = models.CharField(max_length=20, choices=CATEGORIAS)
-    orden = models.PositiveIntegerField(default=0)
+    categoria = models.CharField(max_length=50, choices=CATEGORIAS)
     votos = models.PositiveIntegerField(default=0)
     activo = models.BooleanField(default=True)
-    fecha_creacion = models.DateTimeField(default=timezone.now)
+    fecha_creacion = models.DateTimeField(auto_now_add=True)
     fecha_actualizacion = models.DateTimeField(auto_now=True)
 
     class Meta:
-        ordering = ['categoria', 'orden']
+        ordering = ['categoria', '-votos']  # Ordenamos por categoría y luego por votos descendentes
         verbose_name = 'Pregunta frecuente'
         verbose_name_plural = 'Preguntas frecuentes'
     
     def __str__(self):
         return self.pregunta
     
-class FAQForm(forms.ModelForm):
-    class Meta:
-        model = FAQ
-        fields = '__all__'
-        widgets = {
-            'pregunta': forms.TextInput(attrs={
-                'class': 'form-control',
-                'placeholder': 'Ingrese la pregunta frecuente'
-            }),
-            'respuesta': forms.Textarea(attrs={
-                'class': 'form-control',
-                'rows': 4,
-                'placeholder': 'Ingrese la respuesta detallada'
-            }),
-            'categoria': forms.Select(attrs={
-                'class': 'form-control'
-            }),
-            'orden': forms.NumberInput(attrs={
-                'class': 'form-control',
-                'min': 0
-            }),
-            'votos': forms.NumberInput(attrs={
-                'class': 'form-control',
-                'min': 0
-            }),
-            'activo': forms.CheckboxInput(attrs={
-                'class': 'form-check-input'
-            }),
-        }
+
 
 class Actualizacion(models.Model):
     titulo = models.CharField(max_length=100)
@@ -273,21 +199,9 @@ class Actualizacion(models.Model):
     def __str__(self):
         return self.titulo
 
-class SoporteForm(forms.Form):
-    nombre = forms.CharField(max_length=100, widget=forms.TextInput(attrs={
-        'class': 'form-control',
-        'placeholder': 'Tu nombre'
-    }))
-    email = forms.EmailField(widget=forms.EmailInput(attrs={
-        'class': 'form-control',
-        'placeholder': 'tu@email.com'
-    }))
-    mensaje = forms.CharField(widget=forms.Textarea(attrs={
-        'class': 'form-control',
-        'placeholder': 'Describe tu problema o consulta...',
-        'rows': 5
-    }))
 
+
+# models.py
 class Pregunta(models.Model):
     ESTADOS = (
         ('pendiente', 'Pendiente'),
@@ -296,17 +210,26 @@ class Pregunta(models.Model):
     )
     
     usuario = models.ForeignKey('Usuario', on_delete=models.CASCADE)
-    pregunta = models.TextField()
+    pregunta = models.TextField(max_length=500)
     fecha = models.DateTimeField(auto_now_add=True)
     estado = models.CharField(max_length=20, choices=ESTADOS, default='pendiente')
-    votos = models.IntegerField(default=0)  # Para medir frecuencia
+    votos = models.IntegerField(default=0)
+    fecha_eliminacion = models.DateTimeField(null=True, blank=True)
     
     class Meta:
         ordering = ['-fecha']
+        verbose_name = 'Pregunta'
+        verbose_name_plural = 'Preguntas'
     
     def __str__(self):
-        return f"Pregunta de {self.usuario.username}"
-
+        return f"Pregunta de {self.usuario.nombre} - {self.get_estado_display()}"
+    
+    def save(self, *args, **kwargs):
+        # Si la pregunta pasa a estado "respondida", establecer fecha de eliminación en 30 días
+        if self.estado == 'respondida' and not self.fecha_eliminacion:
+            self.fecha_eliminacion = timezone.now() + timedelta(days=30)
+        super().save(*args, **kwargs)
+            
 class Respuesta(models.Model):
     pregunta = models.ForeignKey(Pregunta, on_delete=models.CASCADE, related_name='respuestas')
     administrador = models.ForeignKey('Usuario', on_delete=models.CASCADE)
@@ -320,28 +243,4 @@ class Respuesta(models.Model):
     def __str__(self):
         return f"Respuesta a {self.pregunta.id}"
 
-class PreguntaForm(forms.ModelForm):
-    class Meta:
-        model = Pregunta
-        fields = ['pregunta']
-        widgets = {
-            'pregunta': forms.Textarea(attrs={
-                'class': 'form-control',
-                'placeholder': 'Escribe tu pregunta aquí...',
-                'rows': 3
-            }),
-        }
 
-class RespuestaForm(forms.ModelForm):
-    class Meta:
-        model = Respuesta
-        fields = ['respuesta', 'es_faq']
-        widgets = {
-            'respuesta': forms.Textarea(attrs={
-                'class': 'form-control',
-                'rows': 3
-            }),
-            'es_faq': forms.CheckboxInput(attrs={
-                'class': 'form-check-input'
-            }),
-        }

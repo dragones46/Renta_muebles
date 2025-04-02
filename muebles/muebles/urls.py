@@ -5,6 +5,7 @@ from rest_framework.authtoken import views as especial
 from . import views
 
 urlpatterns = [
+#Zona de USUARIOS
 #inicio
     path('', views.index, name='index'),
 
@@ -29,7 +30,30 @@ urlpatterns = [
     path('eliminar-domicilio/', views.eliminar_domicilio, name='eliminar_domicilio'),
     path('procesar-pago/', views.procesar_pago, name='procesar_pago'),
 
-#admin
+
+#ayuda
+    path('ayuda/', views.ayuda_principal, name='ayuda'),
+    path('ayuda/faq/', views.faq_lista, name='faq'),
+    path('ayuda/soporte/', views.soporte, name='soporte'),
+    path('ayuda/actualizaciones/', views.actualizaciones, name='actualizaciones'),
+
+#cookies
+    path('politica-cookies/', views.politica_cookies, name='politica_cookies'),
+    path('configurar-cookies/', views.configurar_cookies, name='configurar_cookies'),
+
+#preguntas
+    path('preguntas/', views.lista_preguntas, name='lista_preguntas'),
+    path('preguntas/nueva/', views.crear_pregunta, name='crear_pregunta'),
+    path('preguntas/<int:pregunta_id>/', views.detalle_pregunta, name='detalle_pregunta'),
+    path('preguntas/eliminar-respondidas/', views.eliminar_preguntas_respondidas, name='eliminar_preguntas_respondidas'),
+    path('eliminar-preguntas-antiguas/', views.eliminar_preguntas_antiguas, name='eliminar_preguntas_antiguas'),
+
+# FAQ
+    path('faq/', views.faq_lista, name='faq_lista'),
+    path('faq/votar/<int:faq_id>/', views.votar_faq, name='votar_faq'),
+
+
+#ZONA DE ADMINISTRADORES
 #inicio de admin
     path('administradores/', views.admin_inicio, name='admin_inicio'),
 
@@ -49,32 +73,16 @@ urlpatterns = [
     path('administradores/pedidos/', views.admin_pedidos, name='admin_pedidos'),
     path('administradores/pedidos/detalle/<int:id>/', views.detalle_pedido, name='detalle_pedido'),
 
-#ayuda
-    path('ayuda/', views.ayuda_principal, name='ayuda'),
-    path('ayuda/faq/', views.faq, name='faq'),
-    path('ayuda/soporte/', views.soporte, name='soporte'),
-    path('ayuda/actualizaciones/', views.actualizaciones, name='actualizaciones'),
 
-#cookies
-    path('politica-cookies/', views.politica_cookies, name='politica_cookies'),
-    path('configurar-cookies/', views.configurar_cookies, name='configurar_cookies'),
-
-#preguntas
-    path('preguntas/', views.lista_preguntas, name='lista_preguntas'),
-    path('preguntas/nueva/', views.crear_pregunta, name='crear_pregunta'),
-    path('preguntas/<int:pregunta_id>/', views.detalle_pregunta, name='detalle_pregunta'),
-    
 # Admin preguntas
     path('administradores/preguntas/', views.admin_lista_preguntas, name='admin_lista_preguntas'),
     path('administradores/preguntas/<int:pregunta_id>/responder/', views.responder_pregunta, name='responder_pregunta'),
 
-# FAQ
-    path('faq/', views.faq_lista, name='faq_lista'),
-    path('faq/votar/<int:faq_id>/', views.votar_faq, name='votar_faq'),
     
 # Admin FAQ
-    path('administradores/faq/', views.admin_faq_lista, name='admin_faq_lista'),
-    path('administradores/faq/editar/<int:pk>/', views.admin_editar_faq, name='editar_faq'),
-    path('administradores/faq/eliminar/<int:faq_id>/', views.admin_eliminar_faq, name='admin_eliminar_faq'),
+    path('administradores/faqs/', views.admin_faq_lista, name='admin_faq_lista'),
+    path('administradores/faqs/crear/', views.admin_crear_faq, name='admin_crear_faq'),
+    path('administradores/faqs/editar/<int:pk>/', views.admin_editar_faq, name='admin_editar_faq'),
+    path('administradores/faqs/eliminar/<int:faq_id>/', views.admin_eliminar_faq, name='admin_eliminar_faq'),
 
 ]
