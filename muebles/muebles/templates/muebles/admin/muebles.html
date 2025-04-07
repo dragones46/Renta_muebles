@@ -95,7 +95,20 @@
         color: #6c757d !important;
     }
     
-
+    .badge-oferta {
+        background-color: #dc3545;
+        font-size: 0.8rem;
+    }
+    
+    .precio-original {
+        text-decoration: line-through;
+        color: #999;
+    }
+    
+    .precio-descuento {
+        color: #28a745;
+        font-weight: bold;
+    }
 </style>
 
 <div class="container mt-4">
@@ -117,6 +130,7 @@
                             <th>ID</th>
                             <th>Nombre</th>
                             <th>Precio</th>
+                            <th>Descuento</th>
                             <th>Propietario</th>
                             <th>Imagen</th>
                             <th>Acciones</th>
@@ -127,7 +141,24 @@
                         <tr>
                             <td>{{ mueble.id }}</td>
                             <td>{{ mueble.nombre }}</td>
-                            <td>${{ mueble.precio_diario }}</td>
+                            <td>
+                                {% if mueble.en_oferta %}
+                                <span class="precio-original">${{ mueble.precio_diario|floatformat:0 }}</span>
+                                <span class="precio-descuento">${{ mueble.precio_con_descuento|floatformat:0 }}</span>
+                                {% else %}
+                                ${{ mueble.precio_diario|floatformat:0 }}
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if mueble.en_oferta %}
+                                <span class="badge badge-oferta">{{ mueble.descuento }}% OFF</span>
+                                {% if mueble.fecha_fin_descuento %}
+                                <small class="text-muted d-block">Hasta {{ mueble.fecha_fin_descuento|date:"d/m/Y" }}</small>
+                                {% endif %}
+                                {% else %}
+                                -
+                                {% endif %}
+                            </td>
                             <td>{{ mueble.propietario }}</td>
                             <td>
                                 {% if mueble.imagen %}
@@ -179,6 +210,14 @@
                         <input type="number" class="form-control" name="precio_diario" required>
                     </div>
                     <div class="mb-3">
+                        <label class="form-label">Descuento (%)</label>
+                        <input type="number" class="form-control" name="descuento" min="0" max="100" value="0">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Fecha Fin Descuento (opcional)</label>
+                        <input type="date" class="form-control" name="fecha_fin_descuento">
+                    </div>
+                    <div class="mb-3">
                         <label class="form-label">Propietario</label>
                         <select class="form-select" name="propietario" required>
                             {% for propietario in propietarios %}
@@ -224,6 +263,15 @@
                     <div class="mb-3">
                         <label class="form-label">Precio Diario</label>
                         <input type="number" class="form-control" name="precio_diario" value="{{ mueble.precio_diario }}" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Descuento (%)</label>
+                        <input type="number" class="form-control" name="descuento" min="0" max="100" value="{{ mueble.descuento }}">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Fecha Fin Descuento (opcional)</label>
+                        <input type="date" class="form-control" name="fecha_fin_descuento" 
+                               value="{{ mueble.fecha_fin_descuento|date:'Y-m-d' }}">
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Propietario</label>

@@ -119,9 +119,10 @@ class UsuarioForm(forms.ModelForm):
 class RentaForm(forms.ModelForm):
     class Meta:
         model = Renta
-        fields = ['fecha_inicio', 'duracion_meses', 'duracion_dias']
+        fields = ['fecha_inicio', 'fecha_fin', 'duracion_meses', 'duracion_dias']
         widgets = {
             'fecha_inicio': forms.DateInput(attrs={'type': 'date', 'required': True}),
+            'fecha_fin': forms.DateInput(attrs={'type': 'date', 'required': True}),
             'duracion_meses': forms.NumberInput(attrs={'required': True, 'min': 0}),
             'duracion_dias': forms.NumberInput(attrs={'required': True, 'min': 0}),
         }

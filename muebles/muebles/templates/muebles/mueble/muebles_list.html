@@ -1,26 +1,106 @@
 {% extends 'muebles/barnav.html' %}
-
-{% load static %}
+{% load static humanize %}
 
 {% block titulo %}Muebles Disponibles{% endblock %}
 
 {% block contenedor %}
-<h1>Nuestros Muebles</h1>
-<div class="row">
-    {% for mueble in muebles %}
-    <div class="col-md-4">
-        <div class="card mb-4">
-            <img src="{{ mueble.imagen.url }}" class="card-img-top" alt="{{ mueble.nombre }}">
-            <div class="card-body">
-                <h5 class="card-title">{{ mueble.nombre }}</h5>
-                <p class="card-text">{{ mueble.descripcion }}</p>
-                <p class="card-text">Precio: ${{ mueble.precio_diario  }}/día</p>
-                <!-- Botón de Rentar -->
-                <a href="{% url 'rentar_mueble' mueble.id %}" class="btn btn-primary">Rentar</a>
+<style>
+    .card {
+        position: relative;
+        transition: transform 0.3s;
+        margin-bottom: 20px;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        overflow: hidden;
+    }
+    .card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+    .card-img-top {
+        height: 200px;
+        object-fit: cover;
+    }
+    .card-body {
+        padding: 15px;
+    }
+    .oferta-sticker {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        background-color: #ff5722;
+        color: white;
+        padding: 5px 10px;
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: bold;
+        z-index: 1;
+    }
+    .precio-original {
+        text-decoration: line-through;
+        color: #999;
+        font-size: 0.9em;
+    }
+    .precio-descuento {
+        color: #4CAF50;
+        font-weight: bold;
+        font-size: 1.2em;
+    }
+    .precio-normal {
+        font-weight: bold;
+        font-size: 1.2em;
+        color: white;
+    }
+    .btn-rentar {
+        background-color: #4CAF50;
+        color: white;
+        width: 100%;
+        margin-top: 10px;
+        transition: background-color 0.3s; /* Smooth transition */
+    }
+    .btn-rentar:hover {
+        background-color: #388E3C; /* Darker green on hover */
+    }
+</style>
+
+<div class="container">
+    <h1 class="my-4">Muebles Disponibles</h1>
+    <div class="row">
+        {% for mueble in muebles %}
+        <div class="col-md-4 mb-4">
+            <div class="card h-100">
+                {% if mueble.en_oferta %}
+                    <div class="oferta-sticker">{{ mueble.descuento }}% OFF</div>
+                {% endif %}
+                
+                <img src="{{ mueble.imagen.url }}" class="card-img-top" alt="{{ mueble.nombre }}">
+                <div class="card-body d-flex flex-column">
+                    <h5 class="card-title">{{ mueble.nombre }}</h5>
+                    <p class="card-text">{{ mueble.descripcion|truncatechars:100 }}</p>
+                    
+                    <div class="mt-auto">
+                        {% if mueble.en_oferta %}
+                            <div>
+                                <span class="precio-original">${{ mueble.precio_diario }}/día</span>
+                                <span class="precio-descuento">${{ mueble.precio_con_descuento }}/día</span>
+                            </div>
+                        {% else %}
+                            <span class="precio-normal">${{ mueble.precio_diario }}/día</span>
+                        {% endif %}
+                        
+                        <a href="{% url 'rentar_mueble' mueble.id %}" class="btn btn-rentar">
+                            <i class="fas fa-shopping-cart"></i> Rentar
+                        </a>
+                    </div>
+                </div>
             </div>
         </div>
+        {% empty %}
+        <div class="col-12">
+            <div class="alert alert-info">No hay muebles disponibles en este momento.</div>
+        </div>
+        {% endfor %}
     </div>
-    {% endfor %}
 </div>
 <script src="{% static 'muebles/js/numberFormatter.js' %}"></script>
 

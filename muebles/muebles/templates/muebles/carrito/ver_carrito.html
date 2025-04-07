@@ -1,262 +1,501 @@
 {% extends 'muebles/barnav.html' %}
 {% load static %}
 
-{% block titulo %}Carrito de Compras{% endblock %}
-
 {% block contenedor %}
 <style>
     .carrito-container {
         background-color: #2a2a2a;
         border-radius: 10px;
         box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
-        padding: 20px;
-        max-width: 800px;
+        padding: 30px;
+        max-width: 900px;
         margin: 50px auto;
-    }
-
-    .carrito-container h1 {
-        color: #ffffff;
-        text-align: center;
     }
 
     .carrito-item {
         display: flex;
         justify-content: space-between;
         align-items: center;
-        padding: 15px;
-        margin-bottom: 15px;
+        padding: 20px;
+        margin-bottom: 20px;
         background-color: #333;
-        border-radius: 8px;
+        border-radius: 10px;
+        position: relative;
+        transition: all 0.3s ease;
+    }
+
+    .carrito-item:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
+    }
+
+    .oferta-sticker {
+        position: absolute;
+        top: -10px;
+        right: -10px;
+        background-color: #ff5722;
+        color: white;
+        padding: 5px 15px;
+        border-radius: 20px;
+        font-size: 14px;
+        font-weight: bold;
+        z-index: 1;
     }
 
     .carrito-item img {
-        width: 100px;
-        height: 100px;
+        width: 120px;
+        height: 120px;
         border-radius: 10px;
         object-fit: cover;
+        margin-right: 20px;
+        border: 2px solid #444;
     }
 
-    .carrito-item .info {
+    .item-content {
+        display: flex;
         flex: 1;
-        margin-left: 20px;
+        align-items: center;
     }
 
-    .carrito-item .info h3 {
+    .item-info {
+        flex: 1;
+        min-width: 250px;
+    }
+
+    .item-info h3 {
         color: #ffffff;
+        margin-bottom: 10px;
+        font-size: 1.4rem;
     }
 
-    .carrito-item .info p {
+    .item-info p {
         color: #cccccc;
+        margin: 5px 0;
+        font-size: 1rem;
     }
 
-    .carrito-item .cantidad {
+    .precio-original {
+        text-decoration: line-through;
+        color: #999;
+        font-size: 1rem;
+    }
+
+    .precio-descuento {
+        color: #4CAF50;
+        font-weight: bold;
+        font-size: 1.2rem;
+    }
+
+    .fechas-renta {
+        background-color: #3a3a3a;
+        padding: 10px;
+        border-radius: 8px;
+        margin-top: 10px;
+        font-size: 0.95rem;
+    }
+    .cantidad-control-container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        grid-column: 3;
+        padding: 0 20px;
+    }
+    .cantidad-control {
         display: flex;
         align-items: center;
     }
 
-    .carrito-item .cantidad input {
-        width: 50px;
+    .cantidad-input {
+        width: 60px;
         text-align: center;
-        margin: 0 10px;
+        padding: 8px;
+        border-radius: 6px;
+        border: 1px solid #555;
         background-color: #444;
         color: white;
-        border: 1px solid #555;
-        border-radius: 4px;
-        padding: 5px;
+        font-size: 1rem;
+        margin: 0 10px;
     }
 
-    .carrito-item .subtotal {
-        color: #ffffff;
-        font-weight: bold;
-        min-width: 100px;
-        text-align: right;
+    .precio-container {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+        min-width: 150px;
+        margin-right: 30px;
+    }
+
+    .precio-container span {
+        font-size: 1.2rem;
+        margin: 3px 0;
+    }
+
+    .ahorro {
+        color: #ff5722;
+        font-size: 1rem;
+    }
+
+    .btn-eliminar {
+        background-color: #ff4444;
+        border: none;
+        padding: 10px 15px;
+        border-radius: 6px;
+        color: white;
+        cursor: pointer;
+        transition: background-color 0.3s;
+        font-size: 0.9rem;
+    }
+
+    .btn-eliminar:hover {
+        background-color: #cc0000;
     }
 
     .carrito-total {
-        text-align: right;
-        margin-top: 20px;
-        padding: 15px;
         background-color: #3a3a3a;
-        border-radius: 8px;
+        padding: 20px;
+        border-radius: 10px;
+        margin-top: 30px;
+        font-size: 1.1rem;
     }
 
-    .carrito-total h3 {
-        color: #ffffff;
-        margin: 0;
-    }
-
-    .domicilio-item {
+    .total-line {
         display: flex;
         justify-content: space-between;
-        align-items: center;
-        padding: 15px;
-        margin-bottom: 15px;
-        background-color: #333;
-        border-radius: 8px;
+        margin: 12px 0;
+        padding: 5px 0;
     }
 
-    .domicilio-info {
-        flex: 1;
-        margin-left: 20px;
-    }
-
-    .domicilio-info h3 {
-        color: #ffffff;
-    }
-
-    .domicilio-info p {
-        color: #cccccc;
-    }
-
-    .domicilio-imagen {
-        width: 100px;
-        height: 100px;
-        border-radius: 10px;
-        object-fit: cover;
-    }
-
-    .delivery-cost {
-        color: #4CAF50;
+    .total-final {
+        font-size: 1.4rem;
         font-weight: bold;
+        color: #4CAF50;
+        border-top: 2px solid #555;
+        padding-top: 15px;
+        margin-top: 15px;
     }
 
-    .btn-primary {
+    .btn-pagar {
+        width: 100%;
+        padding: 12px;
+        font-size: 1.2rem;
+        font-weight: bold;
         background-color: #4CAF50;
         border: none;
+        border-radius: 8px;
+        color: white;
+        cursor: pointer;
+        transition: background-color 0.3s;
         margin-top: 10px;
     }
 
-    .btn-danger {
-        background-color: #f44336;
+    .btn-pagar:hover {
+        background-color: #388E3C;
+    }
+
+    .domicilio-form {
+        margin-top: 30px;
+        background-color: #3a3a3a;
+        padding: 20px;
+        border-radius: 10px;
+    }
+
+    .domicilio-form h3 {
+        color: #ffffff;
+        margin-top: 0;
+        margin-bottom: 15px;
+        font-size: 1.3rem;
+    }
+
+    .form-group input {
+        width: 100%;
+        padding: 10px;
+        border-radius: 6px;
+        border: 1px solid #555;
+        background-color: #444;
+        color: white;
+        font-size: 1rem;
+        margin-bottom: 15px;
+    }
+
+    .btn-direccion {
+        background-color: #2196F3;
         border: none;
+        padding: 10px 20px;
+        border-radius: 6px;
+        color: white;
+        cursor: pointer;
+        font-size: 1rem;
+        transition: background-color 0.3s;
+    }
+
+    .btn-direccion:hover {
+        background-color: #0b7dda;
     }
 
     .empty-cart {
         text-align: center;
+        padding: 40px;
+    }
+
+    .empty-cart h3 {
         color: #ffffff;
-        padding: 30px;
-        background-color: #333;
-        border-radius: 8px;
+        font-size: 1.5rem;
+        margin-bottom: 15px;
     }
 
-    .delivery-cost-amount {
-        font-weight: bold;
+    .empty-cart p {
+        color: #cccccc;
+        font-size: 1.1rem;
+        margin-bottom: 25px;
+    }
+
+    .btn-explorar {
+        background-color: #2196F3;
+        border: none;
+        padding: 12px 25px;
+        border-radius: 6px;
         color: white;
+        cursor: pointer;
+        font-size: 1.1rem;
+        transition: background-color 0.3s;
+        text-decoration: none;
+        display: inline-block;
     }
 
-    .carrito-item .actions {
+    .btn-explorar:hover {
+        background-color: #0b7dda;
+    }
+
+    /* Botones de incremento/decremento */
+    .cantidad-btn {
+        background-color: #444;
+        border: none;
+        color: white;
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
         display: flex;
         align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        font-size: 1rem;
+        transition: background-color 0.3s;
     }
 
-    .carrito-item .actions .btn-danger {
-        margin-left: 20px;
-    }
-
-    .domicilio-item .actions {
-        display: flex;
-        align-items: center;
-    }
-
-    .domicilio-item .actions .btn-danger {
-        margin-left: 20px;
+    .cantidad-btn:hover {
+        background-color: #555;
     }
 </style>
 
 <div class="carrito-container">
-    <h1>Carrito de Compras</h1>
+    <h1 style="font-size: 2rem; margin-bottom: 30px; color: #ffffff;">Carrito de Compras</h1>
 
-    {% if items or carrito.domicilio %}
-    <!-- Lista de items del carrito -->
-    {% for item in items %}
-    <div class="carrito-item">
-        <img src="{{ item.mueble.imagen.url }}" alt="{{ item.mueble.nombre }}">
-        <div class="info">
-            <h3>{{ item.mueble.nombre }}</h3>
-            <p>{{ item.mueble.descripcion }}</p>
-            <p>Precio: $<span class="price-number">{{ item.mueble.precio_diario }}</span>/día</p>
+    {% if items %}
+        {% for item in items %}
+        <div class="carrito-item">
+            {% if item.mueble.en_oferta %}
+                <div class="oferta-sticker">{{ item.mueble.descuento }}% OFF</div>
+            {% endif %}
+            
+            <img src="{{ item.mueble.imagen.url }}" alt="{{ item.mueble.nombre }}">
+            
+            <div class="item-content">
+                <div class="item-info">
+                    <h3>{{ item.mueble.nombre }}</h3>
+                    <p>{{ item.mueble.descripcion|truncatechars:60 }}</p>
+                    
+                    <div class="fechas-renta">
+                        <p><strong>Fechas:</strong> {{ item.fecha_inicio|date:"d/m/Y" }} - {{ item.fecha_fin|date:"d/m/Y" }}</p>
+                        <p><strong>Días:</strong> {{ item.dias }}</p>
+                    </div>
+                    
+                    {% if item.mueble.en_oferta %}
+                        <p class="precio-original">${{ item.mueble.precio_diario|floatformat:0 }}/día</p>
+                        <p class="precio-descuento">${{ item.mueble.precio_con_descuento|floatformat:0 }}/día</p>
+                        <p class="ahorro">Ahorras: ${{ item.ahorro_por_dia|floatformat:0 }}/día</p>
+                    {% else %}
+                        <p style="font-size: 1.2rem;">${{ item.mueble.precio_diario|floatformat:0 }}/día</p>
+                    {% endif %}
+                </div>
+
+                <div class="cantidad-control">
+                    <form method="post" action="{% url 'actualizar_cantidad' item.id %}" class="cantidad-form" onchange="this.submit()">
+                        {% csrf_token %}
+                        <input type="number" name="cantidad" value="{{ item.cantidad }}" min="1" class="cantidad-input">
+                    </form>
+                </div>
+
+                <div class="precio-container">
+                    <span class="precio-total">${{ item.subtotal|floatformat:0 }}</span>
+                    {% if item.mueble.en_oferta %}
+                        <span class="ahorro">Ahorro: ${{ item.ahorro_total|floatformat:0 }}</span>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <div class="actions">
+                <a href="{% url 'eliminar_del_carrito' item.id %}" class="btn-eliminar">
+                    <i class="bi bi-trash-fill"></i> Eliminar
+                </a>
+            </div>
         </div>
-        <div class="cantidad">
-            <form method="post" action="{% url 'actualizar_cantidad' item.id %}">
+        {% endfor %}
+
+        {% if carrito.domicilio %}
+        <div class="carrito-item">
+            <img src="{% static 'muebles/img/iconoDomicilio.png' %}" alt="Domicilio">
+            
+            <div class="item-content">
+                <div class="item-info">
+                    <h3>Servicio de Domicilio</h3>
+                    <p><strong>Dirección:</strong> {{ carrito.domicilio }}</p>
+                    <p>Costo fijo por envío</p>
+                </div>
+                
+                <div class="precio-container">
+                    <span>${{ costo_domicilio|floatformat:0 }}</span>
+                </div>
+            </div>
+            
+            <div class="actions">
+                <a href="{% url 'eliminar_domicilio' %}" class="btn-eliminar">
+                    <i class="bi bi-trash-fill"></i> Eliminar
+                </a>
+            </div>
+        </div>
+        {% endif %}
+
+        <div class="carrito-total">
+            {% if ahorro_total > 0 %}
+            <div class="total-line" style="color: #ff5722;">
+                <span>Ahorro total:</span>
+                <span>${{ ahorro_total|floatformat:0 }}</span>
+            </div>
+            {% endif %}
+            
+            <div class="total-line">
+                <span>Subtotal:</span>
+                <span>${{ subtotal|floatformat:0 }}</span>
+            </div>
+            
+            {% if carrito.domicilio %}
+            <div class="total-line">
+                <span>Domicilio:</span>
+                <span>${{ costo_domicilio|floatformat:0 }}</span>
+            </div>
+            {% endif %}
+            
+            <div class="total-line total-final">
+                <span>Total:</span>
+                <span>${{ total|floatformat:0 }}</span>
+            </div>
+            
+            <form method="post" action="{% url 'procesar_pago' %}">
                 {% csrf_token %}
-                <input type="number" name="cantidad" value="{{ item.cantidad }}" min="1" onchange="this.form.submit()">
+                <button type="submit" class="btn-pagar">
+                    <i class="bi bi-credit-card-fill"></i> Pagar ahora
+                </button>
             </form>
         </div>
-        <div class="subtotal">
-            $<span class="subtotal-number">{{ item.subtotal }}</span>
+        
+        <!-- Formulario para agregar domicilio -->
+        <div class="domicilio-form">
+            <h3>Agregar Dirección de Entrega</h3>
+            <form method="post">
+                {% csrf_token %}
+                <div class="form-group">
+                    {{ form.domicilio }}
+                </div>
+                <button type="submit" class="btn-direccion">
+                    {% if carrito.domicilio %}
+                        Actualizar Dirección
+                    {% else %}
+                        Agregar Dirección
+                    {% endif %}
+                </button>
+            </form>
         </div>
-        <div class="actions">
-            <a href="{% url 'eliminar_del_carrito' item.id %}" class="btn btn-danger"><i
-                    class="bi bi-trash-fill"></i></a>
-        </div>
-    </div>
-    {% endfor %}
-
-    <!-- Sección de domicilio dentro del cuadro de items -->
-    {% if carrito.domicilio %}
-    <div class="domicilio-item">
-        <img src="{% static 'muebles/img/iconoDomicilio.png' %}" alt="Domicilio" class="domicilio-imagen">
-        <div class="domicilio-info">
-            <h3>Servicio de Domicilio</h3>
-            <p><strong>Dirección:</strong> {{ carrito.domicilio }}</p>
-            <p class="delivery-cost">Costo: $20.000</p>
-        </div>
-        <div class="subtotal">
-            $<span class="delivery-cost-amount">20.000</span>
-        </div>
-        <div class="actions">
-            <a href="{% url 'eliminar_domicilio' %}" class="btn btn-danger"><i class="bi bi-trash-fill"></i></a>
-        </div>
-    </div>
-    {% endif %}
-
-    <!-- Total del carrito -->
-    <div class="carrito-total">
-        <h3>
-            <div
-                style="display: flex; justify-content: space-between; margin-top: 8px; font-size: 1.3rem; color: #4CAF50;">
-                <strong>Total:</strong>
-                <strong>$<span class="final-total">{{ total }}</span></strong>
-            </div>
-        </h3>
-        {% if items %}
-        <form method="post" action="{% url 'procesar_pago' %}" style="margin-top: 15px;">
-            {% csrf_token %}
-            <button type="submit" class="btn btn-success" style="width: 100%; padding: 10px; font-size: 1.1rem;">
-                <i class="bi bi-credit-card-fill"></i> Pagar ahora
-            </button>
-        </form>
-        {% endif %}
-    </div>
     {% else %}
-    <!-- Mensaje cuando el carrito está vacío -->
-    <div class="empty-cart">
-        <h3>Tu carrito de compras está vacío</h3>
-        <p>¡Explora nuestros muebles y agrega productos!</p>
-        <a href="{% url 'muebles' %}" class="btn btn-primary">Ver Muebles</a>
-    </div>
-    {% endif %}
-
-    <!-- Formulario para agregar domicilio (solo si hay items) -->
-    {% if items %}
-    <div style="margin-top: 20px; background-color: #3a3a3a; padding: 15px; border-radius: 8px;">
-        <h3 style="color: #ffffff; margin-top: 0;">Agregar Dirección de Entrega</h3>
-        <form method="post">
-            {% csrf_token %}
-            <div class="form-group">
-                {{ form.domicilio }}
-            </div>
-            <button type="submit" class="btn btn-primary">
-                {% if carrito.domicilio %}
-                Actualizar Dirección
-                {% else %}
-                Agregar Dirección
-                {% endif %}
-            </button>
-        </form>
-    </div>
+        <div class="empty-cart">
+            <h3>Tu carrito de compras está vacío</h3>
+            <p>¡Explora nuestros muebles y agrega productos!</p>
+            <a href="{% url 'muebles' %}" class="btn-explorar">Ver Muebles</a>
+        </div>
     {% endif %}
 </div>
 
-<script src="{% static 'muebles/js/numberFormatter.js' %}"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Función para formatear números con separadores de miles
+        function formatNumber(number) {
+            return number.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+        }
+
+        // Formatear todos los precios en la página
+        function formatAllPrices() {
+            // Precios de los items
+            const precioElements = document.querySelectorAll('.precio-total, .precio-container span:first-child');
+            precioElements.forEach(element => {
+                const precio = element.textContent.replace('$', '').replace(/\./g, '').trim();
+                if (!isNaN(precio)) {
+                    const precioFormateado = formatNumber(precio);
+                    element.textContent = '$' + precioFormateado;
+                }
+            });
+
+            // Totales en el resumen
+            const totalElements = document.querySelectorAll('.total-line span:last-child, .total-final span:last-child');
+            totalElements.forEach(element => {
+                const precio = element.textContent.replace('$', '').replace(/\./g, '').trim();
+                if (!isNaN(precio)) {
+                    const precioFormateado = formatNumber(precio);
+                    element.textContent = '$' + precioFormateado;
+                }
+            });
+        }
+
+        // Llamar a la función al cargar la página
+        formatAllPrices();
+
+        // Mostrar mensaje cuando se actualiza la cantidad
+        const cantidadInputs = document.querySelectorAll('.cantidad-input');
+        cantidadInputs.forEach(input => {
+            input.addEventListener('change', function() {
+                showNotification('Cantidad actualizada');
+            });
+        });
+
+        // Botones de incremento/decremento
+        const cantidadBtns = document.querySelectorAll('.cantidad-btn');
+        cantidadBtns.forEach(btn => {
+            btn.addEventListener('click', function() {
+                showNotification('Cantidad actualizada');
+            });
+        });
+
+        // Función para mostrar notificación
+        function showNotification(message) {
+            const notification = document.createElement('div');
+            notification.textContent = message;
+            notification.style.position = 'fixed';
+            notification.style.bottom = '20px';
+            notification.style.right = '20px';
+            notification.style.backgroundColor = '#4CAF50';
+            notification.style.color = 'white';
+            notification.style.padding = '12px 24px';
+            notification.style.borderRadius = '5px';
+            notification.style.zIndex = '1000';
+            notification.style.boxShadow = '0 2px 10px rgba(0,0,0,0.2)';
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.style.opacity = '0';
+                setTimeout(() => {
+                    document.body.removeChild(notification);
+                }, 500);
+            }, 2000);
+        }
+    });
+</script>
 {% endblock %}

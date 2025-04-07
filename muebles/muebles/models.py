@@ -26,7 +26,7 @@ class Usuario(AbstractUser):
 
     ROLES = (
         (1, "Administrador"),
-        (2, "Vendedor"),
+        (2, "Propietario"),
         (3, "Cliente"),
     )
     rol = models.IntegerField(choices=ROLES, default=3)
@@ -74,7 +74,25 @@ class Mueble(models.Model):
     precio_diario = models.IntegerField(default=0)
     imagen = models.ImageField(upload_to='muebles/')
     propietario = models.ForeignKey(Propietario, on_delete=models.CASCADE)
+    descuento = models.IntegerField(default=0)  # Porcentaje de descuento (0-100)
+    fecha_inicio_descuento = models.DateField(null=True, blank=True)
+    fecha_fin_descuento = models.DateField(null=True, blank=True)
 
+    @property
+    def en_oferta(self):
+        hoy = timezone.now().date()
+        return (
+            self.descuento > 0 and
+            (self.fecha_inicio_descuento is None or self.fecha_inicio_descuento <= hoy) and
+            (self.fecha_fin_descuento is None or self.fecha_fin_descuento >= hoy)
+        )
+    
+    @property
+    def precio_con_descuento(self):
+        if self.en_oferta:
+            return int(self.precio_diario * (100 - self.descuento) / 100)
+        return self.precio_diario
+    
     def __str__(self):
         return self.nombre
 
@@ -123,12 +141,23 @@ class ItemCarrito(models.Model):
     carrito = models.ForeignKey(Carrito, on_delete=models.CASCADE, related_name='items')
     mueble = models.ForeignKey(Mueble, on_delete=models.CASCADE)
     cantidad = models.PositiveIntegerField(default=1)
-
+    fecha_inicio = models.DateField()
+    fecha_fin = models.DateField()
+    dias = models.PositiveIntegerField(default=1)  # Campo real para almacenar los días
+    
+    def save(self, *args, **kwargs):
+        # Calcular días automáticamente al guardar
+        if self.fecha_inicio and self.fecha_fin:
+            self.dias = (self.fecha_fin - self.fecha_inicio).days + 1
+        super().save(*args, **kwargs)
+    
     def __str__(self):
         return f"{self.cantidad} x {self.mueble.nombre}"
 
     def subtotal(self):
-        return self.cantidad * self.mueble.precio_diario
+        if self.mueble.en_oferta:
+            return self.mueble.precio_con_descuento * self.cantidad * self.dias
+        return self.mueble.precio_diario * self.cantidad * self.dias
     
 class Pedido(models.Model):
     ESTADOS = (
