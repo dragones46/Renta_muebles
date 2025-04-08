@@ -61,12 +61,21 @@ class Usuario(AbstractUser):
         return self.nombre
 
 class Propietario(models.Model):
-    nombre = models.CharField(max_length=100)
-    telefono = models.CharField(max_length=15)
-    email = models.EmailField()
-
+    TIPO_PROPIETARIO = [
+        ('individual', 'Individual'),
+        ('empresa', 'Empresa'),
+    ]
+    
+    usuario = models.OneToOneField(Usuario, on_delete=models.CASCADE, null=True, blank=True)
+    nombre_empresa = models.CharField(max_length=100, null=True, blank=True)
+    tipo = models.CharField(max_length=10, choices=TIPO_PROPIETARIO, default='individual')
+    
     def __str__(self):
-        return self.nombre
+        if self.tipo == 'individual' and self.usuario:
+            return f"{self.usuario.nombre} (Individual)"
+        elif self.tipo == 'empresa':
+            return f"{self.nombre_empresa} (Empresa)"
+        return "Propietario sin nombre"
 
 class Mueble(models.Model):
     nombre = models.CharField(max_length=100)

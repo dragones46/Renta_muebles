@@ -1,0 +1,243 @@
+{% extends 'muebles/propietario/bar_propietario.html' %}
+{% block titulo %}Mis Muebles{% endblock %}
+{% block contenedor %}
+
+<style>
+    /* Estilos personalizados para mantener consistencia */
+    .card {
+        background-color: #1a1a1a;
+        border: 1px solid #333;
+        border-radius: 8px;
+        color: #fff;
+    }
+
+    .card-header {
+        background-color: #d1caca;
+        border-bottom: 1px solid #333;
+    }
+
+    .table {
+        color: #fff;
+    }
+
+    .table th {
+        background-color: #2a2a2a;
+        color: #fff;
+        border-bottom: 1px solid #333;
+    }
+
+    .table td {
+        border-top: 1px solid #333;
+        vertical-align: middle;
+    }
+
+    .table-hover tbody tr:hover {
+        background-color: #2a2a2a;
+    }
+
+    .btn-success {
+        background-color: #ff6b00; /* Naranja */
+        border: none;
+    }
+
+    .btn-success:hover {
+        background-color: #e05d00;
+    }
+
+    .btn-primary {
+        background-color: #ff6b00; /* Naranja */
+        border: none;
+    }
+
+    .btn-primary:hover {
+        background-color: #e05d00;
+    }
+
+    .btn-warning {
+        background-color: #ff6b00; /* Naranja */
+        border: none;
+        color: white;
+    }
+
+    .btn-danger {
+        background-color: #dc3545;
+        border: none;
+    }
+
+    .modal-content {
+        background-color: #1a1a1a;
+        color: #fff;
+    }
+
+    .modal-header {
+        border-bottom: 1px solid #333;
+    }
+
+    .modal-footer {
+        border-top: 1px solid #333;
+    }
+
+    .form-control, .form-select {
+        background-color: #575757;
+        border: 1px solid #333;
+        color: #fff;
+    }
+
+    .form-control:focus, .form-select:focus {
+        background-color: #575757;
+        color: #fff;
+        border-color: #ff6b00;
+        box-shadow: 0 0 0 0.25rem rgba(255, 107, 0, 0.25);
+    }
+
+    .text-muted {
+        color: #6c757d !important;
+    }
+
+    .badge-oferta {
+        background-color: #dc3545;
+        font-size: 0.8rem;
+    }
+
+    .precio-original {
+        text-decoration: line-through;
+        color: #999;
+    }
+
+    .precio-descuento {
+        color: #28a745;
+        font-weight: bold;
+    }
+</style>
+
+<div class="content container mt-5">
+    <h2>Mis Muebles - {{ nombre_propietario }}</h2>
+    <button type="button" class="btn btn-success mb-3" data-bs-toggle="modal" data-bs-target="#crearMuebleModal">
+        Agregar Mueble
+    </button>
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Nombre</th>
+                <th>Descripción</th>
+                <th>Precio Diario</th>
+                <th>Descuento (%)</th>
+                <th>Fecha Fin Descuento</th>
+                <th>Imagen</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for mueble in muebles %}
+            <tr>
+                <td>{{ mueble.nombre }}</td>
+                <td>{{ mueble.descripcion }}</td>
+                <td>{{ mueble.precio_diario }}</td>
+                <td>{{ mueble.descuento }}%</td>
+                <td>{{ mueble.fecha_fin_descuento|date:"d/m/Y" }}</td>
+                <td><img src="{{ mueble.imagen.url }}" alt="{{ mueble.nombre }}" width="100"></td>
+                <td>
+                    <a href="#" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#editarMuebleModal{{ mueble.id }}">Editar</a>
+                    <a href="{% url 'propietario_eliminar_mueble' mueble.id %}" class="btn btn-danger">Eliminar</a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<!-- Modal para crear mueble -->
+<div class="modal fade" id="crearMuebleModal" tabindex="-1" aria-labelledby="crearMuebleModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="crearMuebleModalLabel">Crear Mueble</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="post" enctype="multipart/form-data" action="{% url 'propietario_crear_mueble' %}">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="nombre" class="form-label">Nombre</label>
+                        <input type="text" class="form-control" id="nombre" name="nombre" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="descripcion" class="form-label">Descripción</label>
+                        <textarea class="form-control" id="descripcion" name="descripcion" rows="3"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label for="precio_diario" class="form-label">Precio Diario</label>
+                        <input type="number" class="form-control" id="precio_diario" name="precio_diario" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="descuento" class="form-label">Descuento (%)</label>
+                        <input type="number" class="form-control" id="descuento" name="descuento">
+                    </div>
+                    <div class="mb-3">
+                        <label for="fecha_fin_descuento" class="form-label">Fecha Fin Descuento</label>
+                        <input type="date" class="form-control" id="fecha_fin_descuento" name="fecha_fin_descuento">
+                    </div>
+                <div class="mb-3">
+
+                </div>>
+                    <div class="mb-3">
+                        <label for="imagen" class="form-label">Imagen</label>
+                        <input type="file" class="form-control" id="imagen" name="imagen">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                    <button type="submit" class="btn btn-primary">Crear Mueble</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modales para editar cada mueble -->
+{% for mueble in muebles %}
+<div class="modal fade" id="editarMuebleModal{{ mueble.id }}" tabindex="-1" aria-labelledby="editarMuebleModalLabel{{ mueble.id }}" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="editarMuebleModalLabel{{ mueble.id }}">Editar Mueble</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="post" enctype="multipart/form-data" action="{% url 'propietario_editar_mueble' mueble.id %}">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="nombre{{ mueble.id }}" class="form-label">Nombre</label>
+                        <input type="text" class="form-control" id="nombre{{ mueble.id }}" name="nombre" value="{{ mueble.nombre }}" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="descripcion{{ mueble.id }}" class="form-label">Descripción</label>
+                        <textarea class="form-control" id="descripcion{{ mueble.id }}" name="descripcion" rows="3">{{ mueble.descripcion }}</textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label for="precio_diario{{ mueble.id }}" class="form-label">Precio Diario</label>
+                        <input type="number" class="form-control" id="precio_diario{{ mueble.id }}" name="precio_diario" value="{{ mueble.precio_diario }}" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="descuento{{ mueble.id }}" class="form-label">Descuento (%)</label>
+                        <input type="number" class="form-control" id="descuento{{ mueble.id }}" name="descuento" value="{{ mueble.descuento }}">
+                    </div>
+                    <div class="mb-3">
+                        <label for="fecha_fin_descuento{{ mueble.id }}" class="form-label">Fecha Fin Descuento</label>
+                        <input type="date" class="form-control" id="fecha_fin_descuento{{ mueble.id }}" name="fecha_fin_descuento" value="{{ mueble.fecha_fin_descuento }}">
+                    </div>
+                    <div class="mb-3">
+                        <label for="imagen{{ mueble.id }}" class="form-label">Imagen</label>
+                        <input type="file" class="form-control" id="imagen{{ mueble.id }}" name="imagen">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                    <button type="submit" class="btn btn-primary">Actualizar Mueble</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endfor %}
+{% endblock %}

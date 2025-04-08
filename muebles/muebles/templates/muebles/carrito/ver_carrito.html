@@ -3,43 +3,83 @@
 
 {% block contenedor %}
 <style>
+    :root {
+        --primary-color: #4CAF50;
+        --secondary-color: #2196F3;
+        --danger-color: #ff4444;
+        --warning-color: #ffbb33;
+        --dark-bg: #2a2a2a;
+        --darker-bg: #1f1f1f;
+        --light-text: #ffffff;
+        --lighter-text: #f5f5f5;
+        --muted-text: #cccccc;
+        --border-color: #444;
+    }
+
     .carrito-container {
-        background-color: #2a2a2a;
-        border-radius: 10px;
-        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
-        padding: 30px;
-        max-width: 900px;
+        background-color: var(--dark-bg);
+        border-radius: 15px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+        padding: 40px;
+        max-width: 1000px;
         margin: 50px auto;
+        border: 1px solid var(--border-color);
+    }
+
+    .carrito-header {
+        text-align: center;
+        margin-bottom: 40px;
+        padding-bottom: 20px;
+        border-bottom: 1px solid var(--border-color);
+    }
+
+    .carrito-header h1 {
+        font-size: 2.5rem;
+        color: var(--light-text);
+        margin-bottom: 10px;
+        font-weight: 700;
+        letter-spacing: 1px;
+    }
+
+    .carrito-header p {
+        color: var(--muted-text);
+        font-size: 1.1rem;
+    }
+
+    .carrito-items-container {
+        margin-bottom: 40px;
     }
 
     .carrito-item {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding: 20px;
-        margin-bottom: 20px;
+        display: grid;
+        grid-template-columns: 120px 1fr auto auto;
+        gap: 20px;
+        padding: 25px;
+        margin-bottom: 25px;
         background-color: #333;
-        border-radius: 10px;
+        border-radius: 12px;
         position: relative;
         transition: all 0.3s ease;
+        border: 1px solid var(--border-color);
     }
 
     .carrito-item:hover {
-        transform: translateY(-3px);
-        box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
+        transform: translateY(-5px);
+        box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
     }
 
     .oferta-sticker {
         position: absolute;
         top: -10px;
         right: -10px;
-        background-color: #ff5722;
-        color: white;
+        background-color: var(--warning-color);
+        color: #000;
         padding: 5px 15px;
         border-radius: 20px;
         font-size: 14px;
         font-weight: bold;
         z-index: 1;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
     }
 
     .carrito-item img {
@@ -47,31 +87,36 @@
         height: 120px;
         border-radius: 10px;
         object-fit: cover;
-        margin-right: 20px;
-        border: 2px solid #444;
-    }
-
-    .item-content {
-        display: flex;
-        flex: 1;
-        align-items: center;
+        border: 2px solid var(--border-color);
+        align-self: center;
     }
 
     .item-info {
-        flex: 1;
-        min-width: 250px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
     }
 
     .item-info h3 {
-        color: #ffffff;
-        margin-bottom: 10px;
-        font-size: 1.4rem;
+        color: var(--light-text);
+        margin-bottom: 15px;
+        font-size: 1.5rem;
+        font-weight: 600;
     }
 
     .item-info p {
-        color: #cccccc;
-        margin: 5px 0;
+        color: var(--muted-text);
+        margin: 3px 0;
         font-size: 1rem;
+    }
+
+    .fechas-renta {
+        background-color: #3a3a3a;
+        padding: 12px;
+        border-radius: 8px;
+        margin: 12px 0;
+        font-size: 0.95rem;
+        border: 1px solid #444;
     }
 
     .precio-original {
@@ -81,260 +126,353 @@
     }
 
     .precio-descuento {
-        color: #4CAF50;
+        color: var(--primary-color);
         font-weight: bold;
-        font-size: 1.2rem;
+        font-size: 1.3rem;
     }
 
-    .fechas-renta {
-        background-color: #3a3a3a;
-        padding: 10px;
-        border-radius: 8px;
-        margin-top: 10px;
-        font-size: 0.95rem;
+    .ahorro {
+        color: var(--warning-color);
+        font-size: 1rem;
     }
-    .cantidad-control-container {
+
+    .cantidad-control {
         display: flex;
         flex-direction: column;
         align-items: center;
         justify-content: center;
-        grid-column: 3;
         padding: 0 20px;
     }
-    .cantidad-control {
+
+    .cantidad-control-container {
         display: flex;
         align-items: center;
+        gap: 10px;
     }
 
     .cantidad-input {
         width: 60px;
         text-align: center;
-        padding: 8px;
+        padding: 10px;
         border-radius: 6px;
-        border: 1px solid #555;
+        border: 1px solid var(--border-color);
         background-color: #444;
         color: white;
-        font-size: 1rem;
-        margin: 0 10px;
+        font-size: 1.1rem;
+        font-weight: bold;
+    }
+
+    .cantidad-btn {
+        background-color: #444;
+        border: none;
+        color: white;
+        width: 35px;
+        height: 35px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        font-size: 1.2rem;
+        transition: all 0.3s ease;
+    }
+
+    .cantidad-btn:hover {
+        background-color: #555;
+        transform: scale(1.1);
     }
 
     .precio-container {
         display: flex;
         flex-direction: column;
         align-items: flex-end;
-        min-width: 150px;
-        margin-right: 30px;
+        justify-content: center;
+        min-width: 180px;
     }
 
-    .precio-container span {
-        font-size: 1.2rem;
-        margin: 3px 0;
-    }
-
-    .ahorro {
-        color: #ff5722;
-        font-size: 1rem;
+    .precio-total {
+        font-size: 1.5rem;
+        font-weight: bold;
+        color: var(--light-text);
+        margin-bottom: 5px;
     }
 
     .btn-eliminar {
-        background-color: #ff4444;
-        border: none;
-        padding: 10px 15px;
+        background-color: transparent;
+        border: 1px solid var(--danger-color);
+        padding: 8px 15px;
         border-radius: 6px;
-        color: white;
+        color: var(--danger-color);
         cursor: pointer;
-        transition: background-color 0.3s;
+        transition: all 0.3s;
         font-size: 0.9rem;
+        margin-top: 15px;
+        display: flex;
+        align-items: center;
+        gap: 5px;
     }
 
     .btn-eliminar:hover {
-        background-color: #cc0000;
+        background-color: var(--danger-color);
+        color: white;
     }
 
-    .carrito-total {
+    .carrito-summary {
         background-color: #3a3a3a;
-        padding: 20px;
-        border-radius: 10px;
-        margin-top: 30px;
-        font-size: 1.1rem;
+        padding: 30px;
+        border-radius: 12px;
+        margin-top: 40px;
+        border: 1px solid var(--border-color);
     }
 
-    .total-line {
+    .summary-title {
+        font-size: 1.5rem;
+        color: var(--light-text);
+        margin-bottom: 20px;
+        padding-bottom: 10px;
+        border-bottom: 1px solid var(--border-color);
+    }
+
+    .summary-line {
         display: flex;
         justify-content: space-between;
-        margin: 12px 0;
-        padding: 5px 0;
+        margin: 15px 0;
+        padding: 8px 0;
     }
 
-    .total-final {
-        font-size: 1.4rem;
+    .summary-line.ahorro {
+        color: var(--warning-color);
+    }
+
+    .summary-line.total {
+        font-size: 1.6rem;
         font-weight: bold;
-        color: #4CAF50;
-        border-top: 2px solid #555;
+        color: var(--primary-color);
+        border-top: 2px solid var(--border-color);
         padding-top: 15px;
-        margin-top: 15px;
+        margin-top: 20px;
     }
 
     .btn-pagar {
         width: 100%;
-        padding: 12px;
-        font-size: 1.2rem;
+        padding: 15px;
+        font-size: 1.3rem;
         font-weight: bold;
-        background-color: #4CAF50;
+        background-color: var(--primary-color);
         border: none;
         border-radius: 8px;
         color: white;
         cursor: pointer;
-        transition: background-color 0.3s;
-        margin-top: 10px;
+        transition: all 0.3s;
+        margin-top: 20px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
     }
 
     .btn-pagar:hover {
         background-color: #388E3C;
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(76, 175, 80, 0.3);
     }
 
     .domicilio-form {
-        margin-top: 30px;
+        margin-top: 40px;
         background-color: #3a3a3a;
-        padding: 20px;
-        border-radius: 10px;
+        padding: 30px;
+        border-radius: 12px;
+        border: 1px solid var(--border-color);
     }
 
     .domicilio-form h3 {
-        color: #ffffff;
+        color: var(--light-text);
         margin-top: 0;
-        margin-bottom: 15px;
-        font-size: 1.3rem;
+        margin-bottom: 20px;
+        font-size: 1.5rem;
+    }
+
+    .form-group {
+        margin-bottom: 20px;
+    }
+
+    .form-group label {
+        display: block;
+        color: var(--muted-text);
+        margin-bottom: 8px;
+        font-size: 1rem;
     }
 
     .form-group input {
         width: 100%;
-        padding: 10px;
+        padding: 12px;
         border-radius: 6px;
-        border: 1px solid #555;
+        border: 1px solid var(--border-color);
         background-color: #444;
         color: white;
         font-size: 1rem;
-        margin-bottom: 15px;
     }
 
     .btn-direccion {
-        background-color: #2196F3;
-        border: none;
-        padding: 10px 20px;
-        border-radius: 6px;
-        color: white;
-        cursor: pointer;
-        font-size: 1rem;
-        transition: background-color 0.3s;
-    }
-
-    .btn-direccion:hover {
-        background-color: #0b7dda;
-    }
-
-    .empty-cart {
-        text-align: center;
-        padding: 40px;
-    }
-
-    .empty-cart h3 {
-        color: #ffffff;
-        font-size: 1.5rem;
-        margin-bottom: 15px;
-    }
-
-    .empty-cart p {
-        color: #cccccc;
-        font-size: 1.1rem;
-        margin-bottom: 25px;
-    }
-
-    .btn-explorar {
-        background-color: #2196F3;
+        background-color: var(--secondary-color);
         border: none;
         padding: 12px 25px;
         border-radius: 6px;
         color: white;
         cursor: pointer;
         font-size: 1.1rem;
-        transition: background-color 0.3s;
+        transition: all 0.3s;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .btn-direccion:hover {
+        background-color: #0b7dda;
+        transform: translateY(-2px);
+    }
+
+    .empty-cart {
+        text-align: center;
+        padding: 60px 40px;
+    }
+
+    .empty-cart-icon {
+        font-size: 5rem;
+        color: var(--muted-text);
+        margin-bottom: 20px;
+    }
+
+    .empty-cart h3 {
+        color: var(--light-text);
+        font-size: 2rem;
+        margin-bottom: 20px;
+    }
+
+    .empty-cart p {
+        color: var(--muted-text);
+        font-size: 1.2rem;
+        margin-bottom: 30px;
+        max-width: 500px;
+        margin-left: auto;
+        margin-right: auto;
+    }
+
+    .btn-explorar {
+        background-color: var(--secondary-color);
+        border: none;
+        padding: 15px 30px;
+        border-radius: 8px;
+        color: white;
+        cursor: pointer;
+        font-size: 1.2rem;
+        transition: all 0.3s;
         text-decoration: none;
-        display: inline-block;
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
     }
 
     .btn-explorar:hover {
         background-color: #0b7dda;
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(33, 150, 243, 0.3);
     }
 
-    /* Botones de incremento/decremento */
-    .cantidad-btn {
-        background-color: #444;
-        border: none;
-        color: white;
-        width: 30px;
-        height: 30px;
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        cursor: pointer;
-        font-size: 1rem;
-        transition: background-color 0.3s;
+    /* Animaciones */
+    @keyframes fadeIn {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
     }
 
-    .cantidad-btn:hover {
-        background-color: #555;
+    .carrito-item {
+        animation: fadeIn 0.5s ease forwards;
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+        .carrito-container {
+            padding: 20px;
+        }
+
+        .carrito-item {
+            grid-template-columns: 1fr;
+        }
+
+        .cantidad-control {
+            margin-top: 15px;
+            margin-bottom: 15px;
+        }
+
+        .precio-container {
+            align-items: flex-start;
+            margin-top: 15px;
+        }
     }
 </style>
 
 <div class="carrito-container">
-    <h1 style="font-size: 2rem; margin-bottom: 30px; color: #ffffff;">Carrito de Compras</h1>
+    <div class="carrito-header">
+        <h1>Carrito de Compras</h1>
+        <p>Revisa y gestiona los artículos que deseas rentar</p>
+    </div>
 
     {% if items %}
+    <div class="carrito-items-container">
         {% for item in items %}
-        <div class="carrito-item">
+        <div class="carrito-item" style="animation-delay: {{ forloop.counter0|divisibleby:2|yesno:'0s,0.1s' }}">
             {% if item.mueble.en_oferta %}
-                <div class="oferta-sticker">{{ item.mueble.descuento }}% OFF</div>
+            <div class="oferta-sticker">{{ item.mueble.descuento }}% OFF</div>
             {% endif %}
-            
+
             <img src="{{ item.mueble.imagen.url }}" alt="{{ item.mueble.nombre }}">
-            
-            <div class="item-content">
-                <div class="item-info">
-                    <h3>{{ item.mueble.nombre }}</h3>
-                    <p>{{ item.mueble.descripcion|truncatechars:60 }}</p>
-                    
-                    <div class="fechas-renta">
-                        <p><strong>Fechas:</strong> {{ item.fecha_inicio|date:"d/m/Y" }} - {{ item.fecha_fin|date:"d/m/Y" }}</p>
-                        <p><strong>Días:</strong> {{ item.dias }}</p>
+
+            <div class="item-info">
+                <h3>{{ item.mueble.nombre }}</h3>
+                <div class="fechas-renta">
+                    <p><strong>Fechas:</strong> {{ item.fecha_inicio|date:"d/m/Y" }} - {{ item.fecha_fin|date:"d/m/Y" }}
+                    </p>
+                    <p><strong>Días:</strong> {{ item.dias }}</p>
+                </div>
+
+                {% if item.mueble.en_oferta %}
+                <p class="precio-original">${{ item.mueble.precio_diario|floatformat:0 }}/día</p>
+                <p class="precio-descuento">${{ item.mueble.precio_con_descuento|floatformat:0 }}/día</p>
+                <p class="ahorro">Ahorras: ${{ item.ahorro_por_dia|floatformat:0 }}/día</p>
+                {% else %}
+                <p style="font-size: 1.2rem;">${{ item.mueble.precio_diario|floatformat:0 }}/día</p>
+                {% endif %}
+            </div>
+
+            <div class="cantidad-control">
+                <form method="post" action="{% url 'actualizar_cantidad' item.id %}" class="cantidad-form">
+                    {% csrf_token %}
+                    <div class="cantidad-control-container">
+                        <button type="button" class="cantidad-btn decrement-btn"
+                            onclick="decrementQuantity(this)">-</button>
+                        <input type="number" name="cantidad" value="{{ item.cantidad }}" min="1" class="cantidad-input"
+                            onchange="this.parentNode.parentNode.submit()">
+                        <button type="button" class="cantidad-btn increment-btn"
+                            onclick="incrementQuantity(this)">+</button>
                     </div>
-                    
-                    {% if item.mueble.en_oferta %}
-                        <p class="precio-original">${{ item.mueble.precio_diario|floatformat:0 }}/día</p>
-                        <p class="precio-descuento">${{ item.mueble.precio_con_descuento|floatformat:0 }}/día</p>
-                        <p class="ahorro">Ahorras: ${{ item.ahorro_por_dia|floatformat:0 }}/día</p>
-                    {% else %}
-                        <p style="font-size: 1.2rem;">${{ item.mueble.precio_diario|floatformat:0 }}/día</p>
-                    {% endif %}
-                </div>
-
-                <div class="cantidad-control">
-                    <form method="post" action="{% url 'actualizar_cantidad' item.id %}" class="cantidad-form" onchange="this.submit()">
-                        {% csrf_token %}
-                        <input type="number" name="cantidad" value="{{ item.cantidad }}" min="1" class="cantidad-input">
-                    </form>
-                </div>
-
-                <div class="precio-container">
-                    <span class="precio-total">${{ item.subtotal|floatformat:0 }}</span>
-                    {% if item.mueble.en_oferta %}
-                        <span class="ahorro">Ahorro: ${{ item.ahorro_total|floatformat:0 }}</span>
-                    {% endif %}
+                </form>
+                <div class="warning-message" style="color: red; display: none;">
+                    La cantidad mínima permitida es 1.
                 </div>
             </div>
-            
-            <div class="actions">
+
+            <div class="precio-container">
+                <span class="precio-total">${{ item.subtotal|floatformat:0 }}</span>
+                {% if item.mueble.en_oferta %}
+                <span class="ahorro">Ahorro: ${{ item.ahorro_total|floatformat:0 }}</span>
+                {% endif %}
                 <a href="{% url 'eliminar_del_carrito' item.id %}" class="btn-eliminar">
                     <i class="bi bi-trash-fill"></i> Eliminar
                 </a>
@@ -345,157 +483,140 @@
         {% if carrito.domicilio %}
         <div class="carrito-item">
             <img src="{% static 'muebles/img/iconoDomicilio.png' %}" alt="Domicilio">
-            
-            <div class="item-content">
-                <div class="item-info">
-                    <h3>Servicio de Domicilio</h3>
-                    <p><strong>Dirección:</strong> {{ carrito.domicilio }}</p>
-                    <p>Costo fijo por envío</p>
-                </div>
-                
-                <div class="precio-container">
-                    <span>${{ costo_domicilio|floatformat:0 }}</span>
-                </div>
+
+            <div class="item-info">
+                <h3>Servicio de Domicilio</h3>
+                <p><strong>Dirección:</strong> {{ carrito.domicilio }}</p>
+                <p>Costo fijo por envío</p>
             </div>
-            
-            <div class="actions">
+
+            <div class="precio-container">
+                <span class="precio-total">${{ costo_domicilio|floatformat:0 }}</span>
                 <a href="{% url 'eliminar_domicilio' %}" class="btn-eliminar">
                     <i class="bi bi-trash-fill"></i> Eliminar
                 </a>
             </div>
         </div>
         {% endif %}
+    </div>
 
-        <div class="carrito-total">
-            {% if ahorro_total > 0 %}
-            <div class="total-line" style="color: #ff5722;">
-                <span>Ahorro total:</span>
-                <span>${{ ahorro_total|floatformat:0 }}</span>
-            </div>
-            {% endif %}
-            
-            <div class="total-line">
-                <span>Subtotal:</span>
-                <span>${{ subtotal|floatformat:0 }}</span>
-            </div>
-            
-            {% if carrito.domicilio %}
-            <div class="total-line">
-                <span>Domicilio:</span>
-                <span>${{ costo_domicilio|floatformat:0 }}</span>
-            </div>
-            {% endif %}
-            
-            <div class="total-line total-final">
-                <span>Total:</span>
-                <span>${{ total|floatformat:0 }}</span>
-            </div>
-            
-            <form method="post" action="{% url 'procesar_pago' %}">
-                {% csrf_token %}
-                <button type="submit" class="btn-pagar">
-                    <i class="bi bi-credit-card-fill"></i> Pagar ahora
-                </button>
-            </form>
+    <div class="carrito-summary">
+        <h3 class="summary-title">Resumen de Compra</h3>
+
+        {% if ahorro_total > 0 %}
+        <div class="summary-line ahorro">
+            <span>Ahorro total:</span>
+            <span>${{ ahorro_total|floatformat:0 }}</span>
         </div>
-        
-        <!-- Formulario para agregar domicilio -->
-        <div class="domicilio-form">
-            <h3>Agregar Dirección de Entrega</h3>
-            <form method="post">
-                {% csrf_token %}
-                <div class="form-group">
-                    {{ form.domicilio }}
-                </div>
-                <button type="submit" class="btn-direccion">
-                    {% if carrito.domicilio %}
-                        Actualizar Dirección
-                    {% else %}
-                        Agregar Dirección
-                    {% endif %}
-                </button>
-            </form>
+        {% endif %}
+
+        <div class="summary-line">
+            <span>Subtotal:</span>
+            <span>${{ subtotal|floatformat:0 }}</span>
         </div>
+
+        {% if carrito.domicilio %}
+        <div class="summary-line">
+            <span>Domicilio:</span>
+            <span>${{ costo_domicilio|floatformat:0 }}</span>
+        </div>
+        {% endif %}
+
+        <div class="summary-line total">
+            <span>Total a pagar:</span>
+            <span>${{ total|floatformat:0 }}</span>
+        </div>
+
+        <form method="post" action="{% url 'procesar_pago' %}">
+            {% csrf_token %}
+            <button type="submit" class="btn-pagar">
+                <i class="bi bi-credit-card-fill"></i> Proceder al Pago
+            </button>
+        </form>
+    </div>
+
+    <!-- Formulario para agregar domicilio -->
+    <div class="domicilio-form">
+        <h3>Agregar Dirección de Entrega</h3>
+        <form method="post">
+            {% csrf_token %}
+            <div class="form-group">
+                <label for="id_domicilio">Dirección completa:</label>
+                <input type="text" name="domicilio" id="id_domicilio" placeholder="Ingresa tu dirección completa"
+                    value="{{ carrito.domicilio|default:'' }}" required>
+            </div>
+            <button type="submit" class="btn-direccion">
+                <i class="bi bi-house-check-fill"></i>
+                {% if carrito.domicilio %}
+                Actualizar Dirección
+                {% else %}
+                Agregar Dirección
+                {% endif %}
+            </button>
+        </form>
+    </div>
     {% else %}
-        <div class="empty-cart">
-            <h3>Tu carrito de compras está vacío</h3>
-            <p>¡Explora nuestros muebles y agrega productos!</p>
-            <a href="{% url 'muebles' %}" class="btn-explorar">Ver Muebles</a>
+    <div class="empty-cart">
+        <div class="empty-cart-icon">
+            <i class="bi bi-cart-x"></i>
         </div>
+        <h3>Tu carrito de compras está vacío</h3>
+        <p>Parece que aún no has agregado ningún mueble a tu carrito. Explora nuestro catálogo y encuentra los muebles
+            perfectos para tu hogar.</p>
+        <a href="{% url 'muebles' %}" class="btn-explorar">
+            <i class="bi bi-search"></i> Explorar Muebles
+        </a>
+    </div>
     {% endif %}
 </div>
-
 <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        // Función para formatear números con separadores de miles
-        function formatNumber(number) {
-            return number.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+    function decrementQuantity(button) {
+        const inputField = button.nextElementSibling;
+        let currentQuantity = parseInt(inputField.value);
+
+        if (currentQuantity > 1) {
+            inputField.value = currentQuantity - 1;
+            button.parentNode.parentNode.submit();
+        } else {
+            showWarning(button.parentNode.nextElementSibling);
         }
+    }
 
-        // Formatear todos los precios en la página
-        function formatAllPrices() {
-            // Precios de los items
-            const precioElements = document.querySelectorAll('.precio-total, .precio-container span:first-child');
-            precioElements.forEach(element => {
-                const precio = element.textContent.replace('$', '').replace(/\./g, '').trim();
-                if (!isNaN(precio)) {
-                    const precioFormateado = formatNumber(precio);
-                    element.textContent = '$' + precioFormateado;
-                }
-            });
+    function incrementQuantity(button) {
+        const inputField = button.previousElementSibling;
+        let currentQuantity = parseInt(inputField.value);
+        inputField.value = currentQuantity + 1;
+        button.parentNode.parentNode.submit();
+    }
 
-            // Totales en el resumen
-            const totalElements = document.querySelectorAll('.total-line span:last-child, .total-final span:last-child');
-            totalElements.forEach(element => {
-                const precio = element.textContent.replace('$', '').replace(/\./g, '').trim();
-                if (!isNaN(precio)) {
-                    const precioFormateado = formatNumber(precio);
-                    element.textContent = '$' + precioFormateado;
-                }
-            });
-        }
+    function showWarning(warningMessage) {
+        warningMessage.style.display = 'block';
+        setTimeout(() => {
+            warningMessage.style.display = 'none';
+        }, 3000);
+    }
 
-        // Llamar a la función al cargar la página
-        formatAllPrices();
-
-        // Mostrar mensaje cuando se actualiza la cantidad
-        const cantidadInputs = document.querySelectorAll('.cantidad-input');
-        cantidadInputs.forEach(input => {
-            input.addEventListener('change', function() {
-                showNotification('Cantidad actualizada');
-            });
+    function formatPrices() {
+        const priceElements = document.querySelectorAll('.precio-total, .summary-line span:last-child');
+        priceElements.forEach(element => {
+            const priceText = element.textContent.replace('$', '').replace(/\./g, '').trim();
+            if (!isNaN(priceText)) {
+                element.textContent = '$' + formatNumber(priceText);
+            }
         });
+    }
 
-        // Botones de incremento/decremento
-        const cantidadBtns = document.querySelectorAll('.cantidad-btn');
-        cantidadBtns.forEach(btn => {
-            btn.addEventListener('click', function() {
-                showNotification('Cantidad actualizada');
-            });
-        });
+    function formatNumber(number) {
+        const intPart = Math.floor(number);
+        const decimalPart = number % 1 !== 0 ? number.toString().split('.')[1] : '';
 
-        // Función para mostrar notificación
-        function showNotification(message) {
-            const notification = document.createElement('div');
-            notification.textContent = message;
-            notification.style.position = 'fixed';
-            notification.style.bottom = '20px';
-            notification.style.right = '20px';
-            notification.style.backgroundColor = '#4CAF50';
-            notification.style.color = 'white';
-            notification.style.padding = '12px 24px';
-            notification.style.borderRadius = '5px';
-            notification.style.zIndex = '1000';
-            notification.style.boxShadow = '0 2px 10px rgba(0,0,0,0.2)';
-            document.body.appendChild(notification);
-            
-            setTimeout(() => {
-                notification.style.opacity = '0';
-                setTimeout(() => {
-                    document.body.removeChild(notification);
-                }, 500);
-            }, 2000);
-        }
-    });
+        const formattedInt = intPart.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+
+        return decimalPart ? formattedInt + '.' + decimalPart : formattedInt;
+    }
+
+    // Call formatPrices to initialize
+    window.onload = formatPrices;
+
 </script>
 {% endblock %}

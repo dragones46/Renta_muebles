@@ -1,0 +1,148 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>{% block titulo %}Navegación Propietario{% endblock %}</title>
+    
+        <!-- Bootstrap y estilos -->
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+        <link href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css" rel="stylesheet">
+        <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    
+        <!-- Estilos personalizados -->
+        <link href="{% static './muebles/css/style.css' %}" rel="stylesheet">
+        <link href="{% static 'muebles/css/muebles.css' %}" rel="stylesheet">
+        <link href="{% static 'muebles/js/style.js' %}" rel="stylesheet">
+    
+        <!-- Icono de pestaña de la página -->
+        <link rel="icon" type="image/png" sizes="32x32" href="{% static 'img/favicon-32x32.png' %}">
+    
+        <!-- Scripts -->
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+        <script src="{% static 'muebles/js/jquery-3.7.1.min.js' %}"></script>
+    
+        <!-- Scripts adicionales -->
+        <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+        <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.bundle.min.js"></script>
+    
+        <!--iconos de boostrap-->
+        <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.0/font/bootstrap-icons.css" rel="stylesheet">
+    
+    </head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="{% url 'propietario_inicio' %}">Panel de Propietario</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
+                aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'propietario_muebles' %}"><i class="bi bi-box-seam"></i>Mis Muebles</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'index' %}"><i class="bi bi-house-door"></i>Volver al Inicio</a>
+                    </li>
+                </ul>
+                <ul class="navbar-nav ms-auto">
+                    {% if request.session.logueo %}
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button"
+                            data-bs-toggle="dropdown" aria-expanded="false">
+                            {% if request.session.logueo.foto %}
+                            <img src="{{ request.session.logueo.foto }}" alt="FotoUsuario" class="profile-image">
+                            {% else %}
+                            <img src="{% static 'muebles/img/default.png' %}" alt="LogoUsuario"
+                                class="profile-image">
+                            {% endif %}
+                        </a>
+                        <!-- En la parte del dropdown del usuario -->
+                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdown"
+                            style="background-color: black;">
+                            <li><a class="dropdown-item" href="{% url 'perfil' %}">Ver Perfil</a></li>
+                            {% if request.session.logueo.rol == 1 %}
+                            <li>
+                                <hr class="dropdown-divider">
+                            </li>
+                            <li><a class="dropdown-item" href="{% url 'admin_inicio' %}">
+                                    <i class="bi bi-shield-lock"></i> Admin
+                                </a></li>
+                            {% endif %}
+                            {% if request.session.logueo.rol == 2 %}
+                            <li>
+                                <hr class="dropdown-divider">
+                            </li>
+                            <li><a class="dropdown-item" href="{% url 'propietario_inicio' %}">
+                                    <i class="bi bi-shield-lock"></i> Propietario
+                                </a></li>
+                            {% endif %}
+                            <li>
+                                <hr class="dropdown-divider">
+                            </li>
+                            <li><a class="dropdown-item" href="{% url 'logout' %}">Cerrar Sesión</a></li>
+                        </ul>
+                    </li>
+                    {% else %}
+                    <li class="nav-item">
+                        <a class="btn btn-success-3d me-3" href="{% url 'login' %}">Iniciar sesión</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="btn btn-primary-3d" href="{% url 'registro' %}">Registrarse</a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="content container mt-5">
+        {% if messages %}
+        <div id="messages-container">
+            {% for message in messages %}
+            <div class="alert alert-{{ message.tags|default:'info' }} alert-dismissible fade show" role="alert">
+                <div class="d-flex align-items-center">
+                    <!-- Iconos según el tipo de mensaje -->
+                    {% if message.tags == 'success' %}
+                    <i class="fas fa-check-circle me-2"></i>
+                    {% elif message.tags == 'error' or message.tags == 'danger' %}
+                    <i class="fas fa-exclamation-circle me-2"></i>
+                    {% elif message.tags == 'warning' %}
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    {% else %}
+                    <i class="fas fa-info-circle me-2"></i>
+                    {% endif %}
+                    <strong>{{ message }}</strong>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+        {% block contenedor %}{% endblock %}
+    </div>
+
+    <footer class="footer mt-5">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-info">
+                    <h5>Atención al cliente:</h5>
+                    <div class="footer-contact">
+                        <p><i class="fab fa-whatsapp"></i> WhatsApp: 32594565442</p>
+                        <p><i class="fas fa-phone-alt"></i> Llamadas: 32594565442</p>
+                    </div>
+                </div>
+                <div class="footer-year">
+                    <p>© 2025 Renta de Muebles</p>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+</body>
+</html>

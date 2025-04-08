@@ -85,4 +85,10 @@ urlpatterns = [
     path('administradores/faqs/editar/<int:pk>/', views.admin_editar_faq, name='admin_editar_faq'),
     path('administradores/faqs/eliminar/<int:faq_id>/', views.admin_eliminar_faq, name='admin_eliminar_faq'),
 
+#ZONA DE PROPIETARIOS
+    path('propietarios/', views.propietario_inicio, name='propietario_inicio'),
+    path('propietarios/muebles/', views.propietario_muebles, name='propietario_muebles'),
+    path('propietarios/muebles/crear/', views.propietario_crear_mueble, name='propietario_crear_mueble'),
+    path('propietarios/muebles/editar/<int:id>/', views.propietario_editar_mueble, name='propietario_editar_mueble'),
+    path('propietarios/muebles/eliminar/<int:id>/', views.propietario_eliminar_mueble, name='propietario_eliminar_mueble'),
 ]

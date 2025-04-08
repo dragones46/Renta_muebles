@@ -55,6 +55,16 @@
                             <a class="nav-link" href="{% url 'contacto' %}">Contacto</a>
                         </li>
                         <li class="nav-item">
+                            <a class="nav-link" href="{% url 'ayuda' %}">
+                                <i class="fas fa-question-circle"></i> Ayuda
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'lista_preguntas' %}">
+                                <i class="fas fa-question-circle"></i> Preguntas
+                            </a>
+                        </li>
+                        <li class="nav-item">
                             <a class="nav-link" href="{% url 'ver_carrito' %}">
                                 <i class="fas fa-shopping-cart"></i> Carrito
                                 <span class="badge bg-danger">
@@ -64,16 +74,6 @@
                                         0
                                     {% endif %}
                                 </span>
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="{% url 'ayuda' %}">
-                                <i class="fas fa-question-circle"></i> Ayuda
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="{% url 'lista_preguntas' %}">
-                                <i class="fas fa-question-circle"></i> Preguntas
                             </a>
                         </li>
                     </ul>
@@ -100,6 +100,14 @@
                                 </li>
                                 <li><a class="dropdown-item" href="{% url 'admin_inicio' %}">
                                         <i class="bi bi-shield-lock"></i> Admin
+                                    </a></li>
+                                {% endif %}
+                                {% if request.session.logueo.rol == 2 %}
+                                <li>
+                                    <hr class="dropdown-divider">
+                                </li>
+                                <li><a class="dropdown-item" href="{% url 'propietario_inicio' %}">
+                                        <i class="bi bi-shield-lock"></i> Propietario
                                     </a></li>
                                 {% endif %}
                                 <li>

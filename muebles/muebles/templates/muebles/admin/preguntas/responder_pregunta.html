@@ -1,38 +1,60 @@
-{% extends 'muebles/barNavInicio.html' %}
+{% extends 'muebles/barNav.html' %}
 {% load static %}
 
-{% block admin_contenido %}
+{% block contenedor %}
 <div class="container mt-4">
-    <h2 class="mb-4">Responder Pregunta</h2>
-    
-    <div class="card mb-4">
-        <div class="card-header bg-light" style="color: black;">
-            <strong style="color: black;">{{ pregunta.usuario.nombre }}</strong> - {{ pregunta.fecha|date:"d/m/Y H:i" }}
+    <div class="card bg-dark text-white">
+        <div class="card-header">
+            <h4>Responder Pregunta</h4>
         </div>
         <div class="card-body">
-            <p class="card-text" style="color: white;">{{ pregunta.pregunta }}</p>
-        </div>
-    </div>
-    
-    <div class="card">
-        <div class="card-body">
+            <div class="mb-4">
+                <h5>Pregunta:</h5>
+                <p class="lead">{{ pregunta.pregunta }}</p>
+                <small class="text-muted">Publicado por {{ pregunta.usuario.username }} el {{ pregunta.fecha|date:"d/m/Y H:i" }}</small>
+            </div>
+            
+            <hr>
+            
+            <h5 class="mb-3">Respuestas anteriores:</h5>
+            {% if pregunta.respuestas.exists %}
+                {% for respuesta in pregunta.respuestas.all %}
+                <div class="card mb-3 bg-secondary">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between mb-2">
+                            <strong>{{ respuesta.administrador.username }}</strong>
+                            <small class="text-muted">{{ respuesta.fecha|date:"d/m/Y H:i" }}</small>
+                        </div>
+                        <p>{{ respuesta.respuesta }}</p>
+                    </div>
+                </div>
+                {% endfor %}
+            {% else %}
+                <p class="text-muted">No hay respuestas aún.</p>
+            {% endif %}
+            
+            <hr>
+            
+            <h5 class="mb-3">Nueva Respuesta:</h5>
             <form method="post">
                 {% csrf_token %}
                 <div class="mb-3">
-                    <label for="{{ form.respuesta.id_for_label }}" class="form-label" style="color: white;">Tu respuesta:</label>
+                    {{ form.respuesta.label_tag }}
                     {{ form.respuesta }}
                     {% if form.respuesta.errors %}
-                    <div class="invalid-feedback d-block">
-                        {{ form.respuesta.errors }}
-                    </div>
+                        <div class="invalid-feedback d-block">
+                            {{ form.respuesta.errors|join:", " }}
+                        </div>
                     {% endif %}
                 </div>
-                <div class="mb-3 form-check">
-                    {{ form.es_faq }}
-                    <label class="form-check-label" for="{{ form.es_faq.id_for_label }}" style="color: white;">Incluir en preguntas frecuentes</label>
+                <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                    <a href="{% url 'admin_lista_preguntas' %}" class="btn btn-secondary me-md-2">
+                        <i class="fas fa-arrow-left"></i> Volver
+                    </a>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-paper-plane"></i> Enviar Respuesta
+                    </button>
                 </div>
-                <button type="submit" class="btn btn-primary">Enviar Respuesta</button>
-                <a href="{% url 'admin_lista_preguntas' %}" class="btn btn-secondary">Cancelar</a>
             </form>
         </div>
     </div>

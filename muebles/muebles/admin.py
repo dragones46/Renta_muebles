@@ -7,10 +7,21 @@ from .forms import *
 @admin.register(Usuario)
 class UsuarioAdmin(admin.ModelAdmin):
     form = UsuarioForm
-    list_display = ('id', 'nombre', 'email', 'direccion', 'rol', 'estado', 'ver_foto')
+    list_display = ('id', 'nombre', 'email', 'get_tipo_propietario', 'rol', 'estado', 'ver_foto')
     search_fields = ('id', 'nombre', 'email')
-    list_filter = ('rol', 'estado')  # Debe ser una lista o tupla
-    list_editable = ('rol', 'estado', 'direccion')
+    list_filter = ('rol', 'estado')
+    list_editable = ('rol', 'estado')
+
+    def get_tipo_propietario(self, obj):
+        try:
+            propietario = obj.propietario
+            if propietario.tipo == 'empresa':
+                return f"Empresa: {propietario.nombre_empresa}"
+            elif propietario.tipo == 'individual':
+                return "Propietario Individual"
+        except Propietario.DoesNotExist:
+            return "-"
+    get_tipo_propietario.short_description = 'Tipo Propietario'
 
     def ver_foto(self, obj):
         if obj.foto:
@@ -20,10 +31,32 @@ class UsuarioAdmin(admin.ModelAdmin):
     ver_foto.short_description = 'Foto'
 
 # Registrar el modelo Propietario
-@admin.register(Propietario)
 class PropietarioAdmin(admin.ModelAdmin):
-    list_display = ('id','nombre', 'telefono', 'email')
-    search_fields = ('id','nombre', 'email')
+    list_display = ('id', 'get_nombre', 'get_telefono', 'get_email', 'tipo', 'nombre_empresa')
+    list_filter = ('tipo',)
+    search_fields = ('nombre_empresa', 'usuario__nombre', 'usuario__email')
+    
+    def get_nombre(self, obj):
+        if obj.tipo == 'individual' and obj.usuario:
+            return obj.usuario.nombre
+        elif obj.tipo == 'empresa':
+            return obj.nombre_empresa
+        return "-"
+    get_nombre.short_description = 'Nombre'
+    
+    def get_telefono(self, obj):
+        if obj.tipo == 'individual' and obj.usuario and hasattr(obj.usuario, 'telefono'):
+            return obj.usuario.telefono
+        return "-"
+    get_telefono.short_description = 'Teléfono'
+    
+    def get_email(self, obj):
+        if obj.tipo == 'individual' and obj.usuario:
+            return obj.usuario.email
+        return "-"
+    get_email.short_description = 'Email'
+
+admin.site.register(Propietario, PropietarioAdmin)
 
 # Registrar el modelo Mueble
 @admin.register(Mueble)
