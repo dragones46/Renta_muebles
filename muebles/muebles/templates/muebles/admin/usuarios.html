@@ -184,6 +184,34 @@
         border-color: #ff6b00;
         color: white;
     }
+     /* Estilos adicionales para los íconos y elementos del formulario */
+     .bi-calendar, 
+    .form-select {
+        color: white !important;
+    }
+    
+    /* Cambiar el color del ícono del calendario en los inputs de fecha */
+    input[type="date"]::-webkit-calendar-picker-indicator {
+        filter: invert(1);
+    }
+    
+    /* Cambiar el color de la flecha en los selects */
+    .form-select {
+        background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='white' d='M7.247 11.14 2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 0 1 .753 1.659l-4.796 5.48a1 1 0 0 1-1.506 0z'/%3e%3c/svg%3e");
+    }
+    
+    /* Cambiar el color del placeholder a gris claro */
+    ::placeholder {
+        color: #aaa !important;
+        opacity: 1;
+    }
+    
+    /* Asegurar que el texto en los inputs sea blanco */
+    .form-control, 
+    .form-select, 
+    input[type="date"] {
+        color: white !important;
+    }
 </style>
 
 <div class="container mt-4">
@@ -233,12 +261,12 @@
                         </select>
                     </div>
                     
-                    <div class="col-md-2 d-flex align-items-end">
+                    <div class="col-md-12 d-flex align-items-end">
                         <button type="submit" class="btn btn-filter me-2">
-                            <i class="bi bi-funnel"></i> Filtrar
+                            <i class="bi bi-search"></i> Buscar
                         </button>
                         <a href="{% url 'admin_usuarios' %}" class="btn btn-reset">
-                            <i class="bi bi-arrow-counterclockwise"></i>
+                            <i class="bi bi-arrow-counterclockwise"></i> Limpiar
                         </a>
                     </div>
                 </form>
@@ -266,10 +294,10 @@
                             <td>{{ info.usuario.email }}</td>
                             <td>
                                 {% if info.tipo_propietario.es_propietario %}
-                                    {% if info.tipo_propietario.tipo == 'empresa' %}
-                                        <span class="badge bg-info">Empresa: {{ info.tipo_propietario.nombre_empresa }}</span>
+                                    {% if info.tipo_propietario.tipo == 'empleado' %}
+                                        <span class="badge bg-info">Empleado</span>
                                     {% else %}
-                                        <span class="badge bg-primary">Individual</span>
+                                        <span class="badge bg-primary">Propietario Individual</span>
                                     {% endif %}
                                 {% else %}
                                     <span class="badge bg-secondary">No es propietario</span>
@@ -391,13 +419,21 @@
                         <select class="form-select" name="tipo_propietario" id="tipo_propietario">
                             <option value="">No es propietario</option>
                             <option value="individual">Propietario Individual</option>
-                            <option value="empresa">Empresa</option>
+                            <option value="empleado">Empleado de Empresa</option>
                         </select>
                     </div>
-                    <div class="mb-3" id="nombre_empresa_container" style="display:none;">
-                        <label class="form-label">Nombre de la Empresa</label>
-                        <input type="text" class="form-control" name="nombre_empresa">
-                    </div>
+                    <div class="mb-3" id="empresa_fields" style="display: none;">
+                        <div class="mb-3">
+                            <label class="form-label">Nombre de la Empresa</label>
+                            <input type="text" class="form-control" name="nombre_empresa" 
+                                   value="{% if propietario and propietario.tipo == 'empresa' %}{{ propietario.nombre_empresa }}{% endif %}">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Teléfono</label>
+                            <input type="text" class="form-control" name="telefono" 
+                                   value="{% if propietario %}{{ propietario.telefono }}{% endif %}">
+                        </div>
+                    </div>                    
                     <div class="mb-3">
                         <label class="form-label">Foto de perfil</label>
                         <input type="file" class="form-control" name="foto">
@@ -459,16 +495,27 @@
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Tipo de Propietario</label>
-                        <select class="form-select" name="tipo_propietario" id="tipo_propietario_{{ info.usuario.id }}">
-                            <option value="">No es propietario</option>
-                            <option value="individual" {% if info.tipo_propietario.es_propietario and info.tipo_propietario.tipo == 'individual' %}selected{% endif %}>Propietario Individual</option>
-                            <option value="empresa" {% if info.tipo_propietario.es_propietario and info.tipo_propietario.tipo == 'empresa' %}selected{% endif %}>Empresa</option>
+                        <select class="form-select" name="tipo_propietario" id="tipo_propietario">
+                            {% for tipo in tipos_propietario %}
+                            <option value="{{ tipo.0 }}" {% if propietario and propietario.tipo == tipo.0 %}selected{% endif %}>
+                                {{ tipo.1 }}
+                            </option>
+                            {% endfor %}
                         </select>
                     </div>
-                    <div class="mb-3" id="nombre_empresa_container_{{ info.usuario.id }}" style="display:{% if info.tipo_propietario.es_propietario and info.tipo_propietario.tipo == 'empresa' %}block{% else %}none{% endif %};">
-                        <label class="form-label">Nombre de la Empresa</label>
-                        <input type="text" class="form-control" name="nombre_empresa" value="{% if info.tipo_propietario.es_propietario and info.tipo_propietario.tipo == 'empresa' %}{{ info.tipo_propietario.nombre_empresa }}{% endif %}">
-                    </div>
+                    
+                    <div class="mb-3" id="empresa_fields" style="display: none;">
+                        <div class="mb-3">
+                            <label class="form-label">Nombre de la Empresa</label>
+                            <input type="text" class="form-control" name="nombre_empresa" 
+                                   value="{% if propietario and propietario.tipo == 'empresa' %}{{ propietario.nombre_empresa }}{% endif %}">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Teléfono</label>
+                            <input type="text" class="form-control" name="telefono" 
+                                   value="{% if propietario %}{{ propietario.telefono }}{% endif %}">
+                        </div>
+                    </div>                    
                     <div class="mb-3">
                         <label class="form-label">Foto de perfil</label>
                         {% if info.usuario.foto %}
@@ -530,5 +577,46 @@
     });
     {% endfor %}
 </script>
+
+<script>
+    // Mostrar/ocultar campos de empresa según selección
+    document.getElementById('tipo_propietario').addEventListener('change', function() {
+        const empresaFields = document.getElementById('empresa_fields');
+        if (this.value === 'empresa') {
+            empresaFields.style.display = 'block';
+        } else {
+            empresaFields.style.display = 'none';
+        }
+    });
+
+    // Inicializar estado al cargar la página
+    document.addEventListener('DOMContentLoaded', function() {
+        const tipoSelect = document.getElementById('tipo_propietario');
+        if (tipoSelect) {
+            tipoSelect.dispatchEvent(new Event('change'));
+        }
+    });
+</script>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const tipoPropietario = document.querySelector('[name="tipo_propietario"]');
+        const empresaFields = document.getElementById('empresa-fields');
+        
+        if (tipoPropietario && empresaFields) {
+            // Mostrar campos de empresa si es tipo 'empresa'
+            tipoPropietario.addEventListener('change', function() {
+                if (this.value === 'empresa') {
+                    empresaFields.style.display = 'block';
+                } else {
+                    empresaFields.style.display = 'none';
+                }
+            });
+            
+            // Disparar el evento al cargar la página
+            tipoPropietario.dispatchEvent(new Event('change'));
+        }
+    });
+    </script>
 
 {% endblock %}

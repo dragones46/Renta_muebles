@@ -1,7 +1,182 @@
-{% extends 'muebles/barNav.html' %}
+{% extends 'muebles/barNavInicio.html' %}
 {% load static %}
 
-{% block contenedor %}
+{% block admin_contenido %}
+<style>
+    .card {
+        background-color: #1a1a1a;
+        border: 1px solid #333;
+        border-radius: 8px;
+        color: #fff;
+    }
+    
+    .card-header {
+        background-color: #2a2a2a;
+        border-bottom: 1px solid #333;
+    }
+    
+    .table {
+        color: #fff;
+    }
+    
+    .table th {
+        background-color: #2a2a2a;
+        color: #fff;
+        border-bottom: 1px solid #333;
+    }
+    
+    .table td {
+        border-top: 1px solid #333;
+        vertical-align: middle;
+    }
+    
+    .table-hover tbody tr:hover {
+        background-color: #2a2a2a;
+    }
+    
+    .btn-success {
+        background-color: #ff6b00;
+        border: none;
+    }
+    
+    .btn-success:hover {
+        background-color: #e05d00;
+    }
+    
+    .btn-primary {
+        background-color: #ff6b00;
+        border: none;
+    }
+    
+    .btn-primary:hover {
+        background-color: #e05d00;
+    }
+    
+    .btn-warning {
+        color:#1a1a1a
+    }
+    
+    .btn-danger {
+        background-color: #dc3545;
+        border: none;
+    }
+    
+    .modal-content {
+        background-color: #1a1a1a;
+        color: #fff;
+    }
+    
+    .modal-header {
+        border-bottom: 1px solid #333;
+    }
+    
+    .modal-footer {
+        border-top: 1px solid #333;
+    }
+    
+    .form-control, .form-select {
+        background-color: #2a2a2a;
+        border: 1px solid #333;
+        color: #fff;
+    }
+    
+    .form-control:focus, .form-select:focus {
+        background-color: #2a2a2a;
+        color: #fff;
+        border-color: #ff6b00;
+        box-shadow: 0 0 0 0.25rem rgba(255, 107, 0, 0.25);
+    }
+    
+    .text-muted {
+        color: #6c757d !important;
+    }
+    
+    .badge-oferta {
+        background-color: #dc3545;
+        font-size: 0.8rem;
+    }
+    
+    .precio-original {
+        text-decoration: line-through;
+        color: #999;
+    }
+    
+    .precio-descuento {
+        color: #28a745;
+        font-weight: bold;
+    }
+    
+    .search-filter-container {
+        background-color: #2a2a2a;
+        padding: 15px;
+        border-radius: 8px;
+        margin-bottom: 20px;
+    }
+    
+    .search-filter-container .form-control, 
+    .search-filter-container .form-select {
+        background-color: #1a1a1a;
+    }
+    
+    .search-filter-container .btn-filter {
+        background-color: #ff6b00;
+        color: white;
+    }
+    
+    .search-filter-container .btn-filter:hover {
+        background-color: #e05d00;
+    }
+    
+    .search-filter-container .btn-reset {
+        background-color: #6c757d;
+        color: white;
+    }
+    
+    .page-link {
+        background-color: #2a2a2a;
+        color: #ff6b00;
+        border: 1px solid #333;
+    }
+    
+    .page-item.disabled .page-link {
+        color: #6c757d;
+    }
+    
+    .page-item.active .page-link {
+        background-color: #ff6b00;
+        border-color: #ff6b00;
+        color: white;
+    }
+     /* Estilos adicionales para los íconos y elementos del formulario */
+     .bi-calendar, 
+    .form-select {
+        color: white !important;
+    }
+    
+    /* Cambiar el color del ícono del calendario en los inputs de fecha */
+    input[type="date"]::-webkit-calendar-picker-indicator {
+        filter: invert(1);
+    }
+    
+    /* Cambiar el color de la flecha en los selects */
+    .form-select {
+        background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='white' d='M7.247 11.14 2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 0 1 .753 1.659l-4.796 5.48a1 1 0 0 1-1.506 0z'/%3e%3c/svg%3e");
+    }
+    
+    /* Cambiar el color del placeholder a gris claro */
+    ::placeholder {
+        color: #aaa !important;
+        opacity: 1;
+    }
+    
+    /* Asegurar que el texto en los inputs sea blanco */
+    .form-control, 
+    .form-select, 
+    input[type="date"] {
+        color: white !important;
+    }
+</style>
+
 <div class="container mt-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h2 class="mb-0">Administración de Preguntas</h2>

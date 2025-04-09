@@ -15,8 +15,8 @@ class UsuarioAdmin(admin.ModelAdmin):
     def get_tipo_propietario(self, obj):
         try:
             propietario = obj.propietario
-            if propietario.tipo == 'empresa':
-                return f"Empresa: {propietario.nombre_empresa}"
+            if propietario.tipo == 'empleado':
+                return "Empleado de Empresa"
             elif propietario.tipo == 'individual':
                 return "Propietario Individual"
         except Propietario.DoesNotExist:
@@ -32,29 +32,9 @@ class UsuarioAdmin(admin.ModelAdmin):
 
 # Registrar el modelo Propietario
 class PropietarioAdmin(admin.ModelAdmin):
-    list_display = ('id', 'get_nombre', 'get_telefono', 'get_email', 'tipo', 'nombre_empresa')
+    list_display = ('usuario', 'tipo', 'nombre_empresa', 'telefono', 'fecha_registro')
+    search_fields = ('usuario__nombre', 'usuario__email', 'nombre_empresa', 'telefono')
     list_filter = ('tipo',)
-    search_fields = ('nombre_empresa', 'usuario__nombre', 'usuario__email')
-    
-    def get_nombre(self, obj):
-        if obj.tipo == 'individual' and obj.usuario:
-            return obj.usuario.nombre
-        elif obj.tipo == 'empresa':
-            return obj.nombre_empresa
-        return "-"
-    get_nombre.short_description = 'Nombre'
-    
-    def get_telefono(self, obj):
-        if obj.tipo == 'individual' and obj.usuario and hasattr(obj.usuario, 'telefono'):
-            return obj.usuario.telefono
-        return "-"
-    get_telefono.short_description = 'Teléfono'
-    
-    def get_email(self, obj):
-        if obj.tipo == 'individual' and obj.usuario:
-            return obj.usuario.email
-        return "-"
-    get_email.short_description = 'Email'
 
 admin.site.register(Propietario, PropietarioAdmin)
 

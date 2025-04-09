@@ -150,6 +150,64 @@
         border-color: #ff6b00;
         color: white;
     }
+     /* Estilos adicionales para los íconos y elementos del formulario */
+     .bi-calendar, 
+    .form-select {
+        color: white !important;
+    }
+    
+    /* Cambiar el color del ícono del calendario en los inputs de fecha */
+    input[type="date"]::-webkit-calendar-picker-indicator {
+        filter: invert(1);
+    }
+    
+    /* Cambiar el color de la flecha en los selects */
+    .form-select {
+        background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='white' d='M7.247 11.14 2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 0 1 .753 1.659l-4.796 5.48a1 1 0 0 1-1.506 0z'/%3e%3c/svg%3e");
+    }
+    
+    /* Cambiar el color del placeholder a gris claro */
+    ::placeholder {
+        color: #aaa !important;
+        opacity: 1;
+    }
+    
+    /* Asegurar que el texto en los inputs sea blanco */
+    .form-control, 
+    .form-select, 
+    input[type="date"] {
+        color: white !important;
+    }
+
+    /* Estilos adicionales */
+    .alert-info {
+        background-color: #2a2a2a;
+        border-color: #444;
+        color: #ddd;
+    }
+    
+    .alert-warning {
+        background-color: #332a00;
+        border-color: #665500;
+        color: #ffcc00;
+    }
+    
+    .propietario-individual {
+        color: #4dabf7;
+    }
+    
+    .propietario-empresa {
+        color: #40c057;
+    }
+    
+    .select2-container--default .select2-results__option[aria-selected=true] {
+        background-color: #444;
+    }
+    
+    .select2-container--default .select2-results__option--highlighted[aria-selected] {
+        background-color: #ff6b00;
+        color: white;
+    }
 </style>
 
 <div class="container mt-4">
@@ -170,37 +228,24 @@
                     <div class="col-md-4">
                         <label for="search" class="form-label">Buscar</label>
                         <input type="text" class="form-control" id="search" name="search" 
-                               placeholder="Nombre o descripción" value="{{ request.GET.search }}">
-                    </div>
-                    
-                    <div class="col-md-3">
-                        <label for="propietario" class="form-label">Propietario</label>
-                        <select class="form-select" id="propietario" name="propietario">
-                            <option value="">Todos</option>
-                            {% for propietario in propietarios %}
-                            <option value="{{ propietario.id }}" 
-                                    {% if request.GET.propietario == propietario.id|stringformat:"s" %}selected{% endif %}>
-                                {{ propietario.nombre }}
-                            </option>
-                            {% endfor %}
-                        </select>
+                               placeholder="ID, nombre o descripción" value="{{ search }}">
                     </div>
                     
                     <div class="col-md-3">
                         <label for="oferta" class="form-label">En oferta</label>
                         <select class="form-select" id="oferta" name="oferta">
                             <option value="">Todos</option>
-                            <option value="1" {% if request.GET.oferta == "1" %}selected{% endif %}>Sí</option>
-                            <option value="0" {% if request.GET.oferta == "0" %}selected{% endif %}>No</option>
+                            <option value="1" {% if oferta_filter == "1" %}selected{% endif %}>Sí</option>
+                            <option value="0" {% if oferta_filter == "0" %}selected{% endif %}>No</option>
                         </select>
                     </div>
                     
-                    <div class="col-md-2 d-flex align-items-end">
+                    <div class="col-md-4 d-flex align-items-end">
                         <button type="submit" class="btn btn-filter me-2">
-                            <i class="bi bi-funnel"></i> Filtrar
+                            <i class="bi bi-search"></i> Buscar
                         </button>
-                        <a href="{% url 'admin_muebles' %}" class="btn btn-reset">
-                            <i class="bi bi-arrow-counterclockwise"></i>
+                        <a href="{% url 'propietario_muebles' %}" class="btn btn-reset">
+                            <i class="bi bi-arrow-counterclockwise"></i> Limpiar
                         </a>
                     </div>
                 </form>
@@ -243,7 +288,18 @@
                                 -
                                 {% endif %}
                             </td>
-                            <td>{{ mueble.propietario }}</td>
+                            <td>
+                                {% if mueble.propietario.tipo == 'individual' %}
+                                    <span class="propietario-individual">
+                                        <i class="bi bi-person"></i> {{ mueble.propietario.usuario.nombre }}
+                                    </span>
+                                {% else %}
+                                    <span class="propietario-empresa">
+                                        <i class="bi bi-building"></i> {{ mueble.propietario.nombre_empresa|default:mueble.propietario.usuario.nombre }}
+                                    </span>
+                                {% endif %}
+                                <small class="text-muted d-block">ID: {{ mueble.propietario.id }}</small>
+                            </td>
                             <td>
                                 {% if mueble.imagen %}
                                 <img src="{{ mueble.imagen.url }}" width="50" height="50" class="img-thumbnail">
@@ -325,7 +381,7 @@
                 {% csrf_token %}
                 <div class="modal-body">
                     <div class="mb-3">
-                        <label class="form-label">Nombre</label>
+                        <label class="form-label">Nombre del Mueble</label>
                         <input type="text" class="form-control" name="nombre" required>
                     </div>
                     <div class="mb-3">
@@ -333,7 +389,7 @@
                         <textarea class="form-control" name="descripcion" rows="3"></textarea>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label">Precio Diario</label>
+                        <label class="form-label">Precio Diario ($)</label>
                         <input type="number" class="form-control" name="precio_diario" required>
                     </div>
                     <div class="mb-3">
@@ -347,19 +403,28 @@
                     <div class="mb-3">
                         <label class="form-label">Propietario</label>
                         <select class="form-select" name="propietario" required>
+                            <option value="">Seleccione un propietario</option>
                             {% for propietario in propietarios %}
-                            <option value="{{ propietario.id }}">{{ propietario.nombre }}</option>
+                            <option value="{{ propietario.id }}">
+                                {% if propietario.tipo == 'individual' %}
+                                    {{ propietario.usuario.nombre }} (Propietario Individual)
+                                {% else %}
+                                    {{ propietario.nombre_empresa|default:propietario.usuario.nombre }} (Empresa)
+                                {% endif %}
+                            </option>
                             {% endfor %}
                         </select>
+                        <small class="text-muted">Seleccione a qué empresa o usuario pertenece este mueble</small>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label">Imagen</label>
-                        <input type="file" class="form-control" name="imagen">
+                        <label class="form-label">Imagen del Mueble</label>
+                        <input type="file" class="form-control" name="imagen" accept="image/*">
+                        <small class="text-muted">Formatos aceptados: JPG, PNG, etc.</small>
                     </div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="submit" class="btn btn-primary">Guardar</button>
+                    <button type="submit" class="btn btn-primary">Guardar Mueble</button>
                 </div>
             </form>
         </div>
@@ -368,19 +433,18 @@
 
 <!-- Modales para Editar y Eliminar (uno por cada mueble) -->
 {% for mueble in muebles %}
-<!-- Modal Editar -->
 <div class="modal fade" id="editarMuebleModal{{ mueble.id }}" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">Editar Mueble</h5>
+                <h5 class="modal-title">Editar Mueble: {{ mueble.nombre }}</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <form method="post" enctype="multipart/form-data" action="{% url 'editar_mueble' mueble.id %}">
                 {% csrf_token %}
                 <div class="modal-body">
                     <div class="mb-3">
-                        <label class="form-label">Nombre</label>
+                        <label class="form-label">Nombre del Mueble</label>
                         <input type="text" class="form-control" name="nombre" value="{{ mueble.nombre }}" required>
                     </div>
                     <div class="mb-3">
@@ -388,7 +452,7 @@
                         <textarea class="form-control" name="descripcion" rows="3">{{ mueble.descripcion }}</textarea>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label">Precio Diario</label>
+                        <label class="form-label">Precio Diario ($)</label>
                         <input type="number" class="form-control" name="precio_diario" value="{{ mueble.precio_diario }}" required>
                     </div>
                     <div class="mb-3">
@@ -401,23 +465,45 @@
                                value="{{ mueble.fecha_fin_descuento|date:'Y-m-d' }}">
                     </div>
                     <div class="mb-3">
-                        <label class="form-label">Propietario</label>
-                        <select class="form-select" name="propietario" required>
+                        <label class="form-label">Propietario Actual</label>
+                        <div class="alert alert-info">
+                            {% if mueble.propietario.tipo == 'individual' %}
+                                <strong>{{ mueble.propietario.usuario.nombre }}</strong> (Propietario Individual)
+                            {% else %}
+                                <strong>{{ mueble.propietario.nombre_empresa|default:mueble.propietario.usuario.nombre }}</strong> (Empresa)
+                            {% endif %}
+                        </div>
+                        
+                        <label class="form-label">Cambiar Propietario</label>
+                        <select class="form-select" name="propietario">
+                            <option value="">Mantener propietario actual</option>
                             {% for propietario in propietarios %}
-                            <option value="{{ propietario.id }}" {% if propietario.id == mueble.propietario.id %}selected{% endif %}>
-                                {{ propietario.nombre }}
+                            {% if propietario.id != mueble.propietario.id %}
+                            <option value="{{ propietario.id }}">
+                                {% if propietario.tipo == 'individual' %}
+                                    {{ propietario.usuario.nombre }} (Propietario Individual)
+                                {% else %}
+                                    {{ propietario.nombre_empresa|default:propietario.usuario.nombre }} (Empresa)
+                                {% endif %}
                             </option>
+                            {% endif %}
                             {% endfor %}
                         </select>
+                        <small class="text-muted">Seleccione solo si desea cambiar el propietario</small>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label">Imagen</label>
+                        <label class="form-label">Imagen Actual</label>
                         {% if mueble.imagen %}
                         <div class="mb-2">
                             <img src="{{ mueble.imagen.url }}" width="100" class="img-thumbnail">
                         </div>
+                        {% else %}
+                        <div class="alert alert-warning">Este mueble no tiene imagen</div>
                         {% endif %}
-                        <input type="file" class="form-control" name="imagen">
+                        
+                        <label class="form-label">Cambiar Imagen</label>
+                        <input type="file" class="form-control" name="imagen" accept="image/*">
+                        <small class="text-muted">Dejar en blanco para mantener la imagen actual</small>
                     </div>
                 </div>
                 <div class="modal-footer">

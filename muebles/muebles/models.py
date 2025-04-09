@@ -62,21 +62,35 @@ class Usuario(AbstractUser):
 
 class Propietario(models.Model):
     TIPO_PROPIETARIO = [
-        ('individual', 'Individual'),
-        ('empresa', 'Empresa'),
+        ('individual', 'Propietario Individual'),
+        ('empleado', 'Empleado de Empresa'),
     ]
     
-    usuario = models.OneToOneField(Usuario, on_delete=models.CASCADE, null=True, blank=True)
+    usuario = models.OneToOneField(Usuario, on_delete=models.CASCADE, related_name='propietario',null=True, blank=True)
+    tipo = models.CharField(max_length=10, choices=TIPO_PROPIETARIO,default='empleado')
     nombre_empresa = models.CharField(max_length=100, null=True, blank=True)
-    tipo = models.CharField(max_length=10, choices=TIPO_PROPIETARIO, default='individual')
+    telefono = models.CharField(max_length=20, null=True, blank=True)
+    fecha_registro = models.DateTimeField(default=timezone.now)
+    
+    class Meta:
+        verbose_name = 'Propietario'
+        verbose_name_plural = 'Propietarios'
+        ordering = ['-fecha_registro']
     
     def __str__(self):
-        if self.tipo == 'individual' and self.usuario:
+        if self.tipo == 'individual':
             return f"{self.usuario.nombre} (Individual)"
-        elif self.tipo == 'empresa':
+        elif self.nombre_empresa:
             return f"{self.nombre_empresa} (Empresa)"
-        return "Propietario sin nombre"
-
+        return f"{self.usuario.nombre} (Propietario)"
+    
+    @property
+    def display_tipo(self):
+        """Muestra el tipo de propietario correctamente en las vistas"""
+        if self.tipo == 'individual':
+            return 'Propietario Individual'
+        return 'Empleado'  # Para 'empleado' solo muestra 'Empleado'
+    
 class Mueble(models.Model):
     nombre = models.CharField(max_length=100)
     descripcion = models.TextField()
@@ -104,6 +118,14 @@ class Mueble(models.Model):
     
     def __str__(self):
         return self.nombre
+    
+    def get_propietario_display(self):
+        """Devuelve el nombre del propietario o empresa según corresponda"""
+        if self.propietario.tipo == 'individual':
+            return self.propietario.usuario.nombre
+        elif self.propietario.tipo == 'empleado' and self.propietario.nombre_empresa:
+            return self.propietario.nombre_empresa
+        return self.propietario.usuario.nombre  # Por defecto el nombre del usuario
 
 
 

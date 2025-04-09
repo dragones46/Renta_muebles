@@ -6,36 +6,51 @@
 <style>
     /* Estilos para el formulario de registro */
     .card {
-        background-color: #2a2a2a; /* Fondo oscuro para la tarjeta */
-        border: 1px solid #444; /* Borde sutil */
+        background-color: #2a2a2a;
+        /* Fondo oscuro para la tarjeta */
+        border: 1px solid #444;
+        /* Borde sutil */
         border-radius: 10px;
         box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
     }
 
-    .card-title, .text-center, .form-label, .form-control, .btn-primary {
-        color: #ffffff !important; /* Texto blanco */
+    .card-title,
+    .text-center,
+    .form-label,
+    .form-control,
+    .btn-primary {
+        color: #ffffff !important;
+        /* Texto blanco */
     }
 
     .form-control {
-        background-color: #444; /* Fondo oscuro para los inputs */
-        border: 1px solid #666; /* Borde sutil */
-        color: #ffffff; /* Texto blanco */
+        background-color: #444;
+        /* Fondo oscuro para los inputs */
+        border: 1px solid #666;
+        /* Borde sutil */
+        color: #ffffff;
+        /* Texto blanco */
     }
 
     .form-control:focus {
-        background-color: #555; /* Fondo más claro al enfocar */
-        border-color: #ff8c00; /* Borde naranja al enfocar */
-        color: #ffffff; /* Texto blanco */
+        background-color: #555;
+        /* Fondo más claro al enfocar */
+        border-color: #ff8c00;
+        /* Borde naranja al enfocar */
+        color: #ffffff;
+        /* Texto blanco */
     }
 
     .btn-primary {
-        background-color: #ff8c00; /* Botón naranja */
+        background-color: #ff8c00;
+        /* Botón naranja */
         border: none;
         transition: background-color 0.3s ease;
     }
 
     .btn-primary:hover {
-        background-color: #e67600; /* Naranja más oscuro al pasar el mouse */
+        background-color: #e67600;
+        /* Naranja más oscuro al pasar el mouse */
     }
 </style>
 
@@ -61,12 +76,28 @@
                             <input type="text" class="form-control" id="direccion" name="direccion" required>
                         </div>
                         <div class="mb-3">
+                            <label for="tipo_propietario" class="form-label">Tipo de Propietario:</label>
+                            <select class="form-control" id="tipo_propietario" name="tipo_propietario" required>
+                                <option value="individual">Propietario Individual</option>
+                                <option value="empleado">Empleado de Empresa</option> <!-- Opción para empleados -->
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="nombre_empresa" class="form-label">Nombre de la Empresa:</label>
+                            <input type="text" class="form-control" id="nombre_empresa" name="nombre_empresa">
+                        </div>
+                        <div class="mb-3">
+                            <label for="telefono" class="form-label">Teléfono:</label>
+                            <input type="tel" class="form-control" id="telefono" name="telefono" required pattern="[0-9]{8,15}" title="Por favor, ingrese un número de teléfono válido (solo números)">
+                        </div>
+                        <div class="mb-3">
                             <label for="password" class="form-label">Contraseña:</label>
                             <input type="password" class="form-control" id="password" name="password" required>
                         </div>
                         <div class="mb-3">
                             <label for="confirm_password" class="form-label">Confirmar Contraseña:</label>
-                            <input type="password" class="form-control" id="confirm_password" name="confirm_password" required>
+                            <input type="password" class="form-control" id="confirm_password" name="confirm_password"
+                                required>
                         </div>
                         <div class="d-grid">
                             <button type="submit" class="btn btn-primary">Registrarse</button>

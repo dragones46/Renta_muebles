@@ -97,6 +97,21 @@ class DomicilioForm(forms.Form):
 
 #usuario
 class UsuarioForm(forms.ModelForm):
+    tipo_propietario = forms.ChoiceField(
+        choices=Propietario.TIPO_PROPIETARIO, 
+        required=False,
+        label="Tipo de Propietario"
+    )
+    nombre_empresa = forms.CharField(
+        max_length=100, 
+        required=False, 
+        label="Nombre de Empresa (si aplica)"
+    )
+    telefono = forms.CharField(
+        max_length=20, 
+        required=False, 
+        label="Teléfono"
+    )
     password = forms.CharField(
         widget=forms.PasswordInput(attrs={'class': 'form-control'}),
         required=False,
@@ -139,3 +154,25 @@ class MuebleForm(forms.ModelForm):
             'propietario': forms.Select(attrs={'class': 'form-control'}),
             'imagen': forms.FileInput(attrs={'class': 'form-control'}),
         }  
+
+class PropietarioForm(forms.ModelForm):
+    class Meta:
+        model = Propietario
+        fields = ['tipo', 'nombre_empresa', 'telefono']
+        widgets = {
+            'tipo': forms.Select(attrs={'class': 'form-control'}),
+            'nombre_empresa': forms.TextInput(attrs={'class': 'form-control'}),
+            'telefono': forms.TextInput(attrs={'class': 'form-control'}),
+        }
+
+    def clean_nombre_empresa(self):
+        nombre_empresa = self.cleaned_data.get('nombre_empresa')
+        if not nombre_empresa:
+            raise forms.ValidationError("Este campo es obligatorio.")
+        return nombre_empresa
+
+    def clean_telefono(self):
+        telefono = self.cleaned_data.get('telefono')
+        if not telefono:
+            raise forms.ValidationError("Este campo es obligatorio.")
+        return telefono

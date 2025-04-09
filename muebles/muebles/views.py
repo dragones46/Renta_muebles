@@ -173,7 +173,11 @@ def registro(request):
         email = request.POST.get('email')
         direccion = request.POST.get('direccion')
         password = request.POST.get('password')
+        tipo_propietario = request.POST.get('tipo_propietario')
+        nombre_empresa = request.POST.get('nombre_empresa')
+        telefono = request.POST.get('telefono')
 
+        # Validaciones
         if not re.match("^[A-Za-z\\s]+$", nombre):
             messages.warning(request, "El nombre solo puede contener letras y espacios.")
             return redirect("registro")
@@ -186,19 +190,32 @@ def registro(request):
             messages.warning(request, "El correo electrónico ya está registrado.")
             return redirect("registro")
 
+        if not telefono.isdigit():
+            messages.warning(request, "El teléfono solo puede contener números.")
+            return redirect("registro")
+
         try:
             with transaction.atomic():
-                user = Usuario.objects.create(
+                # Crear el usuario
+                usuario = Usuario.objects.create(
                     nombre=nombre,
                     email=email,
-                    username=email,
+                    username=email,  # Usar el email como nombre de usuario
                     direccion=direccion,
-                    password=make_password(password),
-                    rol=3
+                    password=make_password(password),  # Encriptar la contraseña
                 )
                 
+                # Crear el propietario
+                propietario = Propietario(
+                    usuario=usuario,
+                    tipo=tipo_propietario,
+                    nombre_empresa=nombre_empresa,  # Guardar el nombre de la empresa
+                    telefono=telefono  # Guardar el teléfono
+                )
+                propietario.save()
+
                 # Crear carrito para el nuevo usuario
-                Carrito.objects.create(usuario=user)
+                Carrito.objects.create(usuario=usuario)
                 
                 messages.success(request, "Usuario creado exitosamente. Por favor, inicia sesión.")
                 return redirect("login")
@@ -502,13 +519,61 @@ def admin_inicio(request):
     return render(request, 'muebles/admin/inicio.html', context)
 
 # CRUD Muebles
-@login_requerido(roles_permitidos=[1])
+@login_requerido(roles_permitidos=[1, 2])
 def admin_muebles(request):
-    muebles = Mueble.objects.all()
-    propietarios = Propietario.objects.all()
+    # Obtener parámetros de búsqueda/filtro
+    search = request.GET.get('search', '')
+    oferta_filter = request.GET.get('oferta', '')
+    propietario_filter = request.GET.get('propietario', '')
+    
+    # Obtener todos los muebles
+    muebles = Mueble.objects.all().order_by('-id')
+    
+    # Aplicar filtros
+    if search:
+        try:
+            # Intentar buscar por ID
+            mueble_id = int(search)
+            muebles = muebles.filter(id=mueble_id)
+        except ValueError:
+            # Si no es un ID válido, buscar por nombre o descripción
+            muebles = muebles.filter(
+                Q(nombre__icontains=search) | 
+                Q(descripcion__icontains=search)
+            )
+    
+    if oferta_filter:
+        if oferta_filter == '1':
+            # Filtrar por muebles en oferta (descuento > 0)
+            muebles = muebles.filter(descuento__gt=0)
+        elif oferta_filter == '0':
+            # Filtrar por muebles sin oferta (descuento = 0)
+            muebles = muebles.filter(descuento=0)
+    
+    if propietario_filter:
+        muebles = muebles.filter(propietario__id=propietario_filter)
+    
+    # Paginación
+    paginator = Paginator(muebles, 10)
+    page_number = request.GET.get('page')
+    
+    try:
+        page_obj = paginator.page(page_number)
+    except PageNotAnInteger:
+        page_obj = paginator.page(1)
+    except EmptyPage:
+        page_obj = paginator.page(paginator.num_pages)
+    
+    # Obtener todos los propietarios para el dropdown
+    propietarios = Propietario.objects.all().select_related('usuario')
+    
     return render(request, 'muebles/admin/muebles.html', {
-        'muebles': muebles,
-        'propietarios': propietarios
+        'muebles': page_obj,
+        'propietarios': propietarios,
+        'search': search,
+        'oferta_filter': oferta_filter,
+        'propietario_filter': propietario_filter,
+        'is_paginated': paginator.num_pages > 1,
     })
 
 # views.py
@@ -603,6 +668,7 @@ def eliminar_mueble(request, id):
     return redirect('admin_muebles')
 
 # CRUD Usuarios
+@login_requerido(roles_permitidos=[1])
 def admin_usuarios(request):
     # Obtener parámetros de búsqueda/filtro
     search_query = request.GET.get('search', '')
@@ -610,13 +676,20 @@ def admin_usuarios(request):
     estado_filter = request.GET.get('estado', '')
     
     # Filtrar usuarios
-    usuarios = Usuario.objects.all()
+    usuarios = Usuario.objects.all().order_by('-date_joined')
     
     if search_query:
-        usuarios = usuarios.filter(
-            Q(nombre__icontains=search_query) | 
-            Q(email__icontains=search_query)
-        )
+        try:
+        # Intentar buscar por ID
+            usuario_id = int(search_query)
+            usuarios = usuarios.filter(id=usuario_id)
+        except ValueError:
+        # Si no es un ID válido, buscar por nombre o email
+            usuarios = usuarios.filter(
+                Q(nombre__icontains=search_query) | 
+                Q(email__icontains=search_query) | 
+                Q(username__icontains=search_query)
+            )
     if rol_filter:
         usuarios = usuarios.filter(rol=rol_filter)
     
@@ -626,13 +699,22 @@ def admin_usuarios(request):
     # Preparar información adicional para cada usuario
     usuarios_info = []
     for usuario in usuarios:
-        tipo_propietario = {
-            'es_propietario': hasattr(usuario, 'propietario'),
-            'tipo': getattr(usuario, 'propietario').tipo if hasattr(usuario, 'propietario') else None,
-            'nombre_empresa': getattr(usuario, 'propietario').nombre_empresa 
-                              if hasattr(usuario, 'propietario') and getattr(usuario, 'propietario').tipo == 'empresa' 
-                              else None
-        }
+        try:
+            propietario = usuario.propietario
+            tipo_propietario = {
+                'es_propietario': True,
+                'tipo': propietario.tipo,
+                'nombre_empresa': propietario.nombre_empresa if propietario.tipo == 'empresa' else None,
+                'telefono': propietario.telefono
+            }
+        except Propietario.DoesNotExist:
+            tipo_propietario = {
+                'es_propietario': False,
+                'tipo': None,
+                'nombre_empresa': None,
+                'telefono': None
+            }
+        
         usuarios_info.append({
             'usuario': usuario,
             'tipo_propietario': tipo_propietario
@@ -641,14 +723,28 @@ def admin_usuarios(request):
     # Paginación
     paginator = Paginator(usuarios_info, 10)  # 10 items por página
     page_number = request.GET.get('page')
-    page_obj = paginator.get_page(page_number)
+    
+    try:
+        page_obj = paginator.page(page_number)
+    except PageNotAnInteger:
+        page_obj = paginator.page(1)
+    except EmptyPage:
+        page_obj = paginator.page(paginator.num_pages)
     
     context = {
         'usuarios_info': page_obj,
         'roles': Usuario.ROLES,
         'estados': Usuario.ESTADO,
+        'tipos_propietario': [
+            ('', 'No es propietario'),
+            ('individual', 'Propietario Individual'),
+            ('empleado', 'Empleado de Empresa')
+            ],
         'page_obj': page_obj,
         'is_paginated': paginator.num_pages > 1,
+        'search_query': search_query,
+        'rol_filter': rol_filter,
+        'estado_filter': estado_filter
     }
     
     return render(request, 'muebles/admin/usuarios.html', context)
@@ -659,34 +755,52 @@ def crear_usuario(request):
         form = UsuarioForm(request.POST, request.FILES)
         if form.is_valid():
             try:
-                usuario = form.save(commit=False)
-                usuario.set_password(form.cleaned_data['password'])
-                usuario.save()
-                
-                # Crear carrito para el nuevo usuario
-                Carrito.objects.create(usuario=usuario)
-                
-                # Manejar propietario si es necesario
-                tipo_propietario = request.POST.get('tipo_propietario')
-                if tipo_propietario:
-                    propietario = Propietario(
-                        usuario=usuario,
-                        tipo=tipo_propietario
-                    )
-                    if tipo_propietario == 'empresa':
-                        propietario.nombre_empresa = request.POST.get('nombre_empresa', '')
-                    propietario.save()
-                
-                messages.success(request, 'Usuario creado exitosamente!')
-                return redirect('admin_usuarios')
+                with transaction.atomic():
+                    # Crear usuario
+                    usuario = form.save(commit=False)
+                    usuario.set_password(form.cleaned_data['password'])
+                    usuario.username = form.cleaned_data['email']
+                    usuario.save()
+
+                    # Crear carrito
+                    Carrito.objects.create(usuario=usuario)
+
+                    # Manejar propietario si se especificó tipo
+                    tipo_propietario = form.cleaned_data.get('tipo_propietario')
+                    if tipo_propietario:
+                        Propietario.objects.create(
+                            usuario=usuario,
+                            tipo=tipo_propietario,
+                            nombre_empresa=form.cleaned_data.get('nombre_empresa'),
+                            telefono=form.cleaned_data.get('telefono', '')
+                        )
+
+                    messages.success(request, 'Usuario creado exitosamente!')
+                    return redirect('admin_usuarios')
+
+            except IntegrityError:
+                messages.error(request, 'El correo electrónico ya está registrado.')
             except Exception as e:
                 messages.error(request, f'Error al crear el usuario: {str(e)}')
+        else:
+            for field, errors in form.errors.items():
+                for error in errors:
+                    messages.error(request, f'{field}: {error}')
+    else:
+        form = UsuarioForm()
 
+    return render(request, 'muebles/admin/usuarios.html', {
+        'form': form,
+        'roles': Usuario.ROLES,
+        'estados': Usuario.ESTADO,
+        'tipos_propietario': Propietario.TIPO_PROPIETARIO
+    })
 
 @login_requerido(roles_permitidos=[1])
 def editar_usuario(request, id):
     try:
         usuario = Usuario.objects.get(id=id)
+        propietario = getattr(usuario, 'propietario', None)
         
         if request.method == 'POST':
             form = UsuarioForm(request.POST, request.FILES, instance=usuario)
@@ -694,7 +808,33 @@ def editar_usuario(request, id):
                 try:
                     if form.cleaned_data['password']:
                         usuario.set_password(form.cleaned_data['password'])
-                    form.save()
+                    
+                    usuario = form.save()
+                    
+                    # Manejar propietario
+                    tipo_propietario = request.POST.get('tipo_propietario', None)
+                    
+                    if tipo_propietario:
+                        nombre_empresa = request.POST.get('nombre_empresa', None) if tipo_propietario == 'empresa' else None
+                        
+                        if propietario:
+                            # Actualizar propietario existente
+                            propietario.tipo = tipo_propietario
+                            propietario.nombre_empresa = nombre_empresa
+                            propietario.telefono = request.POST.get('telefono', '')
+                            propietario.save()
+                        else:
+                            # Crear nuevo propietario
+                            Propietario.objects.create(
+                                usuario=usuario,
+                                tipo=tipo_propietario,
+                                nombre_empresa=nombre_empresa,
+                                telefono=request.POST.get('telefono', '')
+                            )
+                    elif propietario:
+                        # Eliminar propietario si ya no es necesario
+                        propietario.delete()
+                    
                     messages.success(request, 'Usuario actualizado exitosamente!')
                     return redirect('admin_usuarios')
                 except Exception as e:
@@ -709,8 +849,10 @@ def editar_usuario(request, id):
         return render(request, 'admin_usuarios', {
             'form': form,
             'usuario': usuario,
+            'propietario': propietario,
             'roles': Usuario.ROLES,
-            'estados': Usuario.ESTADO
+            'estados': Usuario.ESTADO,
+            'tipos_propietario': Propietario.TIPO_PROPIETARIO
         })
         
     except Usuario.DoesNotExist:
@@ -916,6 +1058,7 @@ def eliminar_preguntas_antiguas(request):
         'status': 'error',
         'message': 'Método no permitido'
     }, status=405)
+
 # Admin Preguntas
 @login_requerido(roles_permitidos=[1])
 def admin_lista_preguntas(request):
@@ -956,7 +1099,7 @@ def admin_lista_preguntas(request):
         'usuario_seleccionado': usuario_seleccionado,
     }
     
-    return render(request, 'admin/admin_lista_preguntas.html', context)
+    return render(request, 'muebles/admin/preguntas/lista_preguntas.html', context)
 
 @login_requerido(roles_permitidos=[1])
 def responder_pregunta(request, pregunta_id):
@@ -983,7 +1126,7 @@ def responder_pregunta(request, pregunta_id):
         'pregunta': pregunta,
         'form': form,
     }
-    return render(request, 'admin/responder_pregunta.html', context)
+    return render(request, 'admin/preguntas/responder_pregunta.html', context)
 
 # FAQ
 def faq_lista(request):
@@ -1080,7 +1223,7 @@ def admin_faq_lista(request):
         'faq_editando': faq_editando,
     }
     
-    return render(request, 'muebles/admin/faq_lista.html', context)
+    return render(request, 'muebles/admin/faq/lista.html', context)
 
 # ==================== ADMIN FAQ ====================
 
@@ -1205,135 +1348,195 @@ def configurar_cookies(request):
 def propietario_inicio(request):
     logueo = request.session.get("logueo")
     usuario = Usuario.objects.get(id=logueo["id"])
-    muebles = Mueble.objects.filter(propietario__usuario=usuario)
-
-    return render(request, 'muebles/propietario/inicio.html', {'muebles': muebles})
-
-@login_requerido(roles_permitidos=[2])
-def propietario_crear_mueble(request):
-    logueo = request.session.get("logueo")
-    usuario = Usuario.objects.get(id=logueo["id"])
-
-    try:
-        # Obtener el propietario (individual o empresa) asociado al usuario
-        propietario = Propietario.objects.get(usuario=usuario)
-
-        if request.method == 'POST':
-            try:
-                nombre = request.POST.get('nombre')
-                descripcion = request.POST.get('descripcion')
-                precio_diario = request.POST.get('precio_diario')
-                descuento = request.POST.get('descuento', 0)
-                fecha_fin_descuento = request.POST.get('fecha_fin_descuento')
-                imagen = request.FILES.get('imagen')
-
-                if not all([nombre, precio_diario]):
-                    messages.error(request, 'Nombre y precio diario son campos obligatorios.')
-                    return redirect('propietario_muebles')
-
-                mueble = Mueble(
-                    nombre=nombre,
-                    descripcion=descripcion,
-                    precio_diario=precio_diario,
-                    propietario=propietario,  # Asignamos el propietario obtenido
-                    descuento=descuento if descuento else 0,
-                    fecha_fin_descuento=fecha_fin_descuento if fecha_fin_descuento else None,
-                    imagen=imagen
-                )
-                mueble.save()
-
-                messages.success(request, f'Mueble "{nombre}" creado exitosamente!')
-                return redirect('propietario_muebles')
-
-            except Exception as e:
-                messages.error(request, f'Error al crear el mueble: {str(e)}')
-                return redirect('propietario_muebles')
-
-    except Propietario.DoesNotExist:
-        messages.error(request, 'No tienes un perfil de propietario registrado. Contacta al administrador.')
-        return redirect('propietario_inicio')
-
-    return redirect('propietario_muebles')
-
-
-@login_requerido(roles_permitidos=[2])
-def propietario_editar_mueble(request, id):
-    logueo = request.session.get("logueo")
-    usuario = Usuario.objects.get(id=logueo["id"])
-
-    try:
-        # Obtener el propietario (individual o empresa) asociado al usuario
-        propietario = Propietario.objects.get(usuario=usuario)
-        mueble = Mueble.objects.get(id=id, propietario=propietario)
-
-        if request.method == 'POST':
-            nombre = request.POST.get('nombre')
-            descripcion = request.POST.get('descripcion')
-            precio_diario = request.POST.get('precio_diario')
-            descuento = request.POST.get('descuento', 0)
-            fecha_fin_descuento = request.POST.get('fecha_fin_descuento')
-
-            if not all([nombre, precio_diario]):
-                messages.error(request, 'Nombre y precio diario son campos obligatorios.')
-                return redirect('propietario_muebles')
-
-            mueble.nombre = nombre
-            mueble.descripcion = descripcion
-            mueble.precio_diario = precio_diario
-            mueble.descuento = descuento if descuento else 0
-            mueble.fecha_fin_descuento = fecha_fin_descuento if fecha_fin_descuento else None
-
-            if 'imagen' in request.FILES:
-                mueble.imagen = request.FILES['imagen']
-
-            mueble.save()
-            messages.success(request, f'Mueble "{nombre}" actualizado exitosamente!')
-            return redirect('propietario_muebles')
-
-    except Propietario.DoesNotExist:
-        messages.error(request, 'No tienes un perfil de propietario registrado.')
-        return redirect('propietario_inicio')
-    except Mueble.DoesNotExist:
-        messages.error(request, 'El mueble no existe o no tienes permisos para editarlo.')
-        return redirect('propietario_muebles')
-    except Exception as e:
-        messages.error(request, f'Error al actualizar el mueble: {str(e)}')
-        return redirect('propietario_muebles')
-
-    return redirect('propietario_muebles')
-
+    propietario = get_object_or_404(Propietario, usuario=usuario)
+    
+    # Estadísticas para el dashboard del propietario
+    total_muebles = Mueble.objects.filter(propietario=propietario).count()
+    muebles_en_oferta = Mueble.objects.filter(
+        propietario=propietario,
+        descuento__gt=0,
+        fecha_fin_descuento__gte=timezone.now().date()
+    ).count()
+    
+    # Obtener rentas de los muebles del propietario
+    rentas = Renta.objects.filter(
+        mueble__propietario=propietario
+    ).order_by('-fecha_inicio')[:5]
+    
+    context = {
+        'propietario': propietario,
+        'total_muebles': total_muebles,
+        'muebles_en_oferta': muebles_en_oferta,
+        'rentas_recientes': rentas,
+    }
+    
+    return render(request, 'muebles/propietario/inicio.html', context)
 
 @login_requerido(roles_permitidos=[2])
 def propietario_muebles(request):
     logueo = request.session.get("logueo")
     usuario = Usuario.objects.get(id=logueo["id"])
-
+    propietario = get_object_or_404(Propietario, usuario=usuario)
+    
+    # Obtener parámetros de búsqueda/filtro
+    search = request.GET.get('search', '')
+    propietario_filter = request.GET.get('propietario', '')
+    oferta_filter = request.GET.get('oferta', '')
+    
+    # Obtener solo los muebles del propietario actual
+    muebles = Mueble.objects.filter(propietario=propietario).order_by('-id')
+    
+    # Aplicar filtros
+    if search:
+        try:
+            # Intentar buscar por ID
+            mueble_id = int(search)
+            muebles = muebles.filter(id=mueble_id)
+        except ValueError:
+            # Si no es un ID válido, buscar por nombre o descripción
+            muebles = muebles.filter(
+                Q(nombre__icontains=search) | 
+                Q(descripcion__icontains=search)
+            ) 
+    if oferta_filter:
+        if oferta_filter == '1':
+            muebles = muebles.filter(en_oferta=True)
+        elif oferta_filter == '0':
+            muebles = muebles.filter(en_oferta=False)
+    
+    # Paginación - mantener los parámetros de búsqueda
+    paginator = Paginator(muebles, 10)
+    page_number = request.GET.get('page')
+    
     try:
-        propietario = Propietario.objects.get(usuario=usuario)
-        muebles = Mueble.objects.filter(propietario=propietario)
-        
-        # Mostrar el nombre del propietario (individual o empresa)
-        nombre_propietario = str(propietario)
-        
-        return render(request, 'muebles/propietario/muebles.html', {
-            'muebles': muebles,
-            'nombre_propietario': nombre_propietario
-        })
+        page_obj = paginator.page(page_number)
+    except PageNotAnInteger:
+        page_obj = paginator.page(1)
+    except EmptyPage:
+        page_obj = paginator.page(paginator.num_pages)
+    
+    # Construir parámetros para los links de paginación
+    query_params = []
+    if search:
+        query_params.append(f'search={search}')
+    if propietario_filter:
+        query_params.append(f'propietario={propietario_filter}')
+    if oferta_filter:
+        query_params.append(f'oferta={oferta_filter}')
+    query_string = '&'.join(query_params)
+    
+    context = {
+        'muebles': page_obj,
+        'propietario': propietario,
+        'search': search,
+        'propietario_filter': propietario_filter,
+        'oferta_filter': oferta_filter,
+        'query_string': query_string,
+        'is_paginated': paginator.num_pages > 1,
+    }
+    
+    return render(request, 'muebles/propietario/muebles.html', context)
 
-    except Propietario.DoesNotExist:
-        messages.error(request, 'No tienes un perfil de propietario registrado.')
-        return redirect('propietario_inicio')
+
+@login_requerido(roles_permitidos=[2])
+def propietario_crear_mueble(request):
+    logueo = request.session.get("logueo")
+    usuario = Usuario.objects.get(id=logueo["id"])
+    propietario = get_object_or_404(Propietario, usuario=usuario)
+    
+    if request.method == 'POST':
+        try:
+            nombre = request.POST.get('nombre')
+            descripcion = request.POST.get('descripcion')
+            precio_diario = request.POST.get('precio_diario')
+            descuento = request.POST.get('descuento', 0)
+            fecha_fin_descuento = request.POST.get('fecha_fin_descuento')
+            imagen = request.FILES.get('imagen')
+            
+            if not all([nombre, precio_diario]):
+                messages.error(request, 'Nombre y precio diario son campos obligatorios.')
+                return redirect('propietario_muebles')
+            
+            mueble = Mueble(
+                nombre=nombre,
+                descripcion=descripcion,
+                precio_diario=precio_diario,
+                propietario=propietario,
+                descuento=descuento if descuento else 0,
+                fecha_fin_descuento=fecha_fin_descuento if fecha_fin_descuento else None,
+                imagen=imagen
+            )
+            mueble.save()
+            
+            messages.success(request, f'Mueble "{nombre}" creado exitosamente!')
+            return redirect('propietario_muebles')
+            
+        except Exception as e:
+            messages.error(request, f'Error al crear el mueble: {str(e)}')
+            return redirect('propietario_muebles')
+    
+    return render(request, 'muebles/propietario/crear_mueble.html', {
+        'propietario': propietario,
+        'hoy': timezone.now().date().isoformat(),
+    })
+
+@login_requerido(roles_permitidos=[2])
+def propietario_editar_mueble(request, id):
+    logueo = request.session.get("logueo")
+    usuario = Usuario.objects.get(id=logueo["id"])
+    propietario = get_object_or_404(Propietario, usuario=usuario)
+    
+    mueble = get_object_or_404(Mueble, id=id, propietario=propietario)
+    
+    if request.method == 'POST':
+        try:
+            nombre = request.POST.get('nombre')
+            descripcion = request.POST.get('descripcion')
+            precio_diario = request.POST.get('precio_diario')
+            descuento = request.POST.get('descuento', 0)
+            fecha_fin_descuento = request.POST.get('fecha_fin_descuento')
+            
+            if not all([nombre, precio_diario]):
+                messages.error(request, 'Nombre y precio diario son campos obligatorios.')
+                return redirect('propietario_editar_mueble', id=id)
+            
+            mueble.nombre = nombre
+            mueble.descripcion = descripcion
+            mueble.precio_diario = precio_diario
+            mueble.descuento = descuento if descuento else 0
+            mueble.fecha_fin_descuento = fecha_fin_descuento if fecha_fin_descuento else None
+            
+            if 'imagen' in request.FILES:
+                mueble.imagen = request.FILES['imagen']
+            
+            mueble.save()
+            messages.success(request, f'Mueble "{nombre}" actualizado exitosamente!')
+            return redirect('propietario_muebles')
+            
+        except Exception as e:
+            messages.error(request, f'Error al actualizar el mueble: {str(e)}')
+            return redirect('propietario_editar_mueble', id=id)
+    
+    return render(request, 'muebles/propietario/editar_mueble.html', {
+        'mueble': mueble,
+        'propietario': propietario,
+        'hoy': timezone.now().date().isoformat(),
+    })
 
 @login_requerido(roles_permitidos=[2])
 def propietario_eliminar_mueble(request, id):
+    logueo = request.session.get("logueo")
+    usuario = Usuario.objects.get(id=logueo["id"])
+    propietario = get_object_or_404(Propietario, usuario=usuario)
+    
     try:
-        mueble = Mueble.objects.get(id=id)
+        mueble = Mueble.objects.get(id=id, propietario=propietario)
         nombre = mueble.nombre
         mueble.delete()
         messages.success(request, f'Mueble "{nombre}" eliminado exitosamente!')
     except Mueble.DoesNotExist:
-        messages.error(request, 'El mueble que intentas eliminar no existe.')
+        messages.error(request, 'El mueble no existe o no tienes permisos para eliminarlo.')
     except Exception as e:
         messages.error(request, f'Error al eliminar el mueble: {str(e)}')
-
+    
     return redirect('propietario_muebles')
