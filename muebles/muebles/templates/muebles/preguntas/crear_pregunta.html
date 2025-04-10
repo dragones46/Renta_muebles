@@ -20,6 +20,12 @@
                     </div>
                     {% endif %}
                 </div>
+
+                <div class="mb-3">
+                    <label for="{{ form.categoria.id_for_label }}" class="form-label" style="color: white;">Categoría</label>
+                    {{ form.categoria }}
+                </div>
+
                 <button type="submit" class="btn btn-primary">Enviar</button>
                 <a href="{% url 'lista_preguntas' %}" class="btn btn-secondary">Cancelar</a>
             </form>

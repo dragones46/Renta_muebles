@@ -263,6 +263,8 @@ class Actualizacion(models.Model):
 
 # models.py
 class Pregunta(models.Model):
+    CATEGORIAS = FAQ.CATEGORIAS  # Reutilizamos las mismas categorías que FAQ
+
     ESTADOS = (
         ('pendiente', 'Pendiente'),
         ('respondida', 'Respondida'),
@@ -271,6 +273,7 @@ class Pregunta(models.Model):
     
     usuario = models.ForeignKey('Usuario', on_delete=models.CASCADE)
     pregunta = models.TextField(max_length=500)
+    categoria = models.CharField(max_length=50, choices=CATEGORIAS, default='CUENTA')
     fecha = models.DateTimeField(auto_now_add=True)
     estado = models.CharField(max_length=20, choices=ESTADOS, default='pendiente')
     votos = models.IntegerField(default=0)

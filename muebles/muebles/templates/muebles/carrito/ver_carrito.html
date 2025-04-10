@@ -1,6 +1,6 @@
 {% extends 'muebles/barnav.html' %}
 {% load static %}
-
+{% load humanize %}
 {% block contenedor %}
 <style>
     :root {
@@ -443,9 +443,9 @@
                 </div>
 
                 {% if item.mueble.en_oferta %}
-                <p class="precio-original">${{ item.mueble.precio_diario|floatformat:0 }}/día</p>
-                <p class="precio-descuento">${{ item.mueble.precio_con_descuento|floatformat:0 }}/día</p>
-                <p class="ahorro">Ahorras: ${{ item.ahorro_por_dia|floatformat:0 }}/día</p>
+                <p class="precio-original">${{ item.mueble.precio_diario|intcomma }}/día</p>
+                <p class="precio-descuento">${{ item.mueble.precio_con_descuento|intcomma }}/día</p>
+                <p class="ahorro">Ahorras: ${{ item.ahorro_por_dia|intcomma}}/día</p>
                 {% else %}
                 <p style="font-size: 1.2rem;">${{ item.mueble.precio_diario|floatformat:0 }}/día</p>
                 {% endif %}
@@ -471,7 +471,7 @@
             <div class="precio-container">
                 <span class="precio-total">${{ item.subtotal|floatformat:0 }}</span>
                 {% if item.mueble.en_oferta %}
-                <span class="ahorro">Ahorro: ${{ item.ahorro_total|floatformat:0 }}</span>
+                <span class="ahorro">Ahorro: ${{ item.ahorro_total|intcomma }}</span>
                 {% endif %}
                 <a href="{% url 'eliminar_del_carrito' item.id %}" class="btn-eliminar">
                     <i class="bi bi-trash-fill"></i> Eliminar
@@ -569,54 +569,5 @@
     </div>
     {% endif %}
 </div>
-<script>
-    function decrementQuantity(button) {
-        const inputField = button.nextElementSibling;
-        let currentQuantity = parseInt(inputField.value);
 
-        if (currentQuantity > 1) {
-            inputField.value = currentQuantity - 1;
-            button.parentNode.parentNode.submit();
-        } else {
-            showWarning(button.parentNode.nextElementSibling);
-        }
-    }
-
-    function incrementQuantity(button) {
-        const inputField = button.previousElementSibling;
-        let currentQuantity = parseInt(inputField.value);
-        inputField.value = currentQuantity + 1;
-        button.parentNode.parentNode.submit();
-    }
-
-    function showWarning(warningMessage) {
-        warningMessage.style.display = 'block';
-        setTimeout(() => {
-            warningMessage.style.display = 'none';
-        }, 3000);
-    }
-
-    function formatPrices() {
-        const priceElements = document.querySelectorAll('.precio-total, .summary-line span:last-child');
-        priceElements.forEach(element => {
-            const priceText = element.textContent.replace('$', '').replace(/\./g, '').trim();
-            if (!isNaN(priceText)) {
-                element.textContent = '$' + formatNumber(priceText);
-            }
-        });
-    }
-
-    function formatNumber(number) {
-        const intPart = Math.floor(number);
-        const decimalPart = number % 1 !== 0 ? number.toString().split('.')[1] : '';
-
-        const formattedInt = intPart.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
-
-        return decimalPart ? formattedInt + '.' + decimalPart : formattedInt;
-    }
-
-    // Call formatPrices to initialize
-    window.onload = formatPrices;
-
-</script>
 {% endblock %}

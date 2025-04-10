@@ -490,18 +490,13 @@ def procesar_pago(request):
             request.session.modified = True
 
             messages.success(request, "¡Pago exitoso! Tu pedido ha sido procesado.")
-            return redirect('mis_pedidos')
+            return redirect('index')
             
     except Exception as e:
         messages.error(request, f"Error al procesar el pago: {str(e)}")
         return redirect('ver_carrito')
 
-@login_requerido
-def mis_pedidos(request):
-    logueo = request.session.get("logueo")
-    usuario = Usuario.objects.get(id=logueo["id"])
-    pedidos = Pedido.objects.filter(usuario=usuario).order_by('-fecha')
-    return render(request, 'muebles/pedidos/mis_pedidos.html', {'pedidos': pedidos})
+
 
 # ==================== VISTAS DE ADMINISTRACIÓN ====================
 
@@ -885,15 +880,64 @@ def eliminar_usuario(request, id):
 # Pedidos
 @login_requerido(roles_permitidos=[1])
 def admin_pedidos(request):
+    # Obtener parámetros de búsqueda/filtro
+    search = request.GET.get('search', '')
+    estado = request.GET.get('estado', '')
+    fecha_inicio = request.GET.get('fecha_inicio', '')
+    fecha_fin = request.GET.get('fecha_fin', '')
+    
+    # Obtener todos los pedidos ordenados por fecha descendente
     pedidos = Pedido.objects.all().order_by('-fecha')
-    return render(request, 'muebles/admin/pedidos/pedidos.html', {'pedidos': pedidos})
+    
+    # Aplicar filtros
+    if search:
+        try:
+            # Intentar buscar por ID de pedido
+            pedido_id = int(search)
+            pedidos = pedidos.filter(id=pedido_id)
+        except ValueError:
+            # Si no es un ID válido, buscar por nombre de usuario
+            pedidos = pedidos.filter(
+                Q(usuario__nombre__icontains=search) | 
+                Q(usuario__email__icontains=search)
+            )
+    
+    if estado:
+        pedidos = pedidos.filter(estado=estado)
+    
+    if fecha_inicio:
+        pedidos = pedidos.filter(fecha__gte=fecha_inicio)
+    
+    if fecha_fin:
+        pedidos = pedidos.filter(fecha__lte=fecha_fin)
+    
+    # Paginación
+    paginator = Paginator(pedidos, 10)  # 10 pedidos por página
+    page_number = request.GET.get('page')
+    
+    try:
+        page_obj = paginator.page(page_number)
+    except PageNotAnInteger:
+        page_obj = paginator.page(1)
+    except EmptyPage:
+        page_obj = paginator.page(paginator.num_pages)
+    
+    return render(request, 'muebles/admin/pedidos/pedidos.html', {
+        'pedidos': page_obj,
+        'estados_pedido': Pedido.ESTADOS,
+        'search': search,
+        'estado_selected': estado,
+        'fecha_inicio': fecha_inicio,
+        'fecha_fin': fecha_fin,
+        'is_paginated': paginator.num_pages > 1,
+    })
 
 @login_requerido(roles_permitidos=[1])
 def detalle_pedido(request, id):
     pedido = get_object_or_404(Pedido, id=id)
     detalles = DetallePedido.objects.filter(pedido=pedido)
     
-    return render(request, 'muebles/admin/pedidos/detalle_pedido.html', {
+    return render(request, 'muebles/admin/pedidos/detalles_pedidos.html', {
         'pedido': pedido,
         'detalles': detalles
     })
@@ -962,6 +1006,7 @@ def lista_preguntas(request):
         'busqueda': busqueda
     })
 
+# views.py
 @login_requerido
 def crear_pregunta(request):
     if request.method == 'POST':
@@ -973,6 +1018,7 @@ def crear_pregunta(request):
             pregunta = form.save(commit=False)
             pregunta.usuario = usuario
             pregunta.save()
+            
             messages.success(request, 'Pregunta enviada correctamente.')
             return redirect('lista_preguntas')
     else:
@@ -1103,6 +1149,18 @@ def admin_lista_preguntas(request):
 
 @login_requerido(roles_permitidos=[1])
 def responder_pregunta(request, pregunta_id):
+    # Obtener el usuario desde la sesión personalizada
+    logueo = request.session.get("logueo")
+    if not logueo:
+        messages.error(request, 'Debes iniciar sesión para responder preguntas.')
+        return redirect('login')
+    
+    try:
+        usuario = Usuario.objects.get(id=logueo["id"])
+    except Usuario.DoesNotExist:
+        messages.error(request, 'Usuario no encontrado.')
+        return redirect('login')
+    
     pregunta = get_object_or_404(Pregunta, id=pregunta_id)
     
     if request.method == 'POST':
@@ -1110,7 +1168,7 @@ def responder_pregunta(request, pregunta_id):
         if form.is_valid():
             respuesta = form.save(commit=False)
             respuesta.pregunta = pregunta
-            respuesta.administrador = request.user
+            respuesta.administrador = usuario  # Usar el usuario de tu sistema de sesiones
             respuesta.save()
             
             # Marcar la pregunta como respondida
@@ -1126,7 +1184,7 @@ def responder_pregunta(request, pregunta_id):
         'pregunta': pregunta,
         'form': form,
     }
-    return render(request, 'admin/preguntas/responder_pregunta.html', context)
+    return render(request, 'muebles/admin/preguntas/responder_pregunta.html', context)
 
 # FAQ
 def faq_lista(request):
@@ -1227,42 +1285,61 @@ def admin_faq_lista(request):
 
 # ==================== ADMIN FAQ ====================
 
+# views.py
 @login_requerido(roles_permitidos=[1])
 def admin_crear_faq(request):
-    logueo = request.session.get("logueo")
-    
     if request.method == 'POST':
+        # Verificar que el usuario esté logueado y sea admin
+        if 'logueo' not in request.session or request.session['logueo']['rol'] != 1:
+            messages.error(request, 'No tienes permisos para realizar esta acción')
+            return redirect('index')
+        
+        pregunta_id = request.POST.get('pregunta_id')
         try:
-            pregunta = request.POST.get('pregunta')
-            respuesta = request.POST.get('respuesta')
-            categoria = request.POST.get('categoria')
-            orden = request.POST.get('orden', 0)
-            activo = request.POST.get('activo') == 'on'
+            pregunta = Pregunta.objects.get(id=pregunta_id, estado='respondida')
+            respuesta = pregunta.respuestas.first()
             
-            if not all([pregunta, respuesta, categoria]):
-                messages.error(request, 'Los campos pregunta, respuesta y categoría son obligatorios.')
-                return redirect('admin_faq_lista')
+            if not respuesta:
+                messages.error(request, 'La pregunta no tiene respuesta')
+                return redirect('admin_lista_preguntas')
             
-            FAQ.objects.create(
-                pregunta=pregunta,
-                respuesta=respuesta,
-                categoria=categoria,
-                orden=orden,
-                activo=activo,
+            # Obtener el usuario admin desde la sesión
+            admin_id = request.session['logueo']['id']
+            try:
+                admin = Usuario.objects.get(id=admin_id)
+            except Usuario.DoesNotExist:
+                messages.error(request, 'Usuario administrador no encontrado')
+                return redirect('admin_lista_preguntas')
+                
+            # Crear el FAQ
+            faq = FAQ.objects.create(
+                pregunta=pregunta.pregunta,
+                respuesta=respuesta.respuesta,
+                categoria=pregunta.categoria,
                 votos=0,
-                fecha_creacion=timezone.now()
+                activo=True
             )
             
-            messages.success(request, 'FAQ creada exitosamente!')
-            return redirect('admin_faq_lista')
+            # Marcar la pregunta como publicada
+            pregunta.estado = 'publicada'
+            pregunta.save()
             
+            # Registrar quién creó el FAQ (opcional)
+            Respuesta.objects.create(
+                pregunta=pregunta,
+                administrador=admin,
+                respuesta=f"Publicado como FAQ (ID: {faq.id})",
+                es_faq=True
+            )
+            
+            messages.success(request, f'Pregunta añadida a FAQ exitosamente en la categoría {faq.get_categoria_display()}')
+            
+        except Pregunta.DoesNotExist:
+            messages.error(request, 'Pregunta no encontrada o no está respondida')
         except Exception as e:
-            messages.error(request, f'Error al crear la FAQ: {str(e)}')
-            return redirect('admin_faq_lista')
-    
-    return render(request, 'admin_faq_lista', {
-        'categorias': FAQ.CATEGORIAS
-    })
+            messages.error(request, f'Error al crear el FAQ: {str(e)}')
+            
+    return redirect('admin_faq_lista')
 
 @login_requerido(roles_permitidos=[1])
 def admin_editar_faq(request, pk):

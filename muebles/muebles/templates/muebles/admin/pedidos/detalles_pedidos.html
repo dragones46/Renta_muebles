@@ -1,7 +1,8 @@
 {% extends 'muebles/barNavInicio.html' %}
 
 {% block titulo %}Detalle del Pedido #{{ pedido.id }}{% endblock %}
-
+{% load static %}
+{% load humanize %}
 {% block admin_contenido %}
 <style>
     /* Estilos consistentes con el tema */
@@ -117,7 +118,7 @@
                 <div class="divider"></div>
                 
                 <div class="info-item">
-                    <strong>Total:</strong> ${{ pedido.total }}
+                    <strong>Total:</strong><span id="total-pedido"></span> ${{ pedido.total | intcomma }}
                 </div>
                 <div class="info-item">
                     <strong>Dirección de entrega:</strong> {{ pedido.direccion_entrega }}
@@ -149,7 +150,7 @@
                             <td>{{ detalle.mueble.nombre }}</td>
                             <td>${{ detalle.precio_unitario }}</td>
                             <td>{{ detalle.cantidad }}</td>
-                            <td>${{ detalle.subtotal }}</td>
+                            <td>${{ detalle.subtotal  }}</td>
                         </tr>
                         {% endfor %}
                         <tr class="table-active">
@@ -180,4 +181,38 @@
         {% endif %}
     </div>
 </div>
+
+<script>
+    // Función para formatear números con separador de miles
+    function formatNumber(num) {
+        return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+    }
+
+    // Función para formatear todos los precios en la tabla
+    function formatPrices() {
+        // Formatear precios unitarios y subtotales
+        const priceElements = document.querySelectorAll('.table td:nth-child(2), .table td:nth-child(4)');
+        
+        priceElements.forEach(element => {
+            const priceText = element.textContent.replace('$', '').trim();
+            if (!isNaN(priceText)) {
+                element.textContent = '$' + formatNumber(priceText);
+            }
+        });
+
+        // Formatear el total del pedido
+        const totalElement = document.getElementById('total-pedido');
+        if (totalElement) {
+            const totalText = totalElement.textContent.replace('$', '').trim(); // Eliminar el símbolo de dólar
+            if (!isNaN(totalText)) {
+                totalElement.textContent = '$' + formatNumber(totalText); // Formatear y agregar el símbolo de dólar
+            }
+        }
+    }
+
+    // Llamar a la función para formatear precios al cargar la página
+    window.onload = formatPrices;
+</script>
+
+
 {% endblock %}

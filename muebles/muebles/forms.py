@@ -6,13 +6,16 @@ from .models import *
 class PreguntaForm(forms.ModelForm):
     class Meta:
         model = Pregunta
-        fields = ['pregunta']
+        fields = ['pregunta', 'categoria']  # Añadir categoría
         widgets = {
             'pregunta': forms.Textarea(attrs={
                 'rows': 3,
                 'maxlength': 500,
                 'class': 'form-control',
                 'placeholder': 'Escribe tu pregunta aquí (máximo 500 caracteres)'
+            }),
+            'categoria': forms.Select(attrs={
+                'class': 'form-control'
             }),
         }
     

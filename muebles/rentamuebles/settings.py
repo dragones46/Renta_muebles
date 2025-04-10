@@ -111,11 +111,13 @@ AUTH_PASSWORD_VALIDATORS = [
 # https://docs.djangoproject.com/en/5.1/topics/i18n/
 
 
-LANGUAGE_CODE = 'es'
+LANGUAGE_CODE = 'es-co'  # Español para Colombia
 
 TIME_ZONE = 'America/Bogota'
 
 USE_I18N = True
+
+USE_L10N = True 
 
 USE_TZ = True
 
@@ -165,4 +167,8 @@ EMAIL_HOST_USER = 'deivysarrazola@gmail.com'
 EMAIL_HOST_PASSWORD = 'djxs pwum lert nmas'
 EMAIL_SOPORTE = 'soporte@rentamuebles.com'
 
-
+# Configuración para formato de números
+USE_THOUSAND_SEPARATOR = True  # Esto activa los separadores de miles
+NUMBER_GROUPING = 3  # Agrupa los números cada 3 dígitos
+THOUSAND_SEPARATOR = '.'  # Usa punto como separador de miles
+DECIMAL_SEPARATOR = ','  # Usa coma como separador decimal

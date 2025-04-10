@@ -214,7 +214,7 @@
                         <option value="">Todos los usuarios</option>
                         {% for usuario in usuarios %}
                         <option value="{{ usuario.id }}" {% if usuario_seleccionado == usuario.id %}selected{% endif %}>
-                            {{ usuario.username }}
+                            {{ usuario.id }}
                         </option>
                         {% endfor %}
                     </select>
@@ -236,6 +236,7 @@
                 <tr>
                     <th>ID</th>
                     <th>Pregunta</th>
+                    <th>Categoría</th>
                     <th>Usuario</th>
                     <th>Fecha</th>
                     <th>Estado</th>
@@ -247,7 +248,8 @@
                 <tr>
                     <td>{{ pregunta.id }}</td>
                     <td>{{ pregunta.pregunta|truncatechars:50 }}</td>
-                    <td>{{ pregunta.usuario.username }}</td>
+                    <td>{{ pregunta.get_categoria_display }}</td>
+                    <td>{{ pregunta.usuario.email }}</td>
                     <td>{{ pregunta.fecha|date:"d/m/Y H:i" }}</td>
                     <td>
                         <span class="badge bg-{% if pregunta.estado == 'respondida' %}success{% elif pregunta.estado == 'pendiente' %}warning{% else %}info{% endif %}">

@@ -4,6 +4,7 @@ from functools import wraps
 from .models import Usuario
 from django.contrib import messages
 
+
 def rol_requerido(roles_permitidos):
     def decorator(view_func):
         @wraps(view_func)
@@ -68,3 +69,4 @@ def login_requerido(roles_permitidos=None, redirect_url='index', mensaje_no_auto
         return decorator(temp_func)
     
     return decorator
+

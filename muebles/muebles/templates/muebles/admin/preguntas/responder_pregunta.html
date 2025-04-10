@@ -2,61 +2,233 @@
 {% load static %}
 
 {% block admin_contenido %}
-<div class="container mt-4">
-    <div class="card bg-dark text-white">
-        <div class="card-header">
-            <h4>Responder Pregunta</h4>
-        </div>
-        <div class="card-body">
-            <div class="mb-4">
-                <h5>Pregunta:</h5>
-                <p class="lead">{{ pregunta.pregunta }}</p>
-                <small class="text-muted">Publicado por {{ pregunta.usuario.username }} el {{ pregunta.fecha|date:"d/m/Y H:i" }}</small>
-            </div>
-            
-            <hr>
-            
-            <h5 class="mb-3">Respuestas anteriores:</h5>
-            {% if pregunta.respuestas.exists %}
-                {% for respuesta in pregunta.respuestas.all %}
-                <div class="card mb-3 bg-secondary">
-                    <div class="card-body">
-                        <div class="d-flex justify-content-between mb-2">
-                            <strong>{{ respuesta.administrador.username }}</strong>
-                            <small class="text-muted">{{ respuesta.fecha|date:"d/m/Y H:i" }}</small>
+<style>
+    .question-card {
+        background: linear-gradient(135deg, #2c3e50 0%, #1a1a2e 100%);
+        border: none;
+        border-radius: 15px;
+        box-shadow: 0 10px 20px rgba(0,0,0,0.3);
+        transition: all 0.3s ease;
+    }
+    
+    .question-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 15px 30px rgba(0,0,0,0.4);
+    }
+    
+    .answer-card {
+        background: rgba(255, 255, 255, 0.05);
+        border-left: 4px solid #4e73df;
+        border-radius: 8px;
+        transition: all 0.3s ease;
+    }
+    
+    .answer-card:hover {
+        background: rgba(255, 255, 255, 0.1);
+        border-left: 4px solid #36b9cc;
+    }
+    
+    .new-answer-section {
+        background: rgba(41, 43, 44, 0.7);
+        border-radius: 15px;
+        padding: 25px;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+    }
+    
+    .question-text {
+        font-size: 1.2rem;
+        line-height: 1.6;
+        color: #f8f9fa;
+    }
+    
+    .user-badge {
+        background-color: #4e73df;
+        color: white;
+        border-radius: 20px;
+        padding: 5px 15px;
+        font-size: 0.8rem;
+    }
+    
+    .date-badge {
+        background-color: #6c757d;
+        color: white;
+        border-radius: 20px;
+        padding: 5px 15px;
+        font-size: 0.8rem;
+    }
+    
+    .answer-text {
+        font-size: 1.1rem;
+        line-height: 1.6;
+        color: #e9ecef;
+    }
+    
+    .form-control, .form-control:focus {
+        background-color: rgba(255, 255, 255, 0.1);
+        border: 1px solid #495057;
+        color: #f8f9fa;
+    }
+    
+    .btn-primary {
+        background-color: #4e73df;
+        border: none;
+        padding: 10px 25px;
+        border-radius: 30px;
+        font-weight: 600;
+        transition: all 0.3s;
+    }
+    
+    .btn-primary:hover {
+        background-color: #2e59d9;
+        transform: translateY(-2px);
+    }
+    
+    .btn-secondary {
+        background-color: #6c757d;
+        border: none;
+        padding: 10px 25px;
+        border-radius: 30px;
+        font-weight: 600;
+        transition: all 0.3s;
+    }
+    
+    .btn-secondary:hover {
+        background-color: #5a6268;
+        transform: translateY(-2px);
+    }
+    
+    .divider {
+        border-top: 1px solid rgba(255, 255, 255, 0.1);
+        margin: 2rem 0;
+    }
+    
+    .section-title {
+        position: relative;
+        padding-bottom: 10px;
+        margin-bottom: 25px;
+    }
+    
+    .section-title:after {
+        content: '';
+        position: absolute;
+        left: 0;
+        bottom: 0;
+        width: 50px;
+        height: 3px;
+        background: #4e73df;
+    }
+</style>
+
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+            <!-- Tarjeta de pregunta -->
+            <div class="card question-card mb-4">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h2 class="card-title mb-0">
+                            <i class="fas fa-question-circle me-2"></i>Responder Pregunta
+                        </h2>
+                        <div>
+                            <span class="badge bg-{% if pregunta.estado == 'respondida' %}success{% else %}warning{% endif %}">
+                                {{ pregunta.get_estado_display }}
+                            </span>
                         </div>
-                        <p>{{ respuesta.respuesta }}</p>
                     </div>
-                </div>
-                {% endfor %}
-            {% else %}
-                <p class="text-muted">No hay respuestas aún.</p>
-            {% endif %}
-            
-            <hr>
-            
-            <h5 class="mb-3">Nueva Respuesta:</h5>
-            <form method="post">
-                {% csrf_token %}
-                <div class="mb-3">
-                    {{ form.respuesta.label_tag }}
-                    {{ form.respuesta }}
-                    {% if form.respuesta.errors %}
-                        <div class="invalid-feedback d-block">
-                            {{ form.respuesta.errors|join:", " }}
+                    
+                    <div class="mb-4">
+                        <h4 class="section-title" style="color: red;">Pregunta:</h4>
+                        <p class="question-text">{{ pregunta.pregunta }}</p>
+                        <div class="d-flex align-items-center mt-3">
+                            <span class="user-badge me-2">
+                                <i class="fas fa-user me-1"></i>{{ pregunta.usuario.username }}
+                            </span>
+                            <span class="date-badge">
+                                <i class="far fa-clock me-1"></i>{{ pregunta.fecha|date:"d/m/Y H:i" }}
+                            </span>
+                        </div>
+                    </div>
+                    
+                    <div class="divider"></div>
+                    
+                    <!-- Respuestas existentes -->
+                    <h4 class="section-title mt-4" style="color: red;">
+                        <i class="fas fa-comments me-2"></i>Respuestas anteriores
+                    </h4>
+                    
+                    {% if pregunta.respuestas.exists %}
+                        {% for respuesta in pregunta.respuestas.all %}
+                        <div class="card answer-card mb-3">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <div>
+                                        <span class="user-badge">
+                                            <i class="fas fa-user-shield me-1"></i>{{ respuesta.administrador.username }}
+                                        </span>
+                                    </div>
+                                    <span class="date-badge">
+                                        <i class="far fa-clock me-1"></i>{{ respuesta.fecha|date:"d/m/Y H:i" }}
+                                    </span>
+                                </div>
+                                <p class="answer-text mt-3">{{ respuesta.respuesta }}</p>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="alert alert-dark text-center">
+                            <i class="far fa-comment-dots fa-2x mb-2"></i>
+                            <p class="mb-0">No hay respuestas aún.</p>
                         </div>
                     {% endif %}
+                    
+                    <div class="divider"></div>
+                    
+                    <!-- Formulario de nueva respuesta -->
+                    <div class="new-answer-section mt-4" style="color: red;">
+                        <h4 class="section-title">
+                            <i class="fas fa-edit me-2"></i>Nueva Respuesta
+                        </h4>
+                        
+                        <form method="post">
+                            {% csrf_token %}
+                            <div class="mb-4">
+                                <label for="{{ form.respuesta.id_for_label }}" class="form-label">Tu respuesta:</label>
+                                {{ form.respuesta }}
+                                {% if form.respuesta.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {{ form.respuesta.errors|join:", " }}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="d-flex justify-content-end gap-3">
+                                <a href="{% url 'admin_lista_preguntas' %}" class="btn btn-secondary">
+                                    <i class="fas fa-arrow-left me-2"></i>Volver
+                                </a>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-paper-plane me-2"></i>Enviar Respuesta
+                                </button>
+                            </div>
+                        </form>
+                    </div>
                 </div>
-                <div class="d-grid gap-2 d-md-flex justify-content-md-end">
-                    <a href="{% url 'admin_lista_preguntas' %}" class="btn btn-secondary me-md-2">
-                        <i class="fas fa-arrow-left"></i> Volver
-                    </a>
-                    <button type="submit" class="btn btn-primary">
-                        <i class="fas fa-paper-plane"></i> Enviar Respuesta
-                    </button>
-                </div>
-            </form>
+            </div>
         </div>
     </div>
 </div>
+
+<!-- Font Awesome para íconos -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+
+<script>
+    // Mejorar el textarea de respuesta
+    document.addEventListener('DOMContentLoaded', function() {
+        const textarea = document.querySelector('textarea');
+        if (textarea) {
+            textarea.classList.add('form-control');
+            textarea.style.minHeight = '150px';
+            textarea.placeholder = 'Escribe tu respuesta detallada aquí...';
+        }
+    });
+</script>
 {% endblock %}
