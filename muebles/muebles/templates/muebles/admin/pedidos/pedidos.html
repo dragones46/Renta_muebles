@@ -1,182 +1,284 @@
 {% extends 'muebles/barNavInicio.html' %}
+{% load static %}
 
 {% block titulo %}Administrar Pedidos{% endblock %}
 
 {% block admin_contenido %}
 <style>
+    /* Estilos personalizados para mantener consistencia */
     .card {
         background-color: #1a1a1a;
         border: 1px solid #333;
         border-radius: 8px;
         color: #fff;
     }
-    
+
     .card-header {
         background-color: #2a2a2a;
         border-bottom: 1px solid #333;
     }
-    
+
     .table {
         color: #fff;
     }
-    
+
     .table th {
         background-color: #2a2a2a;
         color: #fff;
         border-bottom: 1px solid #333;
     }
-    
+
     .table td {
         border-top: 1px solid #333;
         vertical-align: middle;
     }
-    
+
     .table-hover tbody tr:hover {
         background-color: #2a2a2a;
     }
-    
-    .btn-info {
-        background-color: #17a2b8;
+
+    /* Estilos para los botones */
+    .btn-success, .btn-primary, .btn-warning, .btn-danger {
+        transition: background-color 0.3s ease;
         border: none;
     }
-    
-    .btn-info:hover {
-        background-color: #138496;
+
+    /* Botón Agregar (naranja) */
+    .btn-success {
+        background-color: #ff6b00;
     }
-    
-    .badge-success {
-        background-color: #28a745;
+    .btn-success:hover {
+        background-color: #e05d00;
     }
-    
-    .badge-warning {
-        background-color: #ffc107;
-        color: #212529;
+    .btn-success:active, .btn-success:focus {
+        background-color: #ff6b00;
     }
-    
-    .badge-danger {
+
+    /* Botón Editar (naranja) */
+    .btn-warning {
+        background-color: #ff6b00;
+        color: #fdfdfd;
+    }
+    .btn-warning:hover {
+        background-color: #e05d00;
+    }
+    .btn-warning:active, .btn-warning:focus {
+        background-color: #ff6b00;
+    }
+
+    /* Botón Eliminar (rojo) */
+    .btn-danger {
         background-color: #dc3545;
     }
-    
+    .btn-danger:hover {
+        background-color: #c82333;
+    }
+    .btn-danger:active, .btn-danger:focus {
+        background-color: #dc3545;
+    }
+
+    /* Botón Guardar/Aceptar (naranja) */
+    .btn-primary {
+        background-color: #ff6b00;
+    }
+    .btn-primary:hover {
+        background-color: #e05d00;
+    }
+    .btn-primary:active, .btn-primary:focus {
+        background-color: #ff6b00;
+    }
+
+    .badge {
+        font-weight: 500;
+        padding: 5px 8px;
+    }
+
+    .badge.bg-primary {
+        background-color: #007bff !important;
+    }
+
+    .badge.bg-info {
+        background-color: #17a2b8 !important;
+    }
+
+    .badge.bg-secondary {
+        background-color: #6c757d !important;
+    }
+
+    .badge.bg-success {
+        background-color: #28a745 !important;
+    }
+
+    .badge.bg-danger {
+        background-color: #dc3545 !important;
+    }
+
+    .modal-content {
+        background-color: #1a1a1a;
+        color: #fff;
+    }
+
+    .modal-header {
+        border-bottom: 1px solid #333;
+    }
+
+    .modal-footer {
+        border-top: 1px solid #333;
+    }
+
+    .form-control, .form-select {
+        background-color: #2a2a2a;
+        border: 1px solid #333;
+        color: #fff;
+    }
+
+    .form-control:focus, .form-select:focus {
+        background-color: #2a2a2a;
+        color: #fff;
+        border-color: #ff6b00;
+        box-shadow: 0 0 0 0.25rem rgba(255, 107, 0, 0.25);
+    }
+
+    .text-muted {
+        color: #6c757d !important;
+    }
+
+    /* Estilos para la sección de búsqueda/filtro */
     .search-filter-container {
         background-color: #2a2a2a;
         padding: 15px;
         border-radius: 8px;
         margin-bottom: 20px;
     }
-    
-    .search-filter-container .form-control, 
+
+    .search-filter-container .form-control,
     .search-filter-container .form-select {
         background-color: #1a1a1a;
     }
-    
+
     .search-filter-container .btn-filter {
         background-color: #ff6b00;
         color: white;
     }
-    
+
     .search-filter-container .btn-filter:hover {
         background-color: #e05d00;
     }
-    
+
     .search-filter-container .btn-reset {
         background-color: #6c757d;
         color: white;
     }
-    
+
     .page-link {
         background-color: #2a2a2a;
         color: #ff6b00;
         border: 1px solid #333;
     }
-    
+
     .page-item.disabled .page-link {
         color: #6c757d;
     }
-    
+
     .page-item.active .page-link {
         background-color: #ff6b00;
         border-color: #ff6b00;
         color: white;
     }
-     /* Estilos adicionales para los íconos y elementos del formulario */
-     .bi-calendar, 
+
+    /* Estilos adicionales para los íconos y elementos del formulario */
+    .bi-calendar,
     .form-select {
         color: white !important;
     }
-    
+
     /* Cambiar el color del ícono del calendario en los inputs de fecha */
     input[type="date"]::-webkit-calendar-picker-indicator {
         filter: invert(1);
     }
-    
+
     /* Cambiar el color de la flecha en los selects */
     .form-select {
         background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='white' d='M7.247 11.14 2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 0 1 .753 1.659l-4.796 5.48a1 1 0 0 1-1.506 0z'/%3e%3c/svg%3e");
     }
-    
+
     /* Cambiar el color del placeholder a gris claro */
     ::placeholder {
         color: #aaa !important;
         opacity: 1;
     }
-    
+
     /* Asegurar que el texto en los inputs sea blanco */
-    .form-control, 
-    .form-select, 
+    .form-control,
+    .form-select,
     input[type="date"] {
         color: white !important;
     }
+    .btn-reset {
+        background-color: #6c757d;
+        color: white;
+    }
+
+    .btn-reset:hover {
+        background-color: #5a6268;
+        color: white;
+    }
+
+    .btn-reset:active, .btn-reset:focus {
+        background-color: #6c757d;
+        color: white;
+    }
+
+
 </style>
 
-<div class="card">
-    <div class="card-header d-flex justify-content-between align-items-center">
-        <h3 class="card-title">
-            <i class="bi bi-receipt"></i> Gestión de Pedidos
-        </h3>
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="mb-0">Administración de Pedidos</h2>
         <div>
             <a href="#" class="btn btn-info me-2">
                 <i class="bi bi-file-excel"></i> Exportar Excel
             </a>
         </div>
     </div>
-    
-    <div class="card-body">
-        <!-- Sección de Búsqueda y Filtros -->
-        <div class="search-filter-container">
+
+    <!-- Filtros avanzados para admin -->
+    <div class="card mb-4 bg-dark">
+        <div class="card-body">
             <form method="get" class="row g-3">
-                <div class="col-md-3" style="color: white;">
+                <div class="col-md-3">
                     <label for="search" class="form-label">Buscar</label>
-                    <input type="text" class="form-control" id="search" name="search" 
-                           placeholder="ID o nombre de usuario" value="{{ request.GET.search }}" >
+                    <input type="text" class="form-control" id="search" name="search"
+                           placeholder="ID o nombre de usuario" value="{{ request.GET.search }}">
                 </div>
-                
+
                 <div class="col-md-3">
                     <label for="estado" class="form-label">Estado</label>
-                    <select class="form-select" id="estado" name="estado" style="color: white;">
+                    <select class="form-select" id="estado" name="estado">
                         <option value="">Todos</option>
                         {% for estado in estados_pedido %}
-                        <option value="{{ estado.0 }}" 
+                        <option value="{{ estado.0 }}"
                                 {% if request.GET.estado == estado.0|stringformat:"s" %}selected{% endif %}>
                             {{ estado.1 }}
                         </option>
                         {% endfor %}
                     </select>
                 </div>
-                
+
                 <div class="col-md-3">
                     <label for="fecha_inicio" class="form-label">Fecha inicio</label>
-                    <input type="date" class="form-control" id="fecha_inicio" name="fecha_inicio" 
+                    <input type="date" class="form-control" id="fecha_inicio" name="fecha_inicio"
                            value="{{ request.GET.fecha_inicio }}">
                 </div>
-                
-                <div class="col-md-3" >
+
+                <div class="col-md-3">
                     <label for="fecha_fin" class="form-label">Fecha fin</label>
-                    <input type="date" class="form-control" id="fecha_fin" name="fecha_fin" 
+                    <input type="date" class="form-control" id="fecha_fin" name="fecha_fin"
                            value="{{ request.GET.fecha_fin }}">
                 </div>
-                
+
                 <div class="col-md-12 d-flex justify-content-end">
-                    <button type="submit" class="btn btn-filter me-2">
+                    <button type="submit" class="btn btn-primary me-2">
                         <i class="bi bi-search"></i> Buscar
                     </button>
                     <a href="{% url 'admin_pedidos' %}" class="btn btn-reset">
@@ -185,85 +287,89 @@
                 </div>
             </form>
         </div>
-        
-        <!-- Tabla de resultados -->
-        <div class="table-responsive">
-            <table class="table table-striped table-hover">
-                <thead>
-                    <tr>
-                        <th>ID</th>
-                        <th>Usuario</th>
-                        <th>Fecha</th>
-                        <th>Total</th>
-                        <th>Estado</th>
-                        <th>Acciones</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for pedido in pedidos %}
-                    <tr>
-                        <td>{{ pedido.id }}</td>
-                        <td>{{ pedido.usuario.nombre }}</td>
-                        <td>{{ pedido.fecha|date:"d/m/Y H:i" }}</td>
-                        <td>${{ pedido.total }}</td>
-                        <td>
-                            <span class="badge bg-{% if pedido.estado == 'completado' %}success{% elif pedido.estado == 'cancelado' %}danger{% else %}warning{% endif %}">
-                                {{ pedido.get_estado_display }}
-                            </span>
-                        </td>
-                        <td>
-                            <a href="{% url 'detalle_pedido' pedido.id %}" class="btn btn-sm btn-info">
-                                <i class="bi bi-eye"></i> Detalle
-                            </a>
-                        </td>
-                    </tr>
-                    {% empty %}
-                    <tr>
-                        <td colspan="6" class="text-center">No se encontraron pedidos</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-            
-            <!-- Paginación -->
-            {% if is_paginated %}
-            <nav aria-label="Page navigation">
-                <ul class="pagination justify-content-center">
-                    {% if page_obj.has_previous %}
-                    <li class="page-item">
-                        <a class="page-link" href="?page=1{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">
-                            &laquo; Primera
-                        </a>
-                    </li>
-                    <li class="page-item">
-                        <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">
-                            Anterior
-                        </a>
-                    </li>
-                    {% endif %}
-                    
-                    <li class="page-item disabled">
-                        <span class="page-link">
-                            Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}
-                        </span>
-                    </li>
-                    
-                    {% if page_obj.has_next %}
-                    <li class="page-item">
-                        <a class="page-link" href="?page={{ page_obj.next_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">
-                            Siguiente
-                        </a>
-                    </li>
-                    <li class="page-item">
-                        <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">
-                            Última &raquo;
-                        </a>
-                    </li>
-                    {% endif %}
-                </ul>
-            </nav>
-            {% endif %}
-        </div>
     </div>
+
+    <!-- Lista de pedidos con opciones de admin -->
+    {% if pedidos %}
+    <div class="table-responsive">
+        <table class="table table-dark table-hover">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Usuario</th>
+                    <th>Fecha</th>
+                    <th>Total</th>
+                    <th>Estado</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for pedido in pedidos %}
+                <tr>
+                    <td>{{ pedido.id }}</td>
+                    <td>{{ pedido.usuario.nombre }}</td>
+                    <td>{{ pedido.fecha|date:"d/m/Y H:i" }}</td>
+                    <td>${{ pedido.total }}</td>
+                    <td>
+                        <span class="badge bg-{% if pedido.estado == 'completado' %}success{% elif pedido.estado == 'cancelado' %}danger{% else %}warning{% endif %}">
+                            {{ pedido.get_estado_display }}
+                        </span>
+                    </td>
+                    <td>
+                        <a href="{% url 'detalle_pedido' pedido.id %}" class="btn btn-sm btn-info">
+                            <i class="bi bi-eye"></i> Detalle
+                        </a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Paginación -->
+    <nav aria-label="Page navigation">
+        <ul class="pagination justify-content-center">
+            {% if pedidos.has_previous %}
+            <li class="page-item">
+                <a class="page-link" href="?page=1&search={{ request.GET.search }}&estado={{ request.GET.estado }}&fecha_inicio={{ request.GET.fecha_inicio }}&fecha_fin={{ request.GET.fecha_fin }}">
+                    <i class="fas fa-angle-double-left"></i>
+                </a>
+            </li>
+            <li class="page-item">
+                <a class="page-link" href="?page={{ pedidos.previous_page_number }}&search={{ request.GET.search }}&estado={{ request.GET.estado }}&fecha_inicio={{ request.GET.fecha_inicio }}&fecha_fin={{ request.GET.fecha_fin }}">
+                    <i class="fas fa-angle-left"></i>
+                </a>
+            </li>
+            {% endif %}
+
+            {% for num in pedidos.paginator.page_range %}
+            {% if pedidos.number == num %}
+            <li class="page-item active"><a class="page-link" href="#">{{ num }}</a></li>
+            {% elif num > pedidos.number|add:'-3' and num < pedidos.number|add:'3' %}
+            <li class="page-item">
+                <a class="page-link" href="?page={{ num }}&search={{ request.GET.search }}&estado={{ request.GET.estado }}&fecha_inicio={{ request.GET.fecha_inicio }}&fecha_fin={{ request.GET.fecha_fin }}">{{ num }}</a>
+            </li>
+            {% endif %}
+            {% endfor %}
+
+            {% if pedidos.has_next %}
+            <li class="page-item">
+                <a class="page-link" href="?page={{ pedidos.next_page_number }}&search={{ request.GET.search }}&estado={{ request.GET.estado }}&fecha_inicio={{ request.GET.fecha_inicio }}&fecha_fin={{ request.GET.fecha_fin }}">
+                    <i class="fas fa-angle-right"></i>
+                </a>
+            </li>
+            <li class="page-item">
+                <a class="page-link" href="?page={{ pedidos.paginator.num_pages }}&search={{ request.GET.search }}&estado={{ request.GET.estado }}&fecha_inicio={{ request.GET.fecha_inicio }}&fecha_fin={{ request.GET.fecha_fin }}">
+                    <i class="fas fa-angle-double-right"></i>
+                </a>
+            </li>
+            {% endif %}
+        </ul>
+    </nav>
+    {% else %}
+    <div class="alert alert-info text-center">
+        <i class="fas fa-info-circle me-2"></i> No se encontraron pedidos con los filtros aplicados.
+    </div>
+    {% endif %}
 </div>
 {% endblock %}

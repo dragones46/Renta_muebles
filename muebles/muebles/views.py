@@ -610,37 +610,47 @@ def crear_mueble(request):
     
     return redirect('admin_muebles')
 
-@login_requerido(roles_permitidos=[1, 2])  # Admin y propietarios
+@login_requerido(roles_permitidos=[1, 2])
 def editar_mueble(request, id):
     try:
         mueble = Mueble.objects.get(id=id)
         
         if request.method == 'POST':
+            # Obtener los datos del formulario
             nombre = request.POST.get('nombre')
             descripcion = request.POST.get('descripcion')
             precio_diario = request.POST.get('precio_diario')
             propietario_id = request.POST.get('propietario')
             descuento = request.POST.get('descuento', 0)
             fecha_fin_descuento = request.POST.get('fecha_fin_descuento')
+            imagen = request.FILES.get('imagen')
             
-            if not all([nombre, precio_diario, propietario_id]):
-                messages.error(request, 'Todos los campos obligatorios deben ser completados.')
+            # Actualizar solo los campos proporcionados (no requerir todos)
+            if nombre:
+                mueble.nombre = nombre
+            if descripcion is not None:  # Permite cadena vacía
+                mueble.descripcion = descripcion
+            if precio_diario:
+                mueble.precio_diario = precio_diario
+            if propietario_id:
+                mueble.propietario = Propietario.objects.get(id=propietario_id)
+            if descuento is not None:  # Permite 0
+                mueble.descuento = descuento
+            if fecha_fin_descuento:
+                mueble.fecha_fin_descuento = fecha_fin_descuento
+            elif fecha_fin_descuento == '':  # Si se envía vacío, limpiar el campo
+                mueble.fecha_fin_descuento = None
+            
+            if imagen:
+                mueble.imagen = imagen
+            
+            try:
+                mueble.save()
+                messages.success(request, f'Mueble "{mueble.nombre}" actualizado exitosamente!')
                 return redirect('admin_muebles')
-            
-            mueble.nombre = nombre
-            mueble.descripcion = descripcion
-            mueble.precio_diario = precio_diario
-            mueble.propietario = Propietario.objects.get(id=propietario_id)
-            mueble.descuento = descuento if descuento else 0
-            mueble.fecha_fin_descuento = fecha_fin_descuento if fecha_fin_descuento else None
-            
-            if 'imagen' in request.FILES:
-                mueble.imagen = request.FILES['imagen']
-            
-            mueble.save()
-            messages.success(request, f'Mueble "{nombre}" actualizado exitosamente!')
-            return redirect('admin_muebles')
-            
+            except Exception as e:
+                messages.error(request, f'Error al actualizar el mueble: {str(e)}')
+    
     except Exception as e:
         messages.error(request, f'Error al actualizar el mueble: {str(e)}')
     
@@ -1118,10 +1128,16 @@ def admin_lista_preguntas(request):
     
     # Aplicar filtros
     if busqueda:
-        preguntas = preguntas.filter(
-            Q(pregunta__icontains=busqueda) | 
-            Q(respuestas__respuesta__icontains=busqueda)
-        ).distinct()
+        try:
+            # Intentar buscar por ID si la búsqueda es un número
+            id_busqueda = int(busqueda)
+            preguntas = preguntas.filter(id=id_busqueda)
+        except ValueError:
+            # Si no es número, buscar en texto de pregunta y respuestas
+            preguntas = preguntas.filter(
+                Q(pregunta__icontains=busqueda) | 
+                Q(respuestas__respuesta__icontains=busqueda)
+            ).distinct()
     
     if estado_seleccionado:
         preguntas = preguntas.filter(estado=estado_seleccionado)
@@ -1130,7 +1146,7 @@ def admin_lista_preguntas(request):
         preguntas = preguntas.filter(usuario__id=usuario_seleccionado)
     
     # Obtener lista de usuarios que han hecho preguntas
-    usuarios = Usuario.objects.filter(pregunta__isnull=False).distinct().order_by('username')
+    usuarios = Usuario.objects.filter(pregunta__isnull=False).distinct().order_by('id')
     
     # Paginación
     paginator = Paginator(preguntas, 10)
@@ -1226,47 +1242,72 @@ def admin_faq_lista(request):
     # Manejar búsqueda y filtros
     search_query = request.GET.get('search', '')
     categoria_filter = request.GET.get('categoria', '')
+    editar_id = request.GET.get('editar_id')
     
-    faqs = FAQ.objects.all()
+    faqs = FAQ.objects.all().order_by('-id')
     
     if search_query:
-        faqs = faqs.filter(
-            Q(pregunta__icontains=search_query) | 
-            Q(respuesta__icontains=search_query)
-        )
+        try:
+            id_busqueda = int(search_query)
+            faqs = faqs.filter(id=id_busqueda)
+        except ValueError:
+            faqs = faqs.filter(
+                Q(pregunta__icontains=search_query) | 
+                Q(respuesta__icontains=search_query)
+            )
     
     if categoria_filter:
         faqs = faqs.filter(categoria=categoria_filter)
     
-    # Manejar edición
-    editar_id = request.GET.get('editar_id')
-    faq_editando = None
+    # Manejar formularios
+    if request.method == 'POST':
+        if 'guardar' in request.POST:  # Crear nueva FAQ
+            pregunta = request.POST.get('pregunta')
+            respuesta = request.POST.get('respuesta')
+            categoria = request.POST.get('categoria')
+            activo = 'activo' in request.POST
+            
+            if not all([pregunta, respuesta, categoria]):
+                messages.error(request, "Todos los campos obligatorios deben ser completados")
+                return redirect('admin_faq_lista')
+            
+            try:
+                FAQ.objects.create(
+                    pregunta=pregunta,
+                    respuesta=respuesta,
+                    categoria=categoria,
+                    activo=activo
+                )
+                messages.success(request, "FAQ creada exitosamente!")
+                return redirect('admin_faq_lista')
+            except Exception as e:
+                messages.error(request, f"Error al crear FAQ: {str(e)}")
+                return redirect('admin_faq_lista')
+        
+        elif 'faq_id' in request.POST:  # Editar FAQ existente
+            try:
+                faq = FAQ.objects.get(id=request.POST['faq_id'])
+                faq.pregunta = request.POST.get('pregunta')
+                faq.respuesta = request.POST.get('respuesta')
+                faq.categoria = request.POST.get('categoria')
+                faq.activo = 'activo' in request.POST
+                faq.save()
+                
+                messages.success(request, "FAQ actualizada exitosamente!")
+                return redirect('admin_faq_lista')
+            except FAQ.DoesNotExist:
+                messages.error(request, "La FAQ no existe")
+            except Exception as e:
+                messages.error(request, f"Error al actualizar FAQ: {str(e)}")
+            return redirect('admin_faq_lista')
     
+    # Manejar edición
+    faq_editando = None
     if editar_id:
         try:
             faq_editando = FAQ.objects.get(id=editar_id)
         except FAQ.DoesNotExist:
-            messages.error(request, "La pregunta frecuente no existe")
-    
-    # Manejar formularios
-    if request.method == 'POST':
-        if 'guardar' in request.POST:
-            form = FAQForm(request.POST)
-            if form.is_valid():
-                form.save()
-                messages.success(request, "Pregunta frecuente guardada correctamente")
-                return redirect('admin_faq_lista')
-        
-        elif 'faq_id' in request.POST:
-            try:
-                faq = FAQ.objects.get(id=request.POST['faq_id'])
-                form = FAQForm(request.POST, instance=faq)
-                if form.is_valid():
-                    form.save()
-                    messages.success(request, "Pregunta frecuente actualizada correctamente")
-                    return redirect('admin_faq_lista')
-            except FAQ.DoesNotExist:
-                messages.error(request, "La pregunta frecuente no existe")
+            messages.error(request, "La FAQ no existe")
     
     # Paginación
     paginator = Paginator(faqs, 10)
@@ -1282,6 +1323,7 @@ def admin_faq_lista(request):
     }
     
     return render(request, 'muebles/admin/faq/lista.html', context)
+
 
 # ==================== ADMIN FAQ ====================
 
