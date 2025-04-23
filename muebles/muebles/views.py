@@ -520,56 +520,56 @@ def admin_muebles(request):
     search = request.GET.get('search', '')
     oferta_filter = request.GET.get('oferta', '')
     propietario_filter = request.GET.get('propietario', '')
-    
+
     # Obtener todos los muebles
     muebles = Mueble.objects.all().order_by('-id')
-    
+
     # Aplicar filtros
     if search:
         try:
-            # Intentar buscar por ID
             mueble_id = int(search)
             muebles = muebles.filter(id=mueble_id)
         except ValueError:
-            # Si no es un ID válido, buscar por nombre o descripción
             muebles = muebles.filter(
-                Q(nombre__icontains=search) | 
+                Q(nombre__icontains=search) |
                 Q(descripcion__icontains=search)
             )
-    
+
     if oferta_filter:
         if oferta_filter == '1':
-            # Filtrar por muebles en oferta (descuento > 0)
             muebles = muebles.filter(descuento__gt=0)
         elif oferta_filter == '0':
-            # Filtrar por muebles sin oferta (descuento = 0)
             muebles = muebles.filter(descuento=0)
-    
+
     if propietario_filter:
         muebles = muebles.filter(propietario__id=propietario_filter)
-    
+
     # Paginación
-    paginator = Paginator(muebles, 10)
+    paginator = Paginator(muebles, 10)  # 10 FAQs por página
     page_number = request.GET.get('page')
     
     try:
         page_obj = paginator.page(page_number)
     except PageNotAnInteger:
+        # Si page no es un entero, mostrar primera página
         page_obj = paginator.page(1)
     except EmptyPage:
+        # Si page está fuera de rango, mostrar última página
         page_obj = paginator.page(paginator.num_pages)
-    
     # Obtener todos los propietarios para el dropdown
     propietarios = Propietario.objects.all().select_related('usuario')
-    
-    return render(request, 'muebles/admin/muebles.html', {
+
+    context = {
         'muebles': page_obj,
+        'page_obj': page_obj,        
         'propietarios': propietarios,
         'search': search,
         'oferta_filter': oferta_filter,
         'propietario_filter': propietario_filter,
-        'is_paginated': paginator.num_pages > 1,
-    })
+        'is_paginated': page_obj.has_other_pages(),
+    }
+
+    return render(request, 'muebles/admin/muebles.html', context)
 
 # views.py
 @login_requerido(roles_permitidos=[1, 2])  # Admin y propietarios
@@ -610,11 +610,13 @@ def crear_mueble(request):
     
     return redirect('admin_muebles')
 
+from django.core.exceptions import ValidationError
+
 @login_requerido(roles_permitidos=[1, 2])
 def editar_mueble(request, id):
     try:
         mueble = Mueble.objects.get(id=id)
-        
+
         if request.method == 'POST':
             # Obtener los datos del formulario
             nombre = request.POST.get('nombre')
@@ -624,7 +626,14 @@ def editar_mueble(request, id):
             descuento = request.POST.get('descuento', 0)
             fecha_fin_descuento = request.POST.get('fecha_fin_descuento')
             imagen = request.FILES.get('imagen')
-            
+
+            # Convertir precio_diario a un entero
+            try:
+                precio_diario = int(precio_diario.replace('.', '').replace(',', ''))
+            except ValueError:
+                messages.error(request, 'El precio diario debe ser un número entero válido.')
+                return redirect('admin_muebles')
+
             # Actualizar solo los campos proporcionados (no requerir todos)
             if nombre:
                 mueble.nombre = nombre
@@ -640,21 +649,22 @@ def editar_mueble(request, id):
                 mueble.fecha_fin_descuento = fecha_fin_descuento
             elif fecha_fin_descuento == '':  # Si se envía vacío, limpiar el campo
                 mueble.fecha_fin_descuento = None
-            
+
             if imagen:
                 mueble.imagen = imagen
-            
+
             try:
                 mueble.save()
                 messages.success(request, f'Mueble "{mueble.nombre}" actualizado exitosamente!')
                 return redirect('admin_muebles')
             except Exception as e:
                 messages.error(request, f'Error al actualizar el mueble: {str(e)}')
-    
+
     except Exception as e:
         messages.error(request, f'Error al actualizar el mueble: {str(e)}')
-    
+
     return redirect('admin_muebles')
+
 
 
 
@@ -1244,6 +1254,7 @@ def admin_faq_lista(request):
     categoria_filter = request.GET.get('categoria', '')
     editar_id = request.GET.get('editar_id')
     
+    # Ordenar por ID descendente (los más nuevos primero)
     faqs = FAQ.objects.all().order_by('-id')
     
     if search_query:
@@ -1309,10 +1320,18 @@ def admin_faq_lista(request):
         except FAQ.DoesNotExist:
             messages.error(request, "La FAQ no existe")
     
-    # Paginación
-    paginator = Paginator(faqs, 10)
+    # Paginación - importante mantener el orden
+    paginator = Paginator(faqs, 10)  # 10 FAQs por página
     page_number = request.GET.get('page')
-    page_obj = paginator.get_page(page_number)
+    
+    try:
+        page_obj = paginator.page(page_number)
+    except PageNotAnInteger:
+        # Si page no es un entero, mostrar primera página
+        page_obj = paginator.page(1)
+    except EmptyPage:
+        # Si page está fuera de rango, mostrar última página
+        page_obj = paginator.page(paginator.num_pages)
     
     context = {
         'faqs': page_obj,
