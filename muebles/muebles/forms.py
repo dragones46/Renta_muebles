@@ -1,5 +1,6 @@
 from django import forms
 from django.core.validators import MaxLengthValidator
+from django.core.exceptions import ValidationError
 from .models import *
 
 #preguntas y respuestas
@@ -100,38 +101,82 @@ class DomicilioForm(forms.Form):
 
 #usuario
 class UsuarioForm(forms.ModelForm):
-    tipo_propietario = forms.ChoiceField(
-        choices=Propietario.TIPO_PROPIETARIO, 
+    password = forms.CharField(
+        label="Contraseña",
+        widget=forms.PasswordInput(attrs={
+            'placeholder': 'Dejar en blanco para mantener la contraseña actual'
+        }),
+        required=False,
+        help_text="Dejar en blanco para mantener la contraseña actual"
+    )
+    
+    segmento = forms.ChoiceField(
+        choices=Propietario.SEGMENTOS, 
         required=False,
         label="Tipo de Propietario"
     )
     nombre_empresa = forms.CharField(
         max_length=100, 
-        required=False, 
-        label="Nombre de Empresa (si aplica)"
+        required=False,
+        label="Nombre de Empresa"
     )
     telefono = forms.CharField(
         max_length=20, 
-        required=False, 
+        required=False,
         label="Teléfono"
     )
-    password = forms.CharField(
-        widget=forms.PasswordInput(attrs={'class': 'form-control'}),
-        required=False,
-        help_text="Dejar en blanco si no quieres cambiar la contraseña"
-    )
-    
+
     class Meta:
         model = Usuario
-        fields = ['nombre', 'email', 'direccion', 'rol', 'estado', 'foto', 'password']
-        widgets = {
-            'nombre': forms.TextInput(attrs={'class': 'form-control'}),
-            'email': forms.EmailInput(attrs={'class': 'form-control'}),
-            'direccion': forms.TextInput(attrs={'class': 'form-control'}),
-            'rol': forms.Select(attrs={'class': 'form-control'}),
-            'estado': forms.Select(attrs={'class': 'form-control'}),
-            'foto': forms.FileInput(attrs={'class': 'form-control'}),
-        }
+        fields = ['nombre', 'email', 'direccion', 'password', 'rol', 'estado', 'foto']
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if self.instance and self.instance.pk:
+            try:
+                propietario = self.instance.propietario
+                self.fields['segmento'].initial = propietario.segmento
+                self.fields['nombre_empresa'].initial = propietario.nombre_empresa
+                self.fields['telefono'].initial = propietario.telefono
+            except Propietario.DoesNotExist:
+                pass
+
+    def clean(self):
+        cleaned_data = super().clean()
+        segmento = cleaned_data.get('segmento')
+        nombre_empresa = cleaned_data.get('nombre_empresa')
+
+        if segmento == 'A' and not nombre_empresa:
+            raise ValidationError("El nombre de la empresa es obligatorio para proveedores.")
+
+        return cleaned_data
+
+    def save(self, commit=True):
+        usuario = super().save(commit=False)
+        password = self.cleaned_data.get('password')
+        if password:  # Solo si se proporcionó una nueva contraseña
+            usuario.set_password(password)
+        
+        if commit:
+            usuario.save()
+
+        segmento = self.cleaned_data.get('segmento')
+        if segmento:
+            nombre_empresa = self.cleaned_data.get('nombre_empresa') if segmento == 'A' else None
+            telefono = self.cleaned_data.get('telefono', '')
+            
+            Propietario.objects.update_or_create(
+                usuario=usuario,
+                defaults={
+                    'segmento': segmento,
+                    'nombre_empresa': nombre_empresa,
+                    'telefono': telefono
+                }
+            )
+        elif hasattr(usuario, 'propietario'):
+            usuario.propietario.delete()
+
+        return usuario
 
 #renta
 class RentaForm(forms.ModelForm):
@@ -161,12 +206,14 @@ class MuebleForm(forms.ModelForm):
 class PropietarioForm(forms.ModelForm):
     class Meta:
         model = Propietario
-        fields = ['tipo', 'nombre_empresa', 'telefono']
-        widgets = {
-            'tipo': forms.Select(attrs={'class': 'form-control'}),
-            'nombre_empresa': forms.TextInput(attrs={'class': 'form-control'}),
-            'telefono': forms.TextInput(attrs={'class': 'form-control'}),
-        }
+        fields = ['segmento', 'nombre_empresa', 'telefono']
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if self.instance and self.instance.pk:
+            self.fields['segmento'].initial = self.instance.segmento
+            self.fields['nombre_empresa'].initial = self.instance.nombre_empresa
+            self.fields['telefono'].initial = self.instance.telefono
 
     def clean_nombre_empresa(self):
         nombre_empresa = self.cleaned_data.get('nombre_empresa')

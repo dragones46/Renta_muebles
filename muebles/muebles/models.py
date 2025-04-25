@@ -61,35 +61,34 @@ class Usuario(AbstractUser):
         return self.nombre
 
 class Propietario(models.Model):
-    TIPO_PROPIETARIO = [
-        ('individual', 'Propietario Individual'),
-        ('empleado', 'Empleado de Empresa'),
+    SEGMENTOS = [
+        ('A', 'Proveedores (Fábricas, Galerías, Tiendas)'),
+        ('B', 'Personas Naturales'),
+        ('C', 'Personas Naturales (Propietarias de Inmuebles)'),
     ]
-    
-    usuario = models.OneToOneField(Usuario, on_delete=models.CASCADE, related_name='propietario',null=True, blank=True)
-    tipo = models.CharField(max_length=10, choices=TIPO_PROPIETARIO,default='empleado')
+
+    usuario = models.OneToOneField(Usuario, on_delete=models.CASCADE, related_name='propietario', null=True, blank=True)
+    segmento = models.CharField(max_length=1, choices=SEGMENTOS, default='B')
     nombre_empresa = models.CharField(max_length=100, null=True, blank=True)
     telefono = models.CharField(max_length=20, null=True, blank=True)
     fecha_registro = models.DateTimeField(default=timezone.now)
-    
+
     class Meta:
         verbose_name = 'Propietario'
         verbose_name_plural = 'Propietarios'
         ordering = ['-fecha_registro']
-    
+
     def __str__(self):
-        if self.tipo == 'individual':
-            return f"{self.usuario.nombre} (Individual)"
-        elif self.nombre_empresa:
-            return f"{self.nombre_empresa} (Empresa)"
-        return f"{self.usuario.nombre} (Propietario)"
-    
+        if self.segmento == 'A':
+            return f"{self.nombre_empresa} (Proveedor)"
+        elif self.segmento == 'C':
+            return f"{self.usuario.nombre} (Propietario de Inmueble)"
+        return f"{self.usuario.nombre} (Persona Natural)"
+
     @property
-    def display_tipo(self):
-        """Muestra el tipo de propietario correctamente en las vistas"""
-        if self.tipo == 'individual':
-            return 'Propietario Individual'
-        return 'Empleado'  # Para 'empleado' solo muestra 'Empleado'
+    def display_segmento(self):
+        return dict(self.SEGMENTOS).get(self.segmento, 'Desconocido')
+
     
 class Mueble(models.Model):
     nombre = models.CharField(max_length=100)
@@ -154,7 +153,10 @@ class Renta(models.Model):
 class Carrito(models.Model):
     usuario = models.OneToOneField(Usuario, on_delete=models.CASCADE, related_name='carrito')
     domicilio = models.CharField(max_length=255, null=True, blank=True)
+    servicio_instalacion = models.BooleanField(default=False)
     COSTO_DOMICILIO = 20000  # Constante para el costo
+    COSTO_INSTALACION_COMPLETO = 50000  # Nuevo costo para instalación completa
+    COSTO_INSTALACION_LIMIPO = 30000  # Nuevo costo para instalación limpio
     fecha_creacion = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
@@ -164,7 +166,10 @@ class Carrito(models.Model):
         total = sum(item.subtotal() for item in self.items.all())
         if self.domicilio:
             total += self.COSTO_DOMICILIO
+        if self.servicio_instalacion:
+            total += self.COSTO_INSTALACION_COMPLETO  # Ajusta según el tipo de instalación
         return total
+
 
 
 

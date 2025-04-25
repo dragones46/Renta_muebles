@@ -76,10 +76,11 @@
                             <input type="text" class="form-control" id="direccion" name="direccion" required>
                         </div>
                         <div class="mb-3">
-                            <label for="tipo_propietario" class="form-label">Tipo de Propietario:</label>
-                            <select class="form-control" id="tipo_propietario" name="tipo_propietario" required>
-                                <option value="individual">Propietario Individual</option>
-                                <option value="empleado">Empleado de Empresa</option> <!-- Opción para empleados -->
+                            <label for="segmento" class="form-label">Segmento:</label>
+                            <select class="form-control" id="segmento" name="segmento" required>
+                                <option value="A">Proveedores (Fábricas, Galerías, Tiendas)</option>
+                                <option value="B">Personas Naturales</option>
+                                <option value="C">Personas Naturales Propietarias de Inmuebles</option>
                             </select>
                         </div>
                         <div class="mb-3">
@@ -108,4 +109,12 @@
         </div>
     </div>
 </div>
+
+<script>
+    document.getElementById('segmento').addEventListener('change', function() {
+        const nombreEmpresaField = document.getElementById('nombre_empresa_field');
+        nombreEmpresaField.style.display = this.value === 'A' ? 'block' : 'none';
+    });
+</script>
+
 {% endblock %}

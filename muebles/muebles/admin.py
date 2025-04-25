@@ -32,9 +32,9 @@ class UsuarioAdmin(admin.ModelAdmin):
 
 # Registrar el modelo Propietario
 class PropietarioAdmin(admin.ModelAdmin):
-    list_display = ('usuario', 'tipo', 'nombre_empresa', 'telefono', 'fecha_registro')
+    list_display = ('usuario', 'segmento', 'nombre_empresa', 'telefono', 'fecha_registro')
     search_fields = ('usuario__nombre', 'usuario__email', 'nombre_empresa', 'telefono')
-    list_filter = ('tipo',)
+    list_filter = ('segmento',)
 
 admin.site.register(Propietario, PropietarioAdmin)
 

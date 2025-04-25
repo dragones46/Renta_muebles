@@ -1,6 +1,8 @@
-{% extends 'muebles/barnav.html' %}
+{% extends 'muebles/barNav.html' %}
 {% load static %}
 {% load humanize %}
+{% block titulo %}Carrito de Compras{% endblock %}
+
 {% block contenedor %}
 <style>
     :root {
@@ -44,6 +46,10 @@
     .carrito-header p {
         color: var(--muted-text);
         font-size: 1.1rem;
+        margin-bottom: 30px;
+        max-width: 500px;
+        margin-left: auto;
+        margin-right: auto;
     }
 
     .carrito-items-container {
@@ -79,7 +85,7 @@
         font-size: 14px;
         font-weight: bold;
         z-index: 1;
-        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+        box-shadow: 0 0 5px rgba(0, 0, 0, 0.2);
     }
 
     .carrito-item img {
@@ -88,6 +94,7 @@
         border-radius: 10px;
         object-fit: cover;
         border: 2px solid var(--border-color);
+        background-color: #444;
         align-self: center;
     }
 
@@ -131,7 +138,7 @@
         font-size: 1.3rem;
     }
 
-    .ahorro {
+    .ahorro-por-dia {
         color: var(--warning-color);
         font-size: 1rem;
     }
@@ -140,7 +147,6 @@
         display: flex;
         flex-direction: column;
         align-items: center;
-        justify-content: center;
         padding: 0 20px;
     }
 
@@ -174,7 +180,7 @@
         justify-content: center;
         cursor: pointer;
         font-size: 1.2rem;
-        transition: all 0.3s ease;
+        font-weight: bold;
     }
 
     .cantidad-btn:hover {
@@ -186,7 +192,6 @@
         display: flex;
         flex-direction: column;
         align-items: flex-end;
-        justify-content: center;
         min-width: 180px;
     }
 
@@ -214,7 +219,7 @@
 
     .btn-eliminar:hover {
         background-color: var(--danger-color);
-        color: white;
+        transform: scale(1.1);
     }
 
     .carrito-summary {
@@ -223,14 +228,6 @@
         border-radius: 12px;
         margin-top: 40px;
         border: 1px solid var(--border-color);
-    }
-
-    .summary-title {
-        font-size: 1.5rem;
-        color: var(--light-text);
-        margin-bottom: 20px;
-        padding-bottom: 10px;
-        border-bottom: 1px solid var(--border-color);
     }
 
     .summary-line {
@@ -367,7 +364,7 @@
         cursor: pointer;
         font-size: 1.2rem;
         transition: all 0.3s;
-        text-decoration: none;
+        margin-top: 20px;
         display: inline-flex;
         align-items: center;
         gap: 10px;
@@ -427,51 +424,47 @@
     {% if items %}
     <div class="carrito-items-container">
         {% for item in items %}
-        <div class="carrito-item" style="animation-delay: {{ forloop.counter0|divisibleby:2|yesno:'0s,0.1s' }}">
+        <div class="carrito-item" data-nombre="{{ item.mueble.nombre }}" style="animation-delay: {{ forloop.counter0|divisibleby:2|yesno:'0s,0s' }}">
             {% if item.mueble.en_oferta %}
             <div class="oferta-sticker">{{ item.mueble.descuento }}% OFF</div>
             {% endif %}
-
+        
             <img src="{{ item.mueble.imagen.url }}" alt="{{ item.mueble.nombre }}">
-
+        
             <div class="item-info">
                 <h3>{{ item.mueble.nombre }}</h3>
                 <div class="fechas-renta">
-                    <p><strong>Fechas:</strong> {{ item.fecha_inicio|date:"d/m/Y" }} - {{ item.fecha_fin|date:"d/m/Y" }}
-                    </p>
+                    <p><strong>Fechas:</strong> {{ item.fecha_inicio|date:"d/m/Y" }} - {{ item.fecha_fin|date:"d/m/Y" }}</p>
                     <p><strong>Días:</strong> {{ item.dias }}</p>
                 </div>
-
+        
                 {% if item.mueble.en_oferta %}
                 <p class="precio-original">${{ item.mueble.precio_diario|intcomma }}/día</p>
                 <p class="precio-descuento">${{ item.mueble.precio_con_descuento|intcomma }}/día</p>
-                <p class="ahorro">Ahorras: ${{ item.ahorro_por_dia|intcomma}}/día</p>
+                <p class="ahorro-por-dia">Ahorras: ${{ item.ahorro_por_dia|floatformat:0 }}/día</p>
                 {% else %}
                 <p style="font-size: 1.2rem;">${{ item.mueble.precio_diario|floatformat:0 }}/día</p>
                 {% endif %}
             </div>
-
+        
             <div class="cantidad-control">
                 <form method="post" action="{% url 'actualizar_cantidad' item.id %}" class="cantidad-form">
                     {% csrf_token %}
                     <div class="cantidad-control-container">
-                        <button type="button" class="cantidad-btn decrement-btn"
-                            onclick="decrementQuantity(this)">-</button>
-                        <input type="number" name="cantidad" value="{{ item.cantidad }}" min="1" class="cantidad-input"
-                            onchange="this.parentNode.parentNode.submit()">
-                        <button type="button" class="cantidad-btn increment-btn"
-                            onclick="incrementQuantity(this)">+</button>
+                        <button type="button" class="cantidad-btn decrement-btn" onclick="decrementQuantity(this)">-</button>
+                        <input type="number" name="cantidad" value="{{ item.cantidad }}" min="1" class="cantidad-input" onchange="this.parentNode.parentNode.submit()">
+                        <button type="button" class="cantidad-btn increment-btn" onclick="incrementQuantity(this)">+</button>
                     </div>
                 </form>
                 <div class="warning-message" style="color: red; display: none;">
-                    La cantidad mínima permitida es 1.
+                    La cantidad mínima permitida es 1. Si deseas eliminar este producto, usa el botón 'Eliminar'
                 </div>
             </div>
-
+        
             <div class="precio-container">
                 <span class="precio-total">${{ item.subtotal|floatformat:0 }}</span>
                 {% if item.mueble.en_oferta %}
-                <span class="ahorro">Ahorro: ${{ item.ahorro_total|intcomma }}</span>
+                <span class="ahorro-total">Ahorro: ${{ item.ahorro_total|intcomma }}</span>
                 {% endif %}
                 <a href="{% url 'eliminar_del_carrito' item.id %}" class="btn-eliminar">
                     <i class="bi bi-trash-fill"></i> Eliminar
@@ -492,6 +485,24 @@
 
             <div class="precio-container">
                 <span class="precio-total">${{ costo_domicilio|floatformat:0 }}</span>
+                <a href="{% url 'eliminar_domicilio' %}" class="btn-eliminar">
+                    <i class="bi bi-trash-fill"></i> Eliminar
+                </a>
+            </div>
+        </div>
+        {% endif %}
+
+        {% if carrito.servicio_instalacion %}
+        <div class="carrito-item">
+            <img src="{% static 'muebles/img/iconoInstalacion.png' %}" alt="Instalación">
+
+            <div class="item-info">
+                <h3>Servicio de Instalación Completo</h3>
+                <p>Costo fijo por instalación</p>
+            </div>
+
+            <div class="precio-container">
+                <span class="precio-total">${{ costo_instalacion|floatformat:0 }}</span>
                 <a href="{% url 'eliminar_domicilio' %}" class="btn-eliminar">
                     <i class="bi bi-trash-fill"></i> Eliminar
                 </a>
@@ -519,6 +530,13 @@
         <div class="summary-line">
             <span>Domicilio:</span>
             <span>${{ costo_domicilio|floatformat:0 }}</span>
+        </div>
+        {% endif %}
+
+        {% if carrito.servicio_instalacion %}
+        <div class="summary-line">
+            <span>Instalación:</span>
+            <span>${{ costo_instalacion|floatformat:0 }}</span>
         </div>
         {% endif %}
 
@@ -571,3 +589,57 @@
 </div>
 
 {% endblock %}
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Mostrar/ocultar campo de nombre de empresa según selección (para crear)
+        document.getElementById('segmento').addEventListener('change', function() {
+            const empresaFields = document.getElementById('empresa_fields');
+            empresaFields.style.display = this.value === 'A' ? 'block' : 'none';
+        });
+
+        // Mostrar/ocultar campo de nombre de empresa según selección (para editar)
+        {% for info in usuarios_info %}
+        document.getElementById('segmento_{{ info.usuario.id }}').addEventListener('change', function() {
+            const empresaFields = document.getElementById('empresa_fields_{{ info.usuario.id }}');
+            empresaFields.style.display = this.value === 'A' ? 'block' : 'none';
+        });
+
+        // Inicializar estado al cargar la página
+        document.addEventListener('DOMContentLoaded', function() {
+            const tipoSelect = document.getElementById('segmento_{{ info.usuario.id }}');
+            if (tipoSelect) {
+                tipoSelect.dispatchEvent(new Event('change'));
+            }
+        });
+        {% endfor %}
+    });
+
+    function decrementQuantity(button) {
+    const input = button.parentNode.querySelector('input[name="cantidad"]');
+    const carritoItem = button.closest('.carrito-item');
+    const nombreProducto = carritoItem.dataset.nombre;
+    const warningMessage = carritoItem.querySelector('.warning-message');
+
+    let value = parseInt(input.value);
+    if (value > 1) {
+        value -= 1;
+        input.value = value;
+        input.parentNode.parentNode.submit();
+    } else {
+        warningMessage.textContent = `La cantidad mínima permitida es 1. Si deseas eliminar ${nombreProducto}, usa el botón 'Eliminar'`;
+        warningMessage.style.display = 'block';
+        setTimeout(() => {
+            warningMessage.style.display = 'none';
+        }, 3000);
+    }
+}
+
+    function incrementQuantity(button) {
+        const input = button.parentNode.querySelector('input[name="cantidad"]');
+        let value = parseInt(input.value);
+        value += 1;
+        input.value = value;
+        input.parentNode.parentNode.submit();
+    }
+</script>
