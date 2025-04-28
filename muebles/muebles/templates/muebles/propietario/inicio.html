@@ -1,13 +1,47 @@
 {% extends 'muebles/propietario/bar_propietario.html' %}
 {% block titulo %}Panel de Propietario{% endblock %}
+{% load static %}
+
 {% block contenedor %}
 <div class="content container mt-5">
     <h2>Bienvenido, {{ request.session.logueo.nombre }}</h2>
-    <h3>Tus Muebles</h3>
-    <ul>
-        {% for mueble in muebles %}
-            <li>{{ mueble.nombre }} - {{ mueble.descripcion }}</li>
-        {% endfor %}
-    </ul>
+    <div class="row">
+        <!-- Cuadro para gestionar muebles -->
+        <div class="col-md-6 mb-4">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Mis Muebles</h5>
+                    <p class="card-text">Aquí puedes gestionar tus muebles, agregar nuevos, editar o eliminar los existentes.</p>
+                    <a href="{% url 'propietario_muebles' %}" class="btn btn-primary">Gestionar Muebles</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Cuadro para ver estadísticas -->
+        <div class="col-md-6 mb-4">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Estadísticas</h5>
+                    <p class="card-text">Aquí puedes ver las estadísticas de tus muebles, como el total de muebles, muebles en oferta, y más.</p>
+                    <a href="{% url 'propietario_inicio' %}" class="btn btn-primary">Ver Estadísticas</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Cuadro para gestionar inmuebles si el propietario es de tipo 'C' -->
+    {% if request.session.logueo.propietario.segmento == 'C' %}
+    <div class="row">
+        <div class="col-md-6 mb-4">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Mis Inmuebles</h5>
+                    <p class="card-text">Aquí puedes gestionar tus inmuebles, agregar nuevos, editar o eliminar los existentes.</p>
+                    <a href="{% url 'propietario_inmuebles' %}" class="btn btn-primary">Gestionar Inmuebles</a>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
 </div>
 {% endblock %}

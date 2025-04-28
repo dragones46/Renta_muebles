@@ -15,13 +15,16 @@ class UsuarioAdmin(admin.ModelAdmin):
     def get_tipo_propietario(self, obj):
         try:
             propietario = obj.propietario
-            if propietario.tipo == 'empleado':
-                return "Empleado de Empresa"
-            elif propietario.tipo == 'individual':
-                return "Propietario Individual"
+        # Usa segmento en lugar de tipo
+            if propietario.segmento == 'A':
+                return "Proveedor (Fábrica/Galería)"
+            elif propietario.segmento == 'B':
+                return "Persona Natural"
+            elif propietario.segmento == 'C':
+                return "Propietario de Inmueble"
+            return "-"
         except Propietario.DoesNotExist:
             return "-"
-    get_tipo_propietario.short_description = 'Tipo Propietario'
 
     def ver_foto(self, obj):
         if obj.foto:

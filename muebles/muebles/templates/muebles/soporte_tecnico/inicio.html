@@ -1,0 +1,11 @@
+{% extends 'muebles/soporte_tecnico/bar_soporte_tecnico.html' %}
+{% load static %}
+{% block titulo %}Inicio - Soporte Técnico{% endblock %}
+
+{% block contenedor %}
+<div class="container mt-4">
+    <h2>Bienvenido al Panel de Soporte Técnico</h2>
+    <p>Aquí puedes ver y editar el código fuente del sistema.</p>
+    <a href="{% url 'ver_codigo_fuente' %}" class="btn btn-primary">Ver Código Fuente</a>
+</div>
+{% endblock %}

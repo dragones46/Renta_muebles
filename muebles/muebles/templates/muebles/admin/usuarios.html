@@ -234,6 +234,18 @@
         background-color: #6c757d;
         color: white;
     }
+
+    .img-thumbnail {
+    max-width: 100px;
+    height: auto;
+    background-color: #2a2a2a;
+    border: 3px solid #ece9e9;
+    padding: 2px;
+}
+
+    .rounded-circle {
+    border-radius: 50% !important;
+}
 </style>
 
 <div class="container mt-4">
@@ -304,6 +316,7 @@
                     <th>Segmento</th>
                     <th>Rol</th>
                     <th>Estado</th>
+                    <th>Imagen</th>
                     <th>Acciones</th>
                 </tr>
             </thead>
@@ -331,6 +344,13 @@
                         <span class="badge bg-{% if info.usuario.estado == 1 %}success{% else %}danger{% endif %}">
                             {{ info.usuario.get_estado_display }}
                         </span>
+                    </td>
+                    <td>
+                        {% if info.usuario.foto %}
+                            <img src="{{ info.usuario.foto.url }}" alt="Imagen de perfil" width="50" height="50" class="img-thumbnail rounded-circle">
+                        {% else %}
+                            <img src="{% static 'muebles/img/default.png' %}" alt="Imagen por defecto" width="50" height="50" class="img-thumbnail rounded-circle">
+                        {% endif %}
                     </td>
                     <td>
                         <button class="btn btn-sm btn-warning" data-bs-toggle="modal"

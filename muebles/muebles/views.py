@@ -383,17 +383,6 @@ def ver_carrito(request):
         usuario = Usuario.objects.get(id=request.session['logueo']['id'])
         carrito = Carrito.objects.get(usuario=usuario)
 
-        if request.method == 'POST':
-            form = DomicilioForm(request.POST)
-            if form.is_valid():
-                carrito.domicilio = form.cleaned_data['domicilio']
-                carrito.servicio_instalacion = 'servicio_instalacion' in request.POST
-                carrito.save()
-                messages.success(request, 'Dirección de entrega actualizada')
-                return redirect('ver_carrito')
-        else:
-            form = DomicilioForm(initial={'domicilio': carrito.domicilio})
-
         items = carrito.items.all().select_related('mueble')
         ahorro_total = 0
 
@@ -428,7 +417,6 @@ def ver_carrito(request):
             'items': items,
             'subtotal': subtotal,
             'total': total,
-            'form': form,
             'carrito': carrito,
             'costo_domicilio': costo_domicilio,
             'costo_instalacion': costo_instalacion,
@@ -443,6 +431,91 @@ def ver_carrito(request):
         messages.error(request, f'Error al cargar el carrito: {str(e)}')
         return redirect('index')
 
+
+@login_requerido
+def agregar_direccion(request):
+    logueo = request.session.get("logueo")
+    usuario = Usuario.objects.get(id=logueo["id"])
+    carrito = get_object_or_404(Carrito, usuario=usuario)
+
+    if request.method == 'POST':
+        domicilio = request.POST.get('domicilio')
+
+        if domicilio:
+            carrito.domicilio = domicilio
+            carrito.save()
+            messages.success(request, 'Dirección agregada exitosamente')
+        else:
+            messages.error(request, 'Dirección no válida')
+
+        return redirect('ver_carrito')
+
+
+@login_requerido
+def agregar_instalacion(request):
+    logueo = request.session.get("logueo")
+    usuario = Usuario.objects.get(id=logueo["id"])
+    carrito = get_object_or_404(Carrito, usuario=usuario)
+
+    if request.method == 'POST':
+        servicio_instalacion = request.POST.get('servicio_instalacion') == 'on'
+
+        if servicio_instalacion:
+            carrito.servicio_instalacion = True
+            carrito.save()
+            messages.success(request, 'Servicio de instalación agregado al carrito')
+        else:
+            messages.error(request, 'No se pudo agregar el servicio de instalación')
+
+        return redirect('ver_carrito')
+
+@login_requerido
+def actualizar_direccion(request):
+    logueo = request.session.get("logueo")
+    usuario = Usuario.objects.get(id=logueo["id"])
+    carrito = get_object_or_404(Carrito, usuario=usuario)
+
+    if request.method == 'POST':
+        domicilio = request.POST.get('domicilio')
+
+        if domicilio:
+            if carrito.domicilio:
+                # Si ya hay una dirección, actualízala
+                carrito.domicilio = domicilio
+                carrito.save()
+                messages.success(request, 'Dirección actualizada exitosamente')
+            else:
+                # Si no hay una dirección, agrégala
+                carrito.domicilio = domicilio
+                carrito.save()
+                messages.success(request, 'Dirección agregada exitosamente')
+        else:
+            messages.error(request, 'Dirección no válida')
+
+        return redirect('ver_carrito')
+
+
+@login_requerido
+def actualizar_instalacion(request):
+    logueo = request.session.get("logueo")
+    usuario = Usuario.objects.get(id=logueo["id"])
+    carrito = get_object_or_404(Carrito, usuario=usuario)
+
+    if request.method == 'POST':
+        servicio_instalacion = request.POST.get('servicio_instalacion') == 'on'
+
+        if servicio_instalacion != carrito.servicio_instalacion:
+            carrito.servicio_instalacion = servicio_instalacion
+            carrito.save()
+
+            if carrito.servicio_instalacion:
+                messages.success(request, 'Servicio de instalación agregado al carrito')
+            else:
+                messages.success(request, 'Servicio de instalación removido del carrito')
+
+        return redirect('ver_carrito')
+
+
 @login_requerido
 def eliminar_domicilio(request):
     logueo = request.session.get("logueo")
@@ -450,9 +523,19 @@ def eliminar_domicilio(request):
     carrito = get_object_or_404(Carrito, usuario=usuario)
 
     carrito.domicilio = None
+    carrito.save()
+    messages.success(request, "Domicilio eliminado correctamente.")
+    return redirect('ver_carrito')
+
+@login_requerido
+def eliminar_instalacion(request):
+    logueo = request.session.get("logueo")
+    usuario = Usuario.objects.get(id=logueo["id"])
+    carrito = get_object_or_404(Carrito, usuario=usuario)
+
     carrito.servicio_instalacion = False
     carrito.save()
-    messages.success(request, "Domicilio y servicio de instalación eliminados correctamente.")
+    messages.success(request, "Servicio de instalación eliminado correctamente.")
     return redirect('ver_carrito')
 
 # ==================== PROCESO DE PAGO ====================
@@ -1463,6 +1546,8 @@ def configurar_cookies(request):
 
 # ==================== Rol de los Propietarios ====================
 
+from django.core.paginator import Paginator
+
 @login_requerido(roles_permitidos=[2])
 def propietario_inicio(request):
     logueo = request.session.get("logueo")
@@ -1491,6 +1576,7 @@ def propietario_inicio(request):
 
     return render(request, 'muebles/propietario/inicio.html', context)
 
+
 @login_requerido(roles_permitidos=[2])
 def propietario_muebles(request):
     logueo = request.session.get("logueo")
@@ -1499,8 +1585,9 @@ def propietario_muebles(request):
 
     # Obtener parámetros de búsqueda/filtro
     search = request.GET.get('search', '')
-    propietario_filter = request.GET.get('propietario', '')
     oferta_filter = request.GET.get('oferta', '')
+    hoy = timezone.now().date()
+
 
     # Obtener solo los muebles del propietario actual
     muebles = Mueble.objects.filter(propietario=propietario).order_by('-id')
@@ -1518,11 +1605,19 @@ def propietario_muebles(request):
                 Q(descripcion__icontains=search)
             )
 
-    if oferta_filter:
-        if oferta_filter == '1':
-            muebles = muebles.filter(en_oferta=True)
-        elif oferta_filter == '0':
-            muebles = muebles.filter(en_oferta=False)
+    if oferta_filter == '1':
+        # Muebles en oferta: tienen descuento > 0 Y (no tienen fecha fin O fecha fin >= hoy)
+        muebles = muebles.filter(
+            descuento__gt=0
+        ).filter(
+            Q(fecha_fin_descuento__gte=hoy) | Q(fecha_fin_descuento__isnull=True)
+        )
+    elif oferta_filter == '0':
+        # Muebles sin oferta: descuento = 0 O fecha fin < hoy
+        muebles = muebles.filter(
+            Q(descuento=0) |
+            Q(fecha_fin_descuento__lt=hoy)
+        )
 
     # Paginación - mantener los parámetros de búsqueda
     paginator = Paginator(muebles, 10)
@@ -1539,8 +1634,6 @@ def propietario_muebles(request):
     query_params = []
     if search:
         query_params.append(f'search={search}')
-    if propietario_filter:
-        query_params.append(f'propietario={propietario_filter}')
     if oferta_filter:
         query_params.append(f'oferta={oferta_filter}')
     query_string = '&'.join(query_params)
@@ -1549,13 +1642,13 @@ def propietario_muebles(request):
         'muebles': page_obj,
         'propietario': propietario,
         'search': search,
-        'propietario_filter': propietario_filter,
         'oferta_filter': oferta_filter,
         'query_string': query_string,
         'is_paginated': paginator.num_pages > 1,
     }
 
     return render(request, 'muebles/propietario/muebles.html', context)
+
 
 @login_requerido(roles_permitidos=[2])
 def propietario_crear_mueble(request):
@@ -1660,3 +1753,16 @@ def propietario_eliminar_mueble(request, id):
         messages.error(request, f'Error al eliminar el mueble: {str(e)}')
 
     return redirect('propietario_muebles')
+
+
+# ============================================ Soporte Tencnico Rol=======================================
+
+
+@rol_requerido(roles_permitidos=[4])
+def soporte_tecnico_inicio(request):
+    return render(request, 'muebles/soporte_tecnico/inicio.html')
+
+@soporte_tecnico_requerido
+def ver_codigo_fuente(request):
+    # Aquí puedes agregar la lógica para mostrar el código fuente
+    return render(request, 'muebles/soporte_tecnico/ver_codigo_fuente.html')

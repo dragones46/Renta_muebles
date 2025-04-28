@@ -413,6 +413,38 @@
             margin-top: 15px;
         }
     }
+
+    .instalacion-form {
+        background-color: #3a3a3a;
+        padding: 30px;
+        border-radius: 12px;
+        border: 1px solid var(--border-color);
+        margin-bottom: 20px;
+    }
+
+    .instalacion-form h3 {
+        color: var(--light-text);
+        margin-top: 0;
+        margin-bottom: 20px;
+        font-size: 1.5rem;
+    }
+
+    .form-check {
+        display: flex;
+        align-items: center;
+        margin-bottom: 15px;
+    }
+
+    .form-check-input {
+        width: 20px;
+        height: 20px;
+        margin-right: 10px;
+    }
+
+    .form-check-label {
+        color: var(--muted-text);
+        font-size: 1rem;
+    }
 </style>
 
 <div class="carrito-container">
@@ -428,16 +460,16 @@
             {% if item.mueble.en_oferta %}
             <div class="oferta-sticker">{{ item.mueble.descuento }}% OFF</div>
             {% endif %}
-        
+
             <img src="{{ item.mueble.imagen.url }}" alt="{{ item.mueble.nombre }}">
-        
+
             <div class="item-info">
                 <h3>{{ item.mueble.nombre }}</h3>
                 <div class="fechas-renta">
                     <p><strong>Fechas:</strong> {{ item.fecha_inicio|date:"d/m/Y" }} - {{ item.fecha_fin|date:"d/m/Y" }}</p>
                     <p><strong>Días:</strong> {{ item.dias }}</p>
                 </div>
-        
+
                 {% if item.mueble.en_oferta %}
                 <p class="precio-original">${{ item.mueble.precio_diario|intcomma }}/día</p>
                 <p class="precio-descuento">${{ item.mueble.precio_con_descuento|intcomma }}/día</p>
@@ -446,7 +478,7 @@
                 <p style="font-size: 1.2rem;">${{ item.mueble.precio_diario|floatformat:0 }}/día</p>
                 {% endif %}
             </div>
-        
+
             <div class="cantidad-control">
                 <form method="post" action="{% url 'actualizar_cantidad' item.id %}" class="cantidad-form">
                     {% csrf_token %}
@@ -460,7 +492,7 @@
                     La cantidad mínima permitida es 1. Si deseas eliminar este producto, usa el botón 'Eliminar'
                 </div>
             </div>
-        
+
             <div class="precio-container">
                 <span class="precio-total">${{ item.subtotal|floatformat:0 }}</span>
                 {% if item.mueble.en_oferta %}
@@ -503,7 +535,7 @@
 
             <div class="precio-container">
                 <span class="precio-total">${{ costo_instalacion|floatformat:0 }}</span>
-                <a href="{% url 'eliminar_domicilio' %}" class="btn-eliminar">
+                <a href="{% url 'eliminar_instalacion' %}" class="btn-eliminar">
                     <i class="bi bi-trash-fill"></i> Eliminar
                 </a>
             </div>
@@ -556,7 +588,7 @@
     <!-- Formulario para agregar domicilio -->
     <div class="domicilio-form">
         <h3>Agregar Dirección de Entrega</h3>
-        <form method="post">
+        <form method="post" action="{% url 'actualizar_direccion' %}">
             {% csrf_token %}
             <div class="form-group">
                 <label for="id_domicilio">Dirección completa:</label>
@@ -569,6 +601,28 @@
                 Actualizar Dirección
                 {% else %}
                 Agregar Dirección
+                {% endif %}
+            </button>
+        </form>
+    </div> <br>
+
+    <!-- Formulario para agregar servicio de instalación -->
+    <div class="instalacion-form">
+        <h3>Servicio de Instalación Completo</h3>
+        <form method="post" action="{% url 'actualizar_instalacion' %}">
+            {% csrf_token %}
+            <div class="form-group">
+                <label for="id_servicio_instalacion" class="form-check-label">
+                    <input type="checkbox" name="servicio_instalacion" id="id_servicio_instalacion" {% if carrito.servicio_instalacion %}checked{% endif %}>
+                    Agregar Servicio de Instalación Completo
+                </label>
+            </div>
+            <button type="submit" class="btn-direccion">
+                <i class="bi bi-wrench-adjustable"></i>
+                {% if carrito.servicio_instalacion %}
+                Remover Instalación
+                {% else %}
+                Agregar Instalación
                 {% endif %}
             </button>
         </form>
@@ -588,25 +642,23 @@
     {% endif %}
 </div>
 
-{% endblock %}
-
 <script>
-    document.addEventListener('DOMContentLoaded', function() {
+    document.addEventListener('DOMContentLoaded', function () {
         // Mostrar/ocultar campo de nombre de empresa según selección (para crear)
-        document.getElementById('segmento').addEventListener('change', function() {
+        document.getElementById('segmento').addEventListener('change', function () {
             const empresaFields = document.getElementById('empresa_fields');
             empresaFields.style.display = this.value === 'A' ? 'block' : 'none';
         });
 
         // Mostrar/ocultar campo de nombre de empresa según selección (para editar)
         {% for info in usuarios_info %}
-        document.getElementById('segmento_{{ info.usuario.id }}').addEventListener('change', function() {
+        document.getElementById('segmento_{{ info.usuario.id }}').addEventListener('change', function () {
             const empresaFields = document.getElementById('empresa_fields_{{ info.usuario.id }}');
             empresaFields.style.display = this.value === 'A' ? 'block' : 'none';
         });
 
         // Inicializar estado al cargar la página
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', function () {
             const tipoSelect = document.getElementById('segmento_{{ info.usuario.id }}');
             if (tipoSelect) {
                 tipoSelect.dispatchEvent(new Event('change'));
@@ -616,24 +668,24 @@
     });
 
     function decrementQuantity(button) {
-    const input = button.parentNode.querySelector('input[name="cantidad"]');
-    const carritoItem = button.closest('.carrito-item');
-    const nombreProducto = carritoItem.dataset.nombre;
-    const warningMessage = carritoItem.querySelector('.warning-message');
+        const input = button.parentNode.querySelector('input[name="cantidad"]');
+        const carritoItem = button.closest('.carrito-item');
+        const nombreProducto = carritoItem.dataset.nombre;
+        const warningMessage = carritoItem.querySelector('.warning-message');
 
-    let value = parseInt(input.value);
-    if (value > 1) {
-        value -= 1;
-        input.value = value;
-        input.parentNode.parentNode.submit();
-    } else {
-        warningMessage.textContent = `La cantidad mínima permitida es 1. Si deseas eliminar ${nombreProducto}, usa el botón 'Eliminar'`;
-        warningMessage.style.display = 'block';
-        setTimeout(() => {
-            warningMessage.style.display = 'none';
-        }, 3000);
+        let value = parseInt(input.value);
+        if (value > 1) {
+            value -= 1;
+            input.value = value;
+            input.parentNode.parentNode.submit();
+        } else {
+            warningMessage.textContent = `La cantidad mínima permitida es 1. Si deseas eliminar ${nombreProducto}, usa el botón 'Eliminar'`;
+            warningMessage.style.display = 'block';
+            setTimeout(() => {
+                warningMessage.style.display = 'none';
+            }, 3000);
+        }
     }
-}
 
     function incrementQuantity(button) {
         const input = button.parentNode.querySelector('input[name="cantidad"]');
@@ -643,3 +695,5 @@
         input.parentNode.parentNode.submit();
     }
 </script>
+
+{% endblock %}

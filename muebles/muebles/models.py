@@ -28,6 +28,7 @@ class Usuario(AbstractUser):
         (1, "Administrador"),
         (2, "Propietario"),
         (3, "Cliente"),
+        (4, "Soporte Técnico"),
     )
     rol = models.IntegerField(choices=ROLES, default=3)
 

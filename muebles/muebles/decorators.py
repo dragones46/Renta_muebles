@@ -70,3 +70,12 @@ def login_requerido(roles_permitidos=None, redirect_url='index', mensaje_no_auto
     
     return decorator
 
+
+def soporte_tecnico_requerido(view_func):
+    @wraps(view_func)
+    def _wrapped_view(request, *args, **kwargs):
+        if 'logueo' not in request.session or request.session['logueo']['rol'] != 4:
+            messages.error(request, 'No tienes permisos para acceder a esta página.')
+            return redirect('index')
+        return view_func(request, *args, **kwargs)
+    return _wrapped_view

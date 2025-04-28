@@ -26,8 +26,17 @@ urlpatterns = [
     path('agregar-al-carrito/<int:mueble_id>/', views.agregar_al_carrito, name='agregar_al_carrito'),
     path('eliminar-del-carrito/<int:item_id>/', views.eliminar_del_carrito, name='eliminar_del_carrito'),
     path('actualizar-cantidad/<int:item_id>/', views.actualizar_cantidad, name='actualizar_cantidad'),
+
     path('ver-carrito/', views.ver_carrito, name='ver_carrito'),
+    
+    path('agregar_direccion/', views.agregar_direccion, name='agregar_direccion'),
+    path('agregar_instalacion/', views.agregar_instalacion, name='agregar_instalacion'),
+
+    path('actualizar_direccion/', views.actualizar_direccion, name='actualizar_direccion'),
+    path('actualizar_instalacion/', views.actualizar_instalacion, name='actualizar_instalacion'),
+
     path('eliminar-domicilio/', views.eliminar_domicilio, name='eliminar_domicilio'),
+    path('eliminar-instalacion/', views.eliminar_instalacion, name='eliminar_instalacion'),
     path('procesar-pago/', views.procesar_pago, name='procesar_pago'),
 
 
@@ -91,4 +100,9 @@ urlpatterns = [
     path('propietarios/muebles/crear/', views.propietario_crear_mueble, name='propietario_crear_mueble'),
     path('propietarios/muebles/editar/<int:id>/', views.propietario_editar_mueble, name='propietario_editar_mueble'),
     path('propietarios/muebles/eliminar/<int:id>/', views.propietario_eliminar_mueble, name='propietario_eliminar_mueble'),
+
+ # Zona de Soporte Técnico
+    path('soporte-tecnico/', views.soporte_tecnico_inicio, name='soporte_tecnico_inicio'),
+    path('soporte-tecnico/ver-codigo-fuente/', views.ver_codigo_fuente, name='ver_codigo_fuente'),
+
 ]
