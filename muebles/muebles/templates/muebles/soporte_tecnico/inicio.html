@@ -1,11 +1,79 @@
 {% extends 'muebles/soporte_tecnico/bar_soporte_tecnico.html' %}
-{% load static %}
-{% block titulo %}Inicio - Soporte Técnico{% endblock %}
+{% load humanize %}
+
+{% block titulo_seccion %}Dashboard de Soporte Técnico{% endblock %}
 
 {% block contenedor %}
-<div class="container mt-4">
-    <h2>Bienvenido al Panel de Soporte Técnico</h2>
-    <p>Aquí puedes ver y editar el código fuente del sistema.</p>
-    <a href="{% url 'ver_codigo_fuente' %}" class="btn btn-primary">Ver Código Fuente</a>
+<div class="row">
+    <div class="col-md-3">
+        <div class="card text-white bg-primary mb-3">
+            <div class="card-body">
+                <h5 class="card-title">Total Problemas</h5>
+                <p class="card-text display-4">{{ total_problemas|intcomma }}</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-white bg-warning mb-3">
+            <div class="card-body">
+                <h5 class="card-title">Abiertos</h5>
+                <p class="card-text display-4">{{ problemas_abiertos|intcomma }}</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-white bg-info mb-3">
+            <div class="card-body">
+                <h5 class="card-title">En Progreso</h5>
+                <p class="card-text display-4">{{ problemas_en_progreso|intcomma }}</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-white bg-success mb-3">
+            <div class="card-body">
+                <h5 class="card-title">Resueltos</h5>
+                <p class="card-text display-4">{{ problemas_resueltos|intcomma }}</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card mt-4">
+    <div class="card-header">
+        <h5>Problemas Recientes</h5>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Título</th>
+                        <th>Tipo</th>
+                        <th>Estado</th>
+                        <th>Fecha</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for problema in problemas_recientes %}
+                    <tr>
+                        <td>{{ problema.id }}</td>
+                        <td><a href="{% url 'detalle_problema' problema.id %}">{{ problema.titulo|truncatechars:30 }}</a></td>
+                        <td>{{ problema.tipo_problema|default:"-" }}</td>
+                        <td><span class="badge bg-{% if problema.estado == 'abierto' %}warning{% elif problema.estado == 'en_progreso' %}info{% elif problema.estado == 'resuelto' %}success{% else %}secondary{% endif %}">
+                            {{ problema.get_estado_display }}
+                        </span></td>
+                        <td>{{ problema.fecha_reporte|date:"d/m/Y H:i" }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5" class="text-center">No hay problemas recientes</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
 </div>
 {% endblock %}

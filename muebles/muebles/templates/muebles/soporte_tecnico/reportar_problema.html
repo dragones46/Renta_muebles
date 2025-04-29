@@ -1,0 +1,192 @@
+{% extends 'muebles/soporte_tecnico/bar_soporte_tecnico.html' %}
+
+{% block titulo_seccion %}<i class="fas fa-bug me-2"></i>Reportar Nuevo Problema{% endblock %}
+
+{% block acciones %}
+<a href="{% url 'lista_problemas' %}" class="btn btn-outline-orange">
+    <i class="fas fa-arrow-left me-1"></i> Volver
+</a>
+{% endblock %}
+
+{% block contenedor %}
+<div class="card border-0 shadow-lg">
+    <div class="card-header bg-gradient-orange text-white">
+        <h5 class="mb-0"><i class="fas fa-file-alt me-2"></i>Formulario de Reporte</h5>
+    </div>
+    <div class="card-body">
+        <form method="post" enctype="multipart/form-data" class="needs-validation" novalidate>
+            {% csrf_token %}
+            
+            <div class="row">
+                <!-- Columna izquierda -->
+                <div class="col-md-6">
+                    <!-- Título -->
+                    <div class="mb-4">
+                        <label for="{{ form.titulo.id_for_label }}" class="form-label fw-bold">
+                            <i class="fas fa-heading me-2 text-orange"></i>Título del Problema
+                        </label>
+                        {{ form.titulo }}
+                        <div class="invalid-feedback">
+                            Por favor ingresa un título para el problema.
+                        </div>
+                    </div>
+                    
+                    <!-- Tipo de Problema -->
+                    <div class="mb-4">
+                        <label for="{{ form.tipo_problema.id_for_label }}" class="form-label fw-bold">
+                            <i class="fas fa-tag me-2 text-orange"></i>Tipo de Problema
+                        </label>
+                        {{ form.tipo_problema }}
+                    </div>
+                    
+                    <!-- URL Relacionada -->
+                    <div class="mb-4">
+                        <label for="{{ form.url_relacionada.id_for_label }}" class="form-label fw-bold">
+                            <i class="fas fa-link me-2 text-orange"></i>URL Relacionada
+                        </label>
+                        {{ form.url_relacionada }}
+                    </div>
+                </div>
+                
+                <!-- Columna derecha -->
+                <div class="col-md-6">
+                    <!-- Descripción -->
+                    <div class="mb-4">
+                        <label for="{{ form.descripcion.id_for_label }}" class="form-label fw-bold">
+                            <i class="fas fa-align-left me-2 text-orange"></i>Descripción Detallada
+                        </label>
+                        {{ form.descripcion }}
+                        <small class="text-muted">
+                            Describe el problema con el mayor detalle posible, incluyendo pasos para reproducirlo.
+                        </small>
+                    </div>
+                    
+                    <!-- Captura de Pantalla -->
+                    <div class="mb-4">
+                        <label class="form-label fw-bold">
+                            <i class="fas fa-camera me-2 text-orange"></i>Captura de Pantalla
+                        </label>
+                        <div class="file-upload-area border rounded p-3 text-center">
+                            <i class="fas fa-cloud-upload-alt fa-3x text-muted mb-3"></i>
+                            <h5>Arrastra y suelta tu archivo aquí</h5>
+                            <p class="text-muted small">o</p>
+                            <button type="button" class="btn btn-orange btn-sm">
+                                Seleccionar archivo
+                            </button>
+                            {{ form.captura_pantalla }}
+                            <div class="file-info mt-2 d-none">
+                                <span class="file-name"></span>
+                                <button type="button" class="btn-close file-remove ms-2"></button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Botón de Envío -->
+            <div class="text-center mt-4">
+                <button type="submit" class="btn btn-orange btn-lg px-5">
+                    <i class="fas fa-paper-plane me-1"></i> Enviar Reporte
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .bg-gradient-orange {
+        background: linear-gradient(135deg, #FF6B35 0%, #E05A2B 100%);
+    }
+    
+    .file-upload-area {
+        border: 2px dashed #dee2e6;
+        transition: all 0.3s;
+        cursor: pointer;
+    }
+    
+    .file-upload-area:hover {
+        border-color: #FF6B35;
+        background-color: rgba(255, 107, 53, 0.05);
+    }
+    
+    .file-upload-area.active {
+        border-color: #FF6B35;
+        background-color: rgba(255, 107, 53, 0.1);
+    }
+    
+    #id_captura_pantalla {
+        display: none;
+    }
+    
+    textarea {
+        min-height: 150px;
+    }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Manejo de la subida de archivos
+        const fileUploadArea = document.querySelector('.file-upload-area');
+        const fileInput = document.querySelector('#id_captura_pantalla');
+        const fileInfo = document.querySelector('.file-info');
+        const fileName = document.querySelector('.file-name');
+        const fileRemove = document.querySelector('.file-remove');
+        
+        fileUploadArea.addEventListener('click', function() {
+            fileInput.click();
+        });
+        
+        fileUploadArea.addEventListener('dragover', function(e) {
+            e.preventDefault();
+            this.classList.add('active');
+        });
+        
+        fileUploadArea.addEventListener('dragleave', function() {
+            this.classList.remove('active');
+        });
+        
+        fileUploadArea.addEventListener('drop', function(e) {
+            e.preventDefault();
+            this.classList.remove('active');
+            if (e.dataTransfer.files.length) {
+                fileInput.files = e.dataTransfer.files;
+                updateFileInfo();
+            }
+        });
+        
+        fileInput.addEventListener('change', function() {
+            updateFileInfo();
+        });
+        
+        fileRemove.addEventListener('click', function(e) {
+            e.stopPropagation();
+            fileInput.value = '';
+            fileInfo.classList.add('d-none');
+        });
+        
+        function updateFileInfo() {
+            if (fileInput.files.length) {
+                fileName.textContent = fileInput.files[0].name;
+                fileInfo.classList.remove('d-none');
+            }
+        }
+        
+        // Validación de formulario
+        const forms = document.querySelectorAll('.needs-validation');
+        Array.from(forms).forEach(form => {
+            form.addEventListener('submit', function(event) {
+                if (!form.checkValidity()) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                }
+                
+                form.classList.add('was-validated');
+            }, false);
+        });
+    });
+</script>
+{% endblock %}

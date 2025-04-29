@@ -1,6 +1,7 @@
 from django import forms
 from django.core.validators import MaxLengthValidator
 from django.core.exceptions import ValidationError
+from django.db.models import Q
 from .models import *
 
 #preguntas y respuestas
@@ -226,3 +227,41 @@ class PropietarioForm(forms.ModelForm):
         if not telefono:
             raise forms.ValidationError("Este campo es obligatorio.")
         return telefono
+    
+#===================================soporte tecnico=================================================
+
+# forms.py
+class ReporteProblemaForm(forms.ModelForm):
+    class Meta:
+        model = ReporteProblema
+        fields = ['titulo', 'descripcion', 'tipo_problema', 'url_relacionada', 'captura_pantalla']
+        widgets = {
+            'descripcion': forms.Textarea(attrs={'rows': 4}),
+            'url_relacionada': forms.URLInput(attrs={'placeholder': 'URL donde ocurre el problema'}),
+        }
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['tipo_problema'].queryset = TipoProblema.objects.all().order_by('nombre')
+        self.fields['captura_pantalla'].required = False
+
+class ComentarioProblemaForm(forms.ModelForm):
+    class Meta:
+        model = ComentarioProblema
+        fields = ['comentario']
+        widgets = {
+            'comentario': forms.Textarea(attrs={'rows': 3, 'placeholder': 'Escribe tu comentario aquí...'}),
+        }
+
+class CambiarEstadoForm(forms.Form):
+    nuevo_estado = forms.ChoiceField(choices=ReporteProblema.ESTADOS)
+    comentario = forms.CharField(
+        required=False,
+        widget=forms.Textarea(attrs={'rows': 2, 'placeholder': 'Explicación del cambio (opcional)'})
+    )
+
+class AsignarProblemaForm(forms.Form):
+    usuario_asignado = forms.ModelChoiceField(
+        queryset=Usuario.objects.filter(Q(rol=1) | Q(rol=4)).order_by('nombre'),
+        label="Asignar a"
+    )

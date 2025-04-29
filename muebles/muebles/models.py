@@ -312,4 +312,64 @@ class Respuesta(models.Model):
     def __str__(self):
         return f"Respuesta a {self.pregunta.id}"
 
+# soporte tecnico
+class TipoProblema(models.Model):
+    nombre = models.CharField(max_length=100)
+    descripcion = models.TextField(blank=True)
+    prioridad = models.IntegerField(default=3)  # 1: Crítico, 2: Alto, 3: Medio, 4: Bajo
+    
+    def __str__(self):
+        return self.nombre
 
+class ReporteProblema(models.Model):
+    ESTADOS = (
+        ('abierto', 'Abierto'),
+        ('en_progreso', 'En Progreso'),
+        ('resuelto', 'Resuelto'),
+        ('cerrado', 'Cerrado'),
+        ('rechazado', 'Rechazado'),
+    )
+    
+    titulo = models.CharField(max_length=200)
+    descripcion = models.TextField()
+    tipo_problema = models.ForeignKey(TipoProblema, on_delete=models.SET_NULL, null=True)
+    estado = models.CharField(max_length=20, choices=ESTADOS, default='abierto')
+    fecha_reporte = models.DateTimeField(auto_now_add=True)
+    fecha_actualizacion = models.DateTimeField(auto_now=True)
+    usuario_reporte = models.ForeignKey(Usuario, on_delete=models.SET_NULL, null=True, related_name='problemas_reportados')
+    usuario_asignado = models.ForeignKey(Usuario, on_delete=models.SET_NULL, null=True, blank=True, related_name='problemas_asignados')
+    url_relacionada = models.CharField(max_length=255, blank=True)
+    captura_pantalla = models.ImageField(upload_to='capturas_problemas/', null=True, blank=True)
+    
+    class Meta:
+        ordering = ['-fecha_reporte']
+    
+    def __str__(self):
+        return f"{self.titulo} - {self.get_estado_display()}"
+
+class ComentarioProblema(models.Model):
+    problema = models.ForeignKey(ReporteProblema, on_delete=models.CASCADE, related_name='comentarios')
+    usuario = models.ForeignKey(Usuario, on_delete=models.SET_NULL, null=True)
+    comentario = models.TextField()
+    fecha = models.DateTimeField(auto_now_add=True)
+    es_solucion = models.BooleanField(default=False)
+    
+    class Meta:
+        ordering = ['fecha']
+    
+    def __str__(self):
+        return f"Comentario de {self.usuario.nombre if self.usuario else 'Anónimo'}"
+
+class RegistroCambio(models.Model):
+    problema = models.ForeignKey(ReporteProblema, on_delete=models.CASCADE, related_name='cambios')
+    usuario = models.ForeignKey(Usuario, on_delete=models.SET_NULL, null=True)
+    campo = models.CharField(max_length=100)
+    valor_anterior = models.TextField()
+    valor_nuevo = models.TextField()
+    fecha = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        ordering = ['-fecha']
+    
+    def __str__(self):
+        return f"Cambio en {self.campo} por {self.usuario.nombre if self.usuario else 'Sistema'}"

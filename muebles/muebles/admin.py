@@ -152,3 +152,29 @@ class RespuestaAdmin(admin.ModelAdmin):
         if db_field.name == "administrador":
             kwargs["queryset"] = db_field.related_model.objects.filter(rol=1)
         return super().formfield_for_foreignkey(db_field, request, **kwargs)
+
+
+class ComentarioProblemaInline(admin.TabularInline):
+    model = ComentarioProblema
+    extra = 0
+
+class RegistroCambioInline(admin.TabularInline):
+    model = RegistroCambio
+    extra = 0
+    readonly_fields = ['usuario', 'campo', 'valor_anterior', 'valor_nuevo', 'fecha']
+
+@admin.register(ReporteProblema)
+class ReporteProblemaAdmin(admin.ModelAdmin):
+    list_display = ['titulo', 'tipo_problema', 'estado', 'usuario_reporte', 'usuario_asignado', 'fecha_reporte']
+    list_filter = ['estado', 'tipo_problema', 'fecha_reporte']
+    search_fields = ['titulo', 'descripcion']
+    inlines = [ComentarioProblemaInline, RegistroCambioInline]
+    readonly_fields = ['fecha_reporte', 'fecha_actualizacion']
+
+@admin.register(TipoProblema)
+class TipoProblemaAdmin(admin.ModelAdmin):
+    list_display = ['nombre', 'prioridad']
+    ordering = ['prioridad', 'nombre']
+
+admin.site.register(ComentarioProblema)
+admin.site.register(RegistroCambio)

@@ -1,0 +1,151 @@
+{% extends 'muebles/soporte_tecnico/bar_soporte_tecnico.html' %}
+
+{% block titulo_seccion %}Estadísticas de Problemas{% endblock %}
+
+{% block contenedor %}
+<div class="row">
+    <div class="col-md-6">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5>Problemas por Estado</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="estadosChart" height="300"></canvas>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5>Problemas por Tipo</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="tiposChart" height="300"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header">
+                <h5>Métricas Clave</h5>
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-md-4">
+                        <div class="card bg-light mb-3">
+                            <div class="card-body">
+                                <h6>Tiempo Promedio de Resolución</h6>
+                                <h3>{{ tiempo_promedio }}</h3>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card bg-light mb-3">
+                            <div class="card-body">
+                                <h6>Problemas Abiertos</h6>
+                                <h3>{{ problemas_por_estado.0.total|default:0 }}</h3>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card bg-light mb-3">
+                            <div class="card-body">
+                                <h6>Problemas Resueltos</h6>
+                                <h3>{{ problemas_por_estado.2.total|default:0 }}</h3>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    // Gráfico de problemas por estado
+    const estadosCtx = document.getElementById('estadosChart').getContext('2d');
+    const estadosChart = new Chart(estadosCtx, {
+        type: 'doughnut',
+        data: {
+            labels: [
+                {% for item in problemas_por_estado %}
+                '{{ item.estado|title }}',
+                {% endfor %}
+            ],
+            datasets: [{
+                data: [
+                    {% for item in problemas_por_estado %}
+                    {{ item.total }},
+                    {% endfor %}
+                ],
+                backgroundColor: [
+                    '#ffc107', // Abierto - amarillo
+                    '#0dcaf0', // En progreso - azul claro
+                    '#198754', // Resuelto - verde
+                    '#6c757d', // Cerrado - gris
+                    '#dc3545'  // Rechazado - rojo
+                ],
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    position: 'right',
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            let label = context.label || '';
+                            if (label) {
+                                label += ': ';
+                            }
+                            label += context.raw + ' (' + context.dataset.data[context.dataIndex] + '%)';
+                            return label;
+                        }
+                    }
+                }
+            }
+        }
+    });
+    
+    // Gráfico de problemas por tipo
+    const tiposCtx = document.getElementById('tiposChart').getContext('2d');
+    const tiposChart = new Chart(tiposCtx, {
+        type: 'bar',
+        data: {
+            labels: [
+                {% for item in problemas_por_tipo %}
+                '{{ item.tipo_problema__nombre|default:"Sin tipo" }}',
+                {% endfor %}
+            ],
+            datasets: [{
+                label: 'Problemas por Tipo',
+                data: [
+                    {% for item in problemas_por_tipo %}
+                    {{ item.total }},
+                    {% endfor %}
+                ],
+                backgroundColor: '#0d6efd',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                y: {
+                    beginAtZero: true
+                }
+            }
+        }
+    });
+</script>
+{% endblock %}

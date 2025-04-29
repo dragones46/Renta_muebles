@@ -104,5 +104,10 @@ urlpatterns = [
  # Zona de Soporte Técnico
     path('soporte-tecnico/', views.soporte_tecnico_inicio, name='soporte_tecnico_inicio'),
     path('soporte-tecnico/ver-codigo-fuente/', views.ver_codigo_fuente, name='ver_codigo_fuente'),
+    path('soporte-tecnico/problemas/', views.lista_problemas, name='lista_problemas'),
+    path('soporte-tecnico/problemas/<int:problema_id>/', views.detalle_problema, name='detalle_problema'),
+    path('soporte-tecnico/problemas/reportar/', views.reportar_problema, name='reportar_problema'),
+    path('soporte-tecnico/codigo-fuente/', views.ver_codigo_fuente, name='ver_codigo_fuente'),
+    path('soporte-tecnico/estadisticas/', views.estadisticas_problemas, name='estadisticas_problemas'),
 
 ]

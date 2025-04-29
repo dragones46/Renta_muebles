@@ -1,4 +1,5 @@
 import re
+from django.forms import DurationField
 from django.shortcuts import render, redirect, get_object_or_404
 from django.http import HttpResponse
 from django.contrib import messages
@@ -49,6 +50,7 @@ from datetime import datetime
 import uuid
 from io import BytesIO
 from .decorators import *
+from django.db.models import Count, Avg, ExpressionWrapper, FloatField, DurationField
 
 # ==================== VISTAS PÚBLICAS ====================
 
@@ -1758,11 +1760,287 @@ def propietario_eliminar_mueble(request, id):
 # ============================================ Soporte Tencnico Rol=======================================
 
 
+# views.py
+from django.db.models import Q
+from django.core.paginator import Paginator
+from django.http import JsonResponse
+import os
+from datetime import datetime
+
+# Decorador personalizado para verificar rol de soporte técnico
+
 @rol_requerido(roles_permitidos=[4])
 def soporte_tecnico_inicio(request):
-    return render(request, 'muebles/soporte_tecnico/inicio.html')
+    # Estadísticas para el dashboard
+    total_problemas = ReporteProblema.objects.count()
+    problemas_abiertos = ReporteProblema.objects.filter(estado='abierto').count()
+    problemas_en_progreso = ReporteProblema.objects.filter(estado='en_progreso').count()
+    problemas_resueltos = ReporteProblema.objects.filter(estado='resuelto').count()
+    
+    # Problemas recientes
+    problemas_recientes = ReporteProblema.objects.all().order_by('-fecha_reporte')[:5]
+    
+    context = {
+        'total_problemas': total_problemas,
+        'problemas_abiertos': problemas_abiertos,
+        'problemas_en_progreso': problemas_en_progreso,
+        'problemas_resueltos': problemas_resueltos,
+        'problemas_recientes': problemas_recientes,
+    }
+    return render(request, 'muebles/soporte_tecnico/inicio.html', context)
 
-@soporte_tecnico_requerido
+@rol_requerido(roles_permitidos=[4])
+def lista_problemas(request):
+    # Filtros
+    estado = request.GET.get('estado', '')
+    tipo_problema = request.GET.get('tipo_problema', '')
+    search = request.GET.get('search', '')
+    asignado_a_mi = 'asignado_a_mi' in request.GET
+    
+    problemas = ReporteProblema.objects.all().order_by('-fecha_reporte')
+    
+    if estado:
+        problemas = problemas.filter(estado=estado)
+    if tipo_problema:
+        problemas = problemas.filter(tipo_problema_id=tipo_problema)
+    if search:
+        problemas = problemas.filter(
+            Q(titulo__icontains=search) |
+            Q(descripcion__icontains=search) |
+            Q(url_relacionada__icontains=search)
+        )
+    if asignado_a_mi:
+        problemas = problemas.filter(usuario_asignado_id=request.session['logueo']['id'])
+    
+    # Paginación
+    paginator = Paginator(problemas, 10)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    
+    tipos_problema = TipoProblema.objects.all()
+    
+    context = {
+        'problemas': page_obj,
+        'tipos_problema': tipos_problema,
+        'estados': ReporteProblema.ESTADOS,
+        'estado_seleccionado': estado,
+        'tipo_seleccionado': tipo_problema,
+        'search': search,
+        'asignado_a_mi': asignado_a_mi,
+    }
+    return render(request, 'muebles/soporte_tecnico/lista_problemas.html', context)
+
+@rol_requerido(roles_permitidos=[4])
+def detalle_problema(request, problema_id):
+    problema = get_object_or_404(ReporteProblema, id=problema_id)
+    
+    if request.method == 'POST':
+        accion = request.POST.get('accion')
+        comentario = request.POST.get('comentario', '').strip()
+        
+        if accion == 'comentar':
+            if comentario:
+                ComentarioProblema.objects.create(
+                    problema=problema,
+                    usuario_id=request.session['logueo']['id'],
+                    comentario=comentario
+                )
+                messages.success(request, 'Comentario agregado correctamente.')
+            else:
+                messages.error(request, 'El comentario no puede estar vacío.')
+        
+        elif accion == 'cambiar_estado':
+            nuevo_estado = request.POST.get('nuevo_estado')
+            if nuevo_estado and nuevo_estado != problema.estado:
+                # Registrar el cambio
+                RegistroCambio.objects.create(
+                    problema=problema,
+                    usuario_id=request.session['logueo']['id'],
+                    campo='estado',
+                    valor_anterior=problema.get_estado_display(),
+                    valor_nuevo=dict(ReporteProblema.ESTADOS).get(nuevo_estado, nuevo_estado)
+                )
+                problema.estado = nuevo_estado
+                problema.save()
+                messages.success(request, f'Estado cambiado a {problema.get_estado_display()}.')
+        
+        elif accion == 'asignar':
+            usuario_asignado_id = request.POST.get('usuario_asignado')
+            if usuario_asignado_id:
+                usuario_asignado = Usuario.objects.get(id=usuario_asignado_id)
+                # Registrar el cambio
+                RegistroCambio.objects.create(
+                    problema=problema,
+                    usuario_id=request.session['logueo']['id'],
+                    campo='usuario_asignado',
+                    valor_anterior=str(problema.usuario_asignado) if problema.usuario_asignado else 'Ninguno',
+                    valor_nuevo=str(usuario_asignado)
+                )
+                problema.usuario_asignado = usuario_asignado
+                problema.save()
+                messages.success(request, f'Problema asignado a {usuario_asignado.nombre}.')
+        
+        elif accion == 'marcar_solucion':
+            comentario_id = request.POST.get('comentario_id')
+            if comentario_id:
+                comentario = ComentarioProblema.objects.get(id=comentario_id)
+                comentario.es_solucion = True
+                comentario.save()
+                
+                # Registrar el cambio
+                RegistroCambio.objects.create(
+                    problema=problema,
+                    usuario_id=request.session['logueo']['id'],
+                    campo='solución',
+                    valor_anterior='',
+                    valor_nuevo=f'Solución marcada en comentario #{comentario.id}'
+                )
+                
+                # Cambiar estado a resuelto
+                if problema.estado != 'resuelto':
+                    problema.estado = 'resuelto'
+                    problema.save()
+                    messages.success(request, 'Comentario marcado como solución y problema marcado como resuelto.')
+                else:
+                    messages.success(request, 'Comentario marcado como solución.')
+        
+        return redirect('detalle_problema', problema_id=problema.id)
+    
+    # Obtener usuarios disponibles para asignar (solo soporte técnico y administradores)
+    usuarios_asignables = Usuario.objects.filter(Q(rol=1) | Q(rol=4)).order_by('nombre')
+    
+    context = {
+        'problema': problema,
+        'usuarios_asignables': usuarios_asignables,
+    }
+    return render(request, 'muebles/soporte_tecnico/detalle_problema.html', context)
+
+@rol_requerido(roles_permitidos=[4])
+def reportar_problema(request):
+    if request.method == 'POST':
+        form = ReporteProblemaForm(request.POST, request.FILES)
+        if form.is_valid():
+            problema = form.save(commit=False)
+            problema.usuario_reporte_id = request.session['logueo']['id']
+            
+            # Procesar captura de pantalla si existe
+            if 'captura_pantalla' in request.FILES:
+                captura = request.FILES['captura_pantalla']
+                # Renombrar el archivo para evitar conflictos
+                nombre_archivo = f"captura_{datetime.now().strftime('%Y%m%d_%H%M%S')}_{captura.name}"
+                problema.captura_pantalla.save(nombre_archivo, captura)
+            
+            problema.save()
+            
+            # Notificar al equipo de soporte
+            notificar_nuevo_problema(problema)
+            
+            messages.success(request, 'Problema reportado correctamente. El equipo de soporte lo revisará pronto.')
+            return redirect('lista_problemas')
+    else:
+        form = ReporteProblemaForm()
+    
+    return render(request, 'muebles/soporte_tecnico/reportar_problema.html', {'form': form})
+
+def notificar_nuevo_problema(problema):
+    # En una aplicación real, aquí podrías enviar un email o notificación
+    # a los miembros del equipo de soporte técnico
+    pass
+
+@rol_requerido(roles_permitidos=[4])
 def ver_codigo_fuente(request):
-    # Aquí puedes agregar la lógica para mostrar el código fuente
-    return render(request, 'muebles/soporte_tecnico/ver_codigo_fuente.html')
+    # Obtener lista de archivos del proyecto
+    base_dir = settings.BASE_DIR
+    archivos = []
+    
+    # Directorios a explorar
+    directorios = [
+        os.path.join(base_dir, 'muebles'),
+        os.path.join(base_dir, 'templates'),
+    ]
+    
+    for directorio in directorios:
+        for root, dirs, files in os.walk(directorio):
+            for file in files:
+                if file.endswith(('.py', '.html', '.css', '.js')):
+                    ruta_relativa = os.path.relpath(os.path.join(root, file), base_dir)
+                    archivos.append({
+                        'nombre': file,
+                        'ruta': os.path.join(root, file),
+                        'ruta_relativa': ruta_relativa,
+                        'tipo': 'python' if file.endswith('.py') else 
+                               'html' if file.endswith('.html') else 
+                               'css' if file.endswith('.css') else 'javascript'
+                    })
+    
+    # Ordenar alfabéticamente
+    archivos.sort(key=lambda x: x['nombre'])
+    
+    # Si se solicita ver un archivo específico
+    archivo_path = request.GET.get('archivo')
+    contenido = None
+    
+    if archivo_path and os.path.exists(archivo_path):
+        try:
+            with open(archivo_path, 'r', encoding='utf-8') as f:
+                contenido = f.read()
+        except UnicodeDecodeError:
+            with open(archivo_path, 'r', encoding='latin-1') as f:
+                contenido = f.read()
+        except Exception as e:
+            messages.error(request, f'Error al leer el archivo: {str(e)}')
+    
+    context = {
+        'archivos': archivos,
+        'contenido': contenido,
+        'archivo_actual': archivo_path,
+    }
+    return render(request, 'muebles/soporte_tecnico/ver_codigo_fuente.html', context)
+
+@rol_requerido(roles_permitidos=[4])
+def estadisticas_problemas(request):
+    # Problemas por estado
+    problemas_por_estado = ReporteProblema.objects.values('estado').annotate(
+        total=Count('id'),
+        porcentaje=ExpressionWrapper(
+            Count('id') * 100.0 / ReporteProblema.objects.count(),
+            output_field=FloatField()
+        )
+    ).order_by('-total')
+    
+    # Problemas por tipo
+    problemas_por_tipo = ReporteProblema.objects.values('tipo_problema__nombre').annotate(
+        total=Count('id'),
+        porcentaje=ExpressionWrapper(
+            Count('id') * 100.0 / ReporteProblema.objects.count(),
+            output_field=FloatField()
+        )
+    ).order_by('-total')
+    
+    # Tiempo promedio de resolución
+    problemas_resueltos = ReporteProblema.objects.filter(estado='resuelto')
+    tiempo_promedio = problemas_resueltos.annotate(
+        tiempo_resolucion=ExpressionWrapper(
+            F('fecha_actualizacion') - F('fecha_reporte'),
+            output_field=DurationField()
+        )
+    ).aggregate(
+        promedio=Avg('tiempo_resolucion')
+    )['promedio']
+    
+    # Convertir a días/horas/minutos
+    if tiempo_promedio:
+        dias = tiempo_promedio.days
+        segundos = tiempo_promedio.seconds
+        horas = segundos // 3600
+        minutos = (segundos % 3600) // 60
+        tiempo_promedio_str = f"{dias}d {horas}h {minutos}m"
+    else:
+        tiempo_promedio_str = "No hay datos suficientes"
+    
+    context = {
+        'problemas_por_estado': problemas_por_estado,
+        'problemas_por_tipo': problemas_por_tipo,
+        'tiempo_promedio': tiempo_promedio_str,
+    }
+    return render(request, 'muebles/soporte_tecnico/estadisticas.html', context)
