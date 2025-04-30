@@ -1,47 +1,94 @@
+<!-- templates/muebles/propietario/inicio.html -->
 {% extends 'muebles/propietario/bar_propietario.html' %}
-{% block titulo %}Panel de Propietario{% endblock %}
-{% load static %}
+{% load humanize %}
 
 {% block contenedor %}
-<div class="content container mt-5">
-    <h2>Bienvenido, {{ request.session.logueo.nombre }}</h2>
-    <div class="row">
-        <!-- Cuadro para gestionar muebles -->
-        <div class="col-md-6 mb-4">
+<div class="container mt-4">
+    <h2>Panel de Propietario</h2>
+    
+    <div class="row mt-4">
+        <div class="col-md-4 mb-4">
             <div class="card">
-                <div class="card-body">
+                <div class="card-header bg-primary text-white">
                     <h5 class="card-title">Mis Muebles</h5>
-                    <p class="card-text">Aquí puedes gestionar tus muebles, agregar nuevos, editar o eliminar los existentes.</p>
-                    <a href="{% url 'propietario_muebles' %}" class="btn btn-primary">Gestionar Muebles</a>
+                </div>
+                <div class="card-body">
+                    <h3 class="display-4">{{ total_muebles }}</h3>
+                    <p class="card-text">Total de muebles registrados</p>
+                    <a href="{% url 'propietario_muebles' %}" class="btn btn-primary">
+                        Gestionar Muebles
+                    </a>
                 </div>
             </div>
         </div>
-
-        <!-- Cuadro para ver estadísticas -->
-        <div class="col-md-6 mb-4">
+        
+        <div class="col-md-4 mb-4">
             <div class="card">
+                <div class="card-header bg-success text-white">
+                    <h5 class="card-title">Mis Ganancias</h5>
+                </div>
                 <div class="card-body">
-                    <h5 class="card-title">Estadísticas</h5>
-                    <p class="card-text">Aquí puedes ver las estadísticas de tus muebles, como el total de muebles, muebles en oferta, y más.</p>
-                    <a href="{% url 'propietario_inicio' %}" class="btn btn-primary">Ver Estadísticas</a>
+                    <h3 class="display-4">${{ ganancias_totales|intcomma }}</h3>
+                    <p class="card-text">Total ganado después de comisiones</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4 mb-4">
+            <div class="card">
+                <div class="card-header bg-warning text-dark">
+                    <h5 class="card-title">Comisiones</h5>
+                </div>
+                <div class="card-body">
+                    <h3 class="display-4">${{ comision_total|intcomma }}</h3>
+                    <p class="card-text">Total en comisiones de servicio</p>
                 </div>
             </div>
         </div>
     </div>
-
-    <!-- Cuadro para gestionar inmuebles si el propietario es de tipo 'C' -->
-    {% if request.session.logueo.propietario.segmento == 'C' %}
-    <div class="row">
-        <div class="col-md-6 mb-4">
-            <div class="card">
-                <div class="card-body">
-                    <h5 class="card-title">Mis Inmuebles</h5>
-                    <p class="card-text">Aquí puedes gestionar tus inmuebles, agregar nuevos, editar o eliminar los existentes.</p>
-                    <a href="{% url 'propietario_inmuebles' %}" class="btn btn-primary">Gestionar Inmuebles</a>
-                </div>
+    
+    <div class="card mt-4">
+        <div class="card-header">
+            <h5>Pedidos Recientes</h5>
+        </div>
+        <div class="card-body">
+            {% if pedidos_recientes %}
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>ID Pedido</th>
+                        <th>Fecha</th>
+                        <th>Total</th>
+                        <th>Estado</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for pedido in pedidos_recientes %}
+                    <tr>
+                        <td>{{ pedido.id }}</td>
+                        <td>{{ pedido.fecha|date:"d/m/Y" }}</td>
+                        <td>${{ pedido.total|intcomma }}</td>
+                        <td>
+                            <span class="badge bg-{% if pedido.estado == 'completado' %}success{% else %}warning{% endif %}">
+                                {{ pedido.get_estado_display }}
+                            </span>
+                        </td>
+                        <td>
+                            <a href="#" class="btn btn-sm btn-info">
+                                <i class="fas fa-eye"></i> Ver
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <div class="alert alert-info">
+                No hay pedidos recientes que incluyan tus muebles.
             </div>
+            {% endif %}
         </div>
     </div>
-    {% endif %}
 </div>
 {% endblock %}

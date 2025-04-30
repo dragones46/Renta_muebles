@@ -460,16 +460,16 @@
             {% if item.mueble.en_oferta %}
             <div class="oferta-sticker">{{ item.mueble.descuento }}% OFF</div>
             {% endif %}
-
+    
             <img src="{{ item.mueble.imagen.url }}" alt="{{ item.mueble.nombre }}">
-
+    
             <div class="item-info">
                 <h3>{{ item.mueble.nombre }}</h3>
                 <div class="fechas-renta">
                     <p><strong>Fechas:</strong> {{ item.fecha_inicio|date:"d/m/Y" }} - {{ item.fecha_fin|date:"d/m/Y" }}</p>
                     <p><strong>Días:</strong> {{ item.dias }}</p>
                 </div>
-
+    
                 {% if item.mueble.en_oferta %}
                 <p class="precio-original">${{ item.mueble.precio_diario|intcomma }}/día</p>
                 <p class="precio-descuento">${{ item.mueble.precio_con_descuento|intcomma }}/día</p>
@@ -478,7 +478,7 @@
                 <p style="font-size: 1.2rem;">${{ item.mueble.precio_diario|floatformat:0 }}/día</p>
                 {% endif %}
             </div>
-
+    
             <div class="cantidad-control">
                 <form method="post" action="{% url 'actualizar_cantidad' item.id %}" class="cantidad-form">
                     {% csrf_token %}
@@ -492,7 +492,7 @@
                     La cantidad mínima permitida es 1. Si deseas eliminar este producto, usa el botón 'Eliminar'
                 </div>
             </div>
-
+    
             <div class="precio-container">
                 <span class="precio-total">${{ item.subtotal|floatformat:0 }}</span>
                 {% if item.mueble.en_oferta %}
@@ -504,88 +504,72 @@
             </div>
         </div>
         {% endfor %}
-
-        {% if carrito.domicilio %}
-        <div class="carrito-item">
-            <img src="{% static 'muebles/img/iconoDomicilio.png' %}" alt="Domicilio">
-
-            <div class="item-info">
-                <h3>Servicio de Domicilio</h3>
-                <p><strong>Dirección:</strong> {{ carrito.domicilio }}</p>
-                <p>Costo fijo por envío</p>
-            </div>
-
-            <div class="precio-container">
-                <span class="precio-total">${{ costo_domicilio|floatformat:0 }}</span>
-                <a href="{% url 'eliminar_domicilio' %}" class="btn-eliminar">
-                    <i class="bi bi-trash-fill"></i> Eliminar
-                </a>
-            </div>
-        </div>
-        {% endif %}
-
-        {% if carrito.servicio_instalacion %}
-        <div class="carrito-item">
-            <img src="{% static 'muebles/img/iconoInstalacion.png' %}" alt="Instalación">
-
-            <div class="item-info">
-                <h3>Servicio de Instalación Completo</h3>
-                <p>Costo fijo por instalación</p>
-            </div>
-
-            <div class="precio-container">
-                <span class="precio-total">${{ costo_instalacion|floatformat:0 }}</span>
-                <a href="{% url 'eliminar_instalacion' %}" class="btn-eliminar">
-                    <i class="bi bi-trash-fill"></i> Eliminar
-                </a>
-            </div>
-        </div>
-        {% endif %}
     </div>
-
+    
     <div class="carrito-summary">
         <h3 class="summary-title">Resumen de Compra</h3>
-
+    
         {% if ahorro_total > 0 %}
         <div class="summary-line ahorro">
             <span>Ahorro total:</span>
             <span>${{ ahorro_total|floatformat:0 }}</span>
         </div>
         {% endif %}
-
+    
         <div class="summary-line">
             <span>Subtotal:</span>
             <span>${{ subtotal|floatformat:0 }}</span>
         </div>
-
-        {% if carrito.domicilio %}
+    
+        {% if carrito and carrito.domicilio %}
         <div class="summary-line">
             <span>Domicilio:</span>
             <span>${{ costo_domicilio|floatformat:0 }}</span>
         </div>
         {% endif %}
-
-        {% if carrito.servicio_instalacion %}
+    
+        {% if carrito and carrito.servicio_instalacion %}
         <div class="summary-line">
             <span>Instalación:</span>
             <span>${{ costo_instalacion|floatformat:0 }}</span>
         </div>
         {% endif %}
-
+    
         <div class="summary-line total">
             <span>Total a pagar:</span>
             <span>${{ total|floatformat:0 }}</span>
         </div>
-
-        <form method="post" action="{% url 'procesar_pago' %}">
-            {% csrf_token %}
-            <button type="submit" class="btn-pagar">
-                <i class="bi bi-credit-card-fill"></i> Proceder al Pago
+    
+        {% if usuario_no_logueado %}
+            <div class="alert alert-info">
+                <strong>¡Estás viendo el carrito como invitado!</strong> 
+                Para proceder al pago, por favor <a href="{% url 'login' %}?next={% url 'procesar_pago' %}" class="alert-link">inicia sesión</a> 
+                o <a href="{% url 'registro' %}" class="alert-link">regístrate</a>.
+            </div>
+            
+            <button class="btn-pagar" disabled>
+                <i class="bi bi-credit-card-fill"></i> Inicia sesión para pagar
             </button>
-        </form>
+            <div class="text-center mt-3">
+                <a href="{% url 'login' %}?next={% url 'procesar_pago' %}" class="btn btn-primary">
+                    <i class="bi bi-box-arrow-in-right"></i> Iniciar sesión
+                </a>
+                <a href="{% url 'registro' %}" class="btn btn-success ml-2">
+                    <i class="bi bi-person-plus"></i> Registrarse
+                </a>
+            </div>
+        {% else %}
+            <form method="post" action="{% url 'procesar_pago' %}">
+                {% csrf_token %}
+                <button type="submit" class="btn-pagar">
+                    <i class="bi bi-credit-card-fill"></i> Proceder al Pago
+                </button>
+            </form>
+        {% endif %}
     </div>
-
-    <!-- Formulario para agregar domicilio -->
+    
+    {% if not usuario_no_logueado %}
+    <!-- Formularios de domicilio e instalación solo para usuarios logueados -->
     <div class="domicilio-form">
         <h3>Agregar Dirección de Entrega</h3>
         <form method="post" action="{% url 'actualizar_direccion' %}">
@@ -604,11 +588,10 @@
                 {% endif %}
             </button>
         </form>
-    </div> <br>
-
-    <!-- Formulario para agregar servicio de instalación -->
+    </div>
+    
     <div class="instalacion-form">
-        <h3>Servicio de Instalación Completo</h3>
+        <h3>Servicio de Instalación</h3>
         <form method="post" action="{% url 'actualizar_instalacion' %}">
             {% csrf_token %}
             <div class="form-group">
@@ -627,6 +610,8 @@
             </button>
         </form>
     </div>
+    {% endif %}
+
     {% else %}
     <div class="empty-cart">
         <div class="empty-cart-icon">
@@ -645,26 +630,20 @@
 <script>
     document.addEventListener('DOMContentLoaded', function () {
         // Mostrar/ocultar campo de nombre de empresa según selección (para crear)
-        document.getElementById('segmento').addEventListener('change', function () {
-            const empresaFields = document.getElementById('empresa_fields');
-            empresaFields.style.display = this.value === 'A' ? 'block' : 'none';
-        });
-
-        // Mostrar/ocultar campo de nombre de empresa según selección (para editar)
-        {% for info in usuarios_info %}
-        document.getElementById('segmento_{{ info.usuario.id }}').addEventListener('change', function () {
-            const empresaFields = document.getElementById('empresa_fields_{{ info.usuario.id }}');
-            empresaFields.style.display = this.value === 'A' ? 'block' : 'none';
-        });
+        const segmentoSelect = document.getElementById('segmento');
+        if (segmentoSelect) {
+            segmentoSelect.addEventListener('change', function () {
+                const empresaFields = document.getElementById('empresa_fields');
+                if (empresaFields) {
+                    empresaFields.style.display = this.value === 'A' ? 'block' : 'none';
+                }
+            });
+        }
 
         // Inicializar estado al cargar la página
-        document.addEventListener('DOMContentLoaded', function () {
-            const tipoSelect = document.getElementById('segmento_{{ info.usuario.id }}');
-            if (tipoSelect) {
-                tipoSelect.dispatchEvent(new Event('change'));
-            }
-        });
-        {% endfor %}
+        if (segmentoSelect) {
+            segmentoSelect.dispatchEvent(new Event('change'));
+        }
     });
 
     function decrementQuantity(button) {

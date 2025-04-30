@@ -1,24 +1,24 @@
 {% extends 'muebles/soporte_tecnico/bar_soporte_tecnico.html' %}
 
-{% block titulo_seccion %}Estadísticas de Problemas{% endblock %}
+{% block titulo_seccion %}<i class="fas fa-chart-bar me-2"></i> Estadísticas de Problemas{% endblock %}
 
 {% block contenedor %}
 <div class="row">
     <div class="col-md-6">
         <div class="card mb-4">
             <div class="card-header">
-                <h5>Problemas por Estado</h5>
+                <h5 style="color: white;">Problemas por Estado</h5>
             </div>
             <div class="card-body">
                 <canvas id="estadosChart" height="300"></canvas>
             </div>
         </div>
     </div>
-    
+
     <div class="col-md-6">
         <div class="card mb-4">
             <div class="card-header">
-                <h5>Problemas por Tipo</h5>
+                <h5 style="color: white;">Problemas por Tipo</h5>
             </div>
             <div class="card-body">
                 <canvas id="tiposChart" height="300"></canvas>
@@ -116,7 +116,7 @@
             }
         }
     });
-    
+
     // Gráfico de problemas por tipo
     const tiposCtx = document.getElementById('tiposChart').getContext('2d');
     const tiposChart = new Chart(tiposCtx, {

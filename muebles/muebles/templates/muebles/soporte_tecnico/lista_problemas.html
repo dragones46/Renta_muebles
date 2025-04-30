@@ -1,10 +1,10 @@
 {% extends 'muebles/soporte_tecnico/bar_soporte_tecnico.html' %}
 
-{% block titulo_seccion %}Problemas Reportados{% endblock %}
+{% block titulo_seccion %}<i class="fas fa-bug me-2"></i> Lista de Problemas{% endblock %}
 
 {% block acciones %}
 <a href="{% url 'reportar_problema' %}" class="btn btn-sm btn-outline-primary">
-    <i class="fas fa-plus"></i> Nuevo Reporte
+    <i class="fas fa-plus-circle"></i> Reportar Problema
 </a>
 {% endblock %}
 
@@ -29,17 +29,17 @@
                             {% endfor %}
                         </select>
                         <button type="submit" class="btn btn-primary btn-sm">
-                            <i class="fas fa-filter"></i> Filtrar
+                            <i class="bi bi-search"></i> Buscar
                         </button>
                     </div>
                 </form>
             </div>
             <div class="col-md-4 text-end">
                 <div class="form-check form-switch">
-                    <input class="form-check-input" type="checkbox" id="asignadosAMi" 
+                    <input class="form-check-input" type="checkbox" id="asignadosAMi"
                            {% if asignado_a_mi %}checked{% endif %}
                            onchange="window.location.href='{% url 'lista_problemas' %}?asignado_a_mi=' + this.checked">
-                    <label class="form-check-label" for="asignadosAMi">Solo asignados a mí</label>
+                    <label class="form-check-label" for="asignadosAMi" style="color: white;">Solo asignados a mí</label>
                 </div>
             </div>
         </div>
@@ -91,7 +91,7 @@
                 </tbody>
             </table>
         </div>
-        
+
         <!-- Paginación -->
         {% if problemas.has_other_pages %}
         <nav aria-label="Page navigation">
@@ -108,7 +108,7 @@
                     </a>
                 </li>
                 {% endif %}
-                
+
                 {% for num in problemas.paginator.page_range %}
                     {% if problemas.number == num %}
                     <li class="page-item active"><a class="page-link" href="#">{{ num }}</a></li>
@@ -116,7 +116,7 @@
                     <li class="page-item"><a class="page-link" href="?page={{ num }}{% if search %}&search={{ search }}{% endif %}{% if estado_seleccionado %}&estado={{ estado_seleccionado }}{% endif %}{% if tipo_seleccionado %}&tipo_problema={{ tipo_seleccionado }}{% endif %}{% if asignado_a_mi %}&asignado_a_mi=on{% endif %}">{{ num }}</a></li>
                     {% endif %}
                 {% endfor %}
-                
+
                 {% if problemas.has_next %}
                 <li class="page-item">
                     <a class="page-link" href="?page={{ problemas.next_page_number }}{% if search %}&search={{ search }}{% endif %}{% if estado_seleccionado %}&estado={{ estado_seleccionado }}{% endif %}{% if tipo_seleccionado %}&tipo_problema={{ tipo_seleccionado }}{% endif %}{% if asignado_a_mi %}&asignado_a_mi=on{% endif %}" aria-label="Next">

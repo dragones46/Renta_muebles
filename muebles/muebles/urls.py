@@ -61,6 +61,8 @@ urlpatterns = [
     path('faq/', views.faq_lista, name='faq_lista'),
     path('faq/votar/<int:faq_id>/', views.votar_faq, name='votar_faq'),
 
+#problemas
+    path('reportar-problema/', views.reportar_problema_usuario, name='reportar_problema_usuario'),
 
 #ZONA DE ADMINISTRADORES
 #inicio de admin
@@ -109,5 +111,11 @@ urlpatterns = [
     path('soporte-tecnico/problemas/reportar/', views.reportar_problema, name='reportar_problema'),
     path('soporte-tecnico/codigo-fuente/', views.ver_codigo_fuente, name='ver_codigo_fuente'),
     path('soporte-tecnico/estadisticas/', views.estadisticas_problemas, name='estadisticas_problemas'),
+
+
+ # Perfiles específicos
+    path('perfil/cliente/', views.perfil_cliente, name='perfil_cliente'),
+    path('perfil/propietario/', views.perfil_propietario, name='perfil_propietario'),
+    path('perfil/soporte/', views.perfil_soporte, name='perfil_soporte'),
 
 ]

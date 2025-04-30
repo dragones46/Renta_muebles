@@ -100,6 +100,7 @@ class Mueble(models.Model):
     descuento = models.IntegerField(default=0)  # Porcentaje de descuento (0-100)
     fecha_inicio_descuento = models.DateField(null=True, blank=True)
     fecha_fin_descuento = models.DateField(null=True, blank=True)
+    comision = models.IntegerField(default=10,verbose_name="Comisión de propietario  (%)")
 
     @property
     def en_oferta(self):
@@ -115,7 +116,11 @@ class Mueble(models.Model):
         if self.en_oferta:
             return int(self.precio_diario * (100 - self.descuento) / 100)
         return self.precio_diario
-    
+
+    @property
+    def precio_final_propietario(self):
+        return self.precio_con_descuento * (100 - self.comision) / 100
+       
     def __str__(self):
         return self.nombre
     
@@ -127,7 +132,15 @@ class Mueble(models.Model):
             return self.propietario.nombre_empresa
         return self.propietario.usuario.nombre  # Por defecto el nombre del usuario
 
-
+    @property
+    def comision_servicio(self):
+        """Calcula el monto de la comisión basado en el precio diario"""
+        return (self.precio_diario * self.comision_propietario / 100)
+    
+    @property
+    def ganancia_propietario(self):
+        """Calcula lo que realmente recibe el propietario"""
+        return self.precio_diario - self.comision_servicio
 
 class Renta(models.Model):
     mueble = models.ForeignKey(Mueble, on_delete=models.CASCADE)
@@ -209,6 +222,8 @@ class Pedido(models.Model):
     total = models.IntegerField(default=0)
     direccion_entrega = models.CharField(max_length=255)
     costo_domicilio = models.IntegerField(default=0)
+    comision_total = models.IntegerField(default=0)
+    
     def __str__(self):
         return f"Pedido #{self.id} - {self.usuario.nombre}"
 
@@ -218,7 +233,8 @@ class DetallePedido(models.Model):
     cantidad = models.PositiveIntegerField()
     precio_unitario = models.IntegerField(default=0)
     subtotal = models.IntegerField(default=0)
-
+    comision = models.IntegerField(default=0)
+    ganancia_propietario = models.IntegerField(default=0)
     def __str__(self):
         return f"{self.cantidad} x {self.mueble.nombre} - ${self.subtotal}"
     

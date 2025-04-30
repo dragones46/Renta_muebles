@@ -1,8 +1,80 @@
 {% extends 'muebles/soporte_tecnico/bar_soporte_tecnico.html' %}
 
-{% block titulo_seccion %}<i class="fas fa-code me-2"></i> Explorador de Código Fuente{% endblock %}
+{% block titulo_seccion %}
+<i class="fas fa-code me-2"></i> Explorador de Código Fuente
+{% endblock %}
 
 {% block contenedor %}
+<style>
+    /* Estilos generales */
+    .card {
+        border: none;
+        border-radius: 0.5rem;
+        transition: all 0.3s ease;
+    }
+
+    .card:hover {
+        box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
+    }
+
+    .card-header {
+        border-radius: 0.5rem 0.5rem 0 0 !important;
+        padding: 1rem 1.5rem;
+    }
+
+    .bg-gradient-primary {
+        background: linear-gradient(135deg, #4e73df 0%, #224abe 100%);
+    }
+
+    /* Estilos para los archivos */
+    .file-explorer {
+        font-family: 'Fira Code', monospace;
+    }
+
+    .file-item {
+        transition: all 0.2s ease;
+        color: #ffffff; /* Color blanco para las letras */
+    }
+
+    .file-item:hover {
+        background-color: #f8f9fa;
+        color: #4e73df;
+    }
+
+    .active-file {
+        background-color: #e9ecef;
+        color: #4e73df;
+        border-left: 3px solid #4e73df !important;
+    }
+
+    /* Estilos para el código */
+    #code-container {
+        background-color: #1e1e1e;
+    }
+
+    pre {
+        margin: 0;
+        padding: 1.5rem;
+        background-color: transparent !important;
+    }
+
+    code {
+        font-family: 'Fira Code', monospace;
+        font-size: 0.85rem;
+        line-height: 1.6;
+        color: #ffffff; /* Color blanco para el código */
+    }
+
+    /* Números de línea */
+    .line-numbers .line-numbers-rows {
+        border-right: 1px solid #444;
+        padding-right: 1em;
+    }
+
+    .line-numbers-rows > span:before {
+        color: #6e7681;
+    }
+</style>
 <div class="container-fluid py-4">
     <div class="row g-4">
         <!-- Panel lateral de archivos -->
@@ -20,10 +92,10 @@
                     </div>
                     <div class="file-explorer" style="height: 70vh; overflow-y: auto; overflow-x: auto;">
                         {% for archivo in archivos %}
-                        <a href="?archivo={{ archivo.ruta }}" 
+                        <a href="?archivo={{ archivo.ruta }}"
                            class="file-item d-flex justify-content-between align-items-center p-3 border-bottom text-decoration-none {% if archivo.ruta == archivo_actual %}active-file{% endif %}">
                             <div class="d-flex align-items-center">
-                                <i class="fas fa-fw me-3 
+                                <i class="fas fa-fw me-3
                                     {% if archivo.tipo == 'python' %}fa-file-code text-primary
                                     {% elif archivo.tipo == 'html' %}fa-file-alt text-danger
                                     {% elif archivo.tipo == 'css' %}fa-file-code text-info
@@ -53,7 +125,7 @@
                         <h5 class="mb-0">{{ archivo_actual|truncatechars:60 }}</h5>
                     </div>
                 </div>
-                <div class="card-body p-0 bg-dark" >
+                <div class="card-body p-0 bg-dark">
                     {% if contenido %}
                     <div id="code-container" style="height: 70vh; overflow: auto;">
                         <pre class="m-0"><code class="language-{{ archivo.tipo }} line-numbers" style="color: white;">{{ contenido }}</code></pre>
@@ -68,7 +140,7 @@
                 </div>
                 <div class="card-footer bg-light d-flex justify-content-between align-items-center">
                     <small class="text-muted">
-                        <i class="fas fa-file-alt me-1"></i> 
+                        <i class="fas fa-file-alt me-1"></i>
                         <span id="file-path">{{ archivo_actual }}</span>
                     </small>
                     <small class="text-muted">
@@ -78,21 +150,21 @@
                 </div>
             </div>
             {% else %}
-            <div class="card shadow-lg h-100">
+            <div class="card shadow-lg h-100" >
                 <div class="card-body d-flex flex-column justify-content-center align-items-center text-center p-5">
                     <div class="bg-primary bg-opacity-10 p-4 rounded-circle mb-4">
-                        <i class="fas fa-file-code fa-4x text-primary"></i>
+                        <i class="fas fa-file-code fa-4x" style="color: #f3f5f7;"></i>
                     </div>
                     <h3 class="text-primary mb-3">Explorador de Código Fuente</h3>
                     <p class="text-muted mb-4">Selecciona un archivo del panel lateral para visualizar su contenido.</p>
                     <div class="d-flex gap-2">
-                        <span class="badge bg-primary bg-opacity-10 text-primary">
+                        <span class="badge bg-primary bg-opacity-10 ">
                             <i class="fas fa-file-code me-1"></i> {{ python_files }} Python
                         </span>
-                        <span class="badge bg-danger bg-opacity-10 text-danger">
+                        <span class="badge bg-danger bg-opacity-10 ">
                             <i class="fas fa-file-alt me-1"></i> {{ html_files }} HTML
                         </span>
-                        <span class="badge bg-info bg-opacity-10 text-info">
+                        <span class="badge bg-info bg-opacity-10">
                             <i class="fas fa-file-code me-1"></i> {{ css_files }} CSS
                         </span>
                     </div>
@@ -104,82 +176,10 @@
 </div>
 {% endblock %}
 
-{% block extra_css %}
-<style>
-    /* Estilos generales */
-    .card {
-        border: none;
-        border-radius: 0.5rem;
-        transition: all 0.3s ease;
-    }
-    
-    .card:hover {
-        box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
-    }
-    
-    .card-header {
-        border-radius: 0.5rem 0.5rem 0 0 !important;
-        padding: 1rem 1.5rem;
-    }
-    
-    .bg-gradient-primary {
-        background: linear-gradient(135deg, #4e73df 0%, #224abe 100%);
-    }
-    
-    /* Estilos para los archivos */
-    .file-explorer {
-        font-family: 'Fira Code', monospace;
-    }
-    
-    .file-item {
-        transition: all 0.2s ease;
-        color: #495057;
-    }
-    
-    .file-item:hover {
-        background-color: #f8f9fa;
-        color: #4e73df;
-    }
-    
-    .active-file {
-        background-color: #e9ecef;
-        color: #4e73df;
-        border-left: 3px solid #4e73df !important;
-    }
-    
-    /* Estilos para el código */
-    #code-container {
-        background-color: #1e1e1e;
-    }
-    
-    pre {
-        margin: 0;
-        padding: 1.5rem;
-        background-color: transparent !important;
-    }
-    
-    code {
-        font-family: 'Fira Code', monospace;
-        font-size: 0.85rem;
-        line-height: 1.6;
-    }
-    
-    /* Números de línea */
-    .line-numbers .line-numbers-rows {
-        border-right: 1px solid #444;
-        padding-right: 1em;
-    }
-    
-    .line-numbers-rows > span:before {
-        color: #6e7681;
-    }
-</style>
-{% endblock %}
-
 {% block extra_js %}
 <!-- Prism.js para resaltado de sintaxis -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.24.1/prism.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.24.1/components/prism-python.min .js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.24.1/components/prism-python.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.24.1/components/prism-html.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.24.1/components/prism-css.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.24.1/components/prism-javascript.min.js"></script>
@@ -192,14 +192,14 @@
         tooltipTriggerList.map(function (tooltipTriggerEl) {
             return new bootstrap.Tooltip(tooltipTriggerEl);
         });
-        
+
         // Filtrado de archivos
         const filtroArchivos = document.getElementById('filtro-archivos');
         const fileItems = document.querySelectorAll('.file-item');
-        
+
         filtroArchivos.addEventListener('input', function() {
             const filtro = this.value.toLowerCase();
-            
+
             fileItems.forEach(item => {
                 const nombre = item.textContent.toLowerCase();
                 if (nombre.includes(filtro)) {
@@ -209,30 +209,30 @@
                 }
             });
         });
-        
+
         // Resaltar sintaxis
         if (typeof Prism !== 'undefined') {
             Prism.highlightAll();
         }
     });
-    
+
     // Función para copiar código
     function copiarCodigo() {
         const codigo = document.querySelector('#code-container code').textContent;
         navigator.clipboard.writeText(codigo).then(() => {
             const tooltip = bootstrap.Tooltip.getInstance(event.target);
             const originalTitle = event.target.getAttribute('data-bs-original-title');
-            
+
             event.target.setAttribute('data-bs-original-title', '¡Copiado!');
             tooltip.show();
-            
+
             setTimeout(() => {
                 event.target.setAttribute('data-bs-original-title', originalTitle);
                 tooltip.hide();
             }, 2000);
         });
     }
-    
+
     // Función para descargar código
     function descargarCodigo() {
         const codigo = document.querySelector('#code-container code').textContent;
@@ -240,7 +240,7 @@
         const blob = new Blob([codigo], { type: 'text/plain' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
-        
+
         a.href = url;
         a.download = nombreArchivo;
         document.body.appendChild(a);

@@ -1,34 +1,70 @@
 {% extends 'muebles/barnav.html' %}
-{% block titulo %}Últimas Actualizaciones{% endblock %}
+
+{% block titulo_seccion %}<i class="fas fa-sync-alt me-2"></i> Actualizaciones del Sistema{% endblock %}
 
 {% block contenedor %}
-<div class="container my-5">
-    <h1 class="text-center mb-5">Últimas Actualizaciones</h1>
-    
-    {% for actualizacion in actualizaciones %}
-    <div class="card mb-4 {% if actualizacion.importante %}border-warning{% endif %}">
-        <div class="card-header {% if actualizacion.importante %}bg-warning{% else %}bg-dark{% endif %} text-white">
-            <h2 class="mb-0">
-                {{ actualizacion.titulo }}
-                {% if actualizacion.importante %}
-                <span class="badge bg-danger ms-2">Importante</span>
-                {% endif %}
-            </h2>
+<div class="card mb-4">
+    <div class="card-header">
+        <h5 style="color: white;">Actualizaciones Recientes</h5>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Fecha</th>
+                        <th>Título</th>
+                        <th>Importante</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for actualizacion in actualizaciones %}
+                    <tr>
+                        <td>{{ actualizacion.fecha|date:"d/m/Y" }}</td>
+                        <td>{{ actualizacion.titulo }}</td>
+                        <td>
+                            {% if actualizacion.importante %}
+                            <span class="badge bg-danger">Sí</span>
+                            {% else %}
+                            <span class="badge bg-secondary">No</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#actualizacionModal{{ forloop.counter }}">
+                                Ver Detalles
+                            </button>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="4" class="text-center">No hay actualizaciones disponibles</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
         </div>
-        <div class="card-body">
-            <p class="text-muted">
-                <i class="far fa-calendar-alt me-2"></i>
-                {{ actualizacion.fecha|date:"d M Y H:i" }}
-            </p>
-            <div class="actualizacion-contenido">
-                {{ actualizacion.contenido|linebreaks }}
+    </div>
+</div>
+
+{% for actualizacion in actualizaciones %}
+<div class="modal fade" id="actualizacionModal{{ forloop.counter }}" tabindex="-1" aria-labelledby="actualizacionModalLabel{{ forloop.counter }}" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="actualizacionModalLabel{{ forloop.counter }}">{{ actualizacion.titulo }}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p><strong>Fecha:</strong> {{ actualizacion.fecha|date:"d/m/Y" }}</p>
+                <p><strong>Contenido:</strong></p>
+                <div style="white-space: pre-wrap;">{{ actualizacion.contenido }}</div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
             </div>
         </div>
     </div>
-    {% empty %}
-    <div class="alert alert-info text-center">
-        No hay actualizaciones recientes.
-    </div>
-    {% endfor %}
 </div>
+{% endfor %}
 {% endblock %}

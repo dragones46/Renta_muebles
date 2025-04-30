@@ -1,6 +1,8 @@
 {% extends 'muebles/soporte_tecnico/bar_soporte_tecnico.html' %}
 
-{% block titulo_seccion %}Detalle del Problema #{{ problema.id }}{% endblock %}
+{% block titulo_seccion %}
+<h1 style="color: white;">Detalle del Problema #{{ problema.id }}</h1>
+{% endblock %}
 
 {% block acciones %}
 <a href="{% url 'lista_problemas' %}" class="btn btn-sm btn-outline-secondary">
@@ -9,206 +11,323 @@
 {% endblock %}
 
 {% block contenedor %}
-<div class="row">
-    <div class="col-md-8">
-        <div class="card mb-4">
-            <div class="card-header">
-                <div class="d-flex justify-content-between align-items-center">
-                    <h5>{{ problema.titulo }}</h5>
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card mb-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 style="color: white;">{{ problema.titulo }}</h5>
                     <span class="badge bg-{% if problema.estado == 'abierto' %}warning{% elif problema.estado == 'en_progreso' %}info{% elif problema.estado == 'resuelto' %}success{% else %}secondary{% endif %}">
                         {{ problema.get_estado_display }}
                     </span>
                 </div>
+                <div class="card-body" style="background-color: #2b2b2b; color: white;">
+                    <div class="mb-3">
+                        <h6>Descripción:</h6>
+                        <p>{{ problema.descripcion|linebreaks }}</p>
+                    </div>
+
+                    {% if problema.url_relacionada %}
+                    <div class="mb-3">
+                        <h6>URL Relacionada:</h6>
+                        <a href="{{ problema.url_relacionada }}" target="_blank" style="color: #00c; text-decoration: underline;">{{ problema.url_relacionada }}</a>
+                    </div>
+                    {% endif %}
+
+                    {% if problema.captura_pantalla %}
+                    <div class="mb-3">
+                        <h6>Captura de Pantalla:</h6>
+                        <a href="{{ problema.captura_pantalla.url }}" target="_blank">
+                            <img src="{{ problema.captura_pantalla.url }}" class="img-thumbnail" style="max-height: 200px;">
+                        </a>
+                    </div>
+                    {% endif %}
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <h6>Reportado por:</h6>
+                                <p>{{ problema.usuario_reporte.nombre|default:"-" }}</p>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <h6>Fecha de Reporte:</h6>
+                                <p>{{ problema.fecha_reporte|date:"d/m/Y H:i" }}</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <h6>Asignado a:</h6>
+                                <p>{{ problema.usuario_asignado.nombre|default:"No asignado" }}</p>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <h6>Última Actualización:</h6>
+                                <p>{{ problema.fecha_actualizacion|date:"d/m/Y H:i" }}</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Formulario para cambiar estado -->
+                    <div class="card mb-3" style="background-color: #2b2b2b;">
+                        <div class="card-header">
+                            <h6>Cambiar Estado</h6>
+                        </div>
+                        <div class="card-body">
+                            <form method="post" action="{% url 'detalle_problema' problema.id %}">
+                                {% csrf_token %}
+                                <input type="hidden" name="accion" value="cambiar_estado">
+                                <div class="input-group">
+                                    <select name="nuevo_estado" class="form-select">
+                                        {% for estado in estados %}
+                                        <option value="{{ estado.0 }}" {% if problema.estado == estado.0 %}selected{% endif %}>{{ estado.1 }}</option>
+                                        {% endfor %}
+                                    </select>
+                                    <button type="submit" class="btn btn-warning" style="background-color: orange; color: white;">Actualizar</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+
+                    <!-- Formulario para asignar problema -->
+                    <div class="card mb-3" style="background-color: #2b2b2b;">
+                        <div class="card-header">
+                            <h6>Asignar Problema</h6>
+                        </div>
+                        <div class="card-body">
+                            <form method="post" action="{% url 'detalle_problema' problema.id %}">
+                                {% csrf_token %}
+                                <input type="hidden" name="accion" value="asignar">
+                                <div class="input-group">
+                                    <select name="usuario_asignado" class="form-select">
+                                        <option value="">-- Sin asignar --</option>
+                                        {% for usuario in usuarios_asignables %}
+                                        <option value="{{ usuario.id }}" {% if problema.usuario_asignado and problema.usuario_asignado.id == usuario.id %}selected{% endif %}>
+                                            {{ usuario.nombre }} ({{ usuario.get_rol_display }})
+                                        </option>
+                                        {% endfor %}
+                                    </select>
+                                    <button type="submit" class="btn btn-warning" style="background-color: orange; color: white;">Asignar</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
             </div>
-            <div class="card-body">
-                <div class="mb-3">
-                    <h6>Descripción:</h6>
-                    <p>{{ problema.descripcion|linebreaks }}</p>
+
+            <!-- Comentarios -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 style="color: white;">Comentarios</h5>
                 </div>
-                
-                {% if problema.url_relacionada %}
-                <div class="mb-3">
-                    <h6>URL Relacionada:</h6>
-                    <a href="{{ problema.url_relacionada }}" target="_blank">{{ problema.url_relacionada }}</a>
-                </div>
-                {% endif %}
-                
-                {% if problema.captura_pantalla %}
-                <div class="mb-3">
-                    <h6>Captura de Pantalla:</h6>
-                    <a href="{{ problema.captura_pantalla.url }}" target="_blank">
-                        <img src="{{ problema.captura_pantalla.url }}" class="img-thumbnail" style="max-height: 200px;">
-                    </a>
-                </div>
-                {% endif %}
-                
-                <div class="row">
-                    <div class="col-md-6">
-                        <div class="mb-3">
-                            <h6>Reportado por:</h6>
-                            <p>{{ problema.usuario_reporte.nombre|default:"-" }}</p>
+                <div class="card-body" style="background-color: #2b2b2b; color: white;">
+                    {% for comentario in problema.comentarios.all %}
+                    <div class="mb-3 p-3 {% if comentario.es_solucion %}bg-light-success{% else %}bg-light{% endif %} rounded">
+                        <div class="d-flex justify-content-between mb-2">
+                            <strong>{{ comentario.usuario.nombre }}</strong>
+                            <small class="text-muted">{{ comentario.fecha|date:"d/m/Y H:i" }}</small>
                         </div>
-                    </div>
-                    <div class="col-md-6">
-                        <div class="mb-3">
-                            <h6>Fecha de Reporte:</h6>
-                            <p>{{ problema.fecha_reporte|date:"d/m/Y H:i" }}</p>
+                        <p>{{ comentario.comentario|linebreaks }}</p>
+
+                        {% if not comentario.es_solucion and problema.estado != 'cerrado' %}
+                        <form method="post" action="{% url 'detalle_problema' problema.id %}" class="text-end">
+                            {% csrf_token %}
+                            <input type="hidden" name="accion" value="marcar_solucion">
+                            <input type="hidden" name="comentario_id" value="{{ comentario.id }}">
+                            <button type="submit" class="btn btn-success">
+                                <i class="fas fa-check"></i> Marcar como solución
+                            </button>
+                        </form>
+                        {% elif comentario.es_solucion %}
+                        <div class="text-end">
+                            <span class="badge bg-success">
+                                <i class="fas fa-check"></i> Solución aceptada
+                            </span>
                         </div>
+                        {% endif %}
                     </div>
-                </div>
-                
-                <div class="row">
-                    <div class="col-md-6">
-                        <div class="mb-3">
-                            <h6>Asignado a:</h6>
-                            <p>{{ problema.usuario_asignado.nombre|default:"No asignado" }}</p>
-                        </div>
-                    </div>
-                    <div class="col-md-6">
-                        <div class="mb-3">
-                            <h6>Última Actualización:</h6>
-                            <p>{{ problema.fecha_actualizacion|date:"d/m/Y H:i" }}</p>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Formulario para cambiar estado -->
-                <div class="card mb-3">
-                    <div class="card-header">
-                        <h6>Cambiar Estado</h6>
-                    </div>
-                    <div class="card-body">
+                    {% empty %}
+                    <p class="text-muted">No hay comentarios aún.</p>
+                    {% endfor %}
+
+                    <!-- Formulario para nuevo comentario -->
+                    {% if problema.estado != 'cerrado' %}
+                    <div class="mt-4">
+                        <h6 style="color: white;">Agregar Comentario</h6>
                         <form method="post" action="{% url 'detalle_problema' problema.id %}">
                             {% csrf_token %}
-                            <input type="hidden" name="accion" value="cambiar_estado">
-                            <div class="input-group">
-                                <select name="nuevo_estado" class="form-select">
-                                    {% for estado in estados %}
-                                    <option value="{{ estado.0 }}" {% if problema.estado == estado.0 %}selected{% endif %}>{{ estado.1 }}</option>
-                                    {% endfor %}
-                                </select>
-                                <button type="submit" class="btn btn-primary">Actualizar</button>
-                            </div>
+                            <input type="hidden" name="accion" value="comentar">
+                            <textarea name="comentario" class="form-control mb-2" rows="3" required></textarea>
+                            <button type="submit" class="btn btn-warning" style="background-color: orange; color: white;">Enviar Comentario</button>
                         </form>
-                    </div>
-                </div>
-                
-                <!-- Formulario para asignar problema -->
-                <div class="card mb-3">
-                    <div class="card-header">
-                        <h6>Asignar Problema</h6>
-                    </div>
-                    <div class="card-body">
-                        <form method="post" action="{% url 'detalle_problema' problema.id %}">
-                            {% csrf_token %}
-                            <input type="hidden" name="accion" value="asignar">
-                            <div class="input-group">
-                                <select name="usuario_asignado" class="form-select">
-                                    <option value="">-- Sin asignar --</option>
-                                    {% for usuario in usuarios_asignables %}
-                                    <option value="{{ usuario.id }}" {% if problema.usuario_asignado and problema.usuario_asignado.id == usuario.id %}selected{% endif %}>
-                                        {{ usuario.nombre }} ({{ usuario.get_rol_display }})
-                                    </option>
-                                    {% endfor %}
-                                </select>
-                                <button type="submit" class="btn btn-primary">Asignar</button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            </div>
-        </div>
-        
-        <!-- Comentarios -->
-        <div class="card mb-4">
-            <div class="card-header">
-                <h5>Comentarios</h5>
-            </div>
-            <div class="card-body">
-                {% for comentario in problema.comentarios.all %}
-                <div class="mb-3 p-3 {% if comentario.es_solucion %}bg-light-success{% else %}bg-light{% endif %} rounded">
-                    <div class="d-flex justify-content-between mb-2">
-                        <strong>{{ comentario.usuario.nombre }}</strong>
-                        <small class="text-muted">{{ comentario.fecha|date:"d/m/Y H:i" }}</small>
-                    </div>
-                    <p>{{ comentario.comentario|linebreaks }}</p>
-                    
-                    {% if not comentario.es_solucion and problema.estado != 'cerrado' %}
-                    <form method="post" action="{% url 'detalle_problema' problema.id %}" class="text-end">
-                        {% csrf_token %}
-                        <input type="hidden" name="accion" value="marcar_solucion">
-                        <input type="hidden" name="comentario_id" value="{{ comentario.id }}">
-                        <button type="submit" class="btn btn-sm btn-success">
-                            <i class="fas fa-check"></i> Marcar como solución
-                        </button>
-                    </form>
-                    {% elif comentario.es_solucion %}
-                    <div class="text-end">
-                        <span class="badge bg-success">
-                            <i class="fas fa-check"></i> Solución aceptada
-                        </span>
                     </div>
                     {% endif %}
                 </div>
-                {% empty %}
-                <p class="text-muted">No hay comentarios aún.</p>
-                {% endfor %}
-                
-                <!-- Formulario para nuevo comentario -->
-                {% if problema.estado != 'cerrado' %}
-                <div class="mt-4">
-                    <h6>Agregar Comentario</h6>
-                    <form method="post" action="{% url 'detalle_problema' problema.id %}">
-                        {% csrf_token %}
-                        <input type="hidden" name="accion" value="comentar">
-                        <textarea name="comentario" class="form-control mb-2" rows="3" required></textarea>
-                        <button type="submit" class="btn btn-primary">Enviar Comentario</button>
-                    </form>
-                </div>
-                {% endif %}
             </div>
         </div>
-    </div>
-    
-    <div class="col-md-4">
-        <!-- Historial de cambios -->
-        <div class="card mb-4">
-            <div class="card-header">
-                <h5>Historial de Cambios</h5>
-            </div>
-            <div class="card-body">
-                <div class="timeline">
-                    {% for cambio in problema.cambios.all %}
-                    <div class="timeline-item mb-3">
-                        <div class="timeline-item-marker">
-                            <div class="timeline-item-marker-indicator bg-{% if cambio.campo == 'estado' %}primary{% else %}secondary{% endif %}"></div>
-                        </div>
-                        <div class="timeline-item-content">
-                            <div class="d-flex justify-content-between">
-                                <strong>{{ cambio.usuario.nombre|default:"Sistema" }}</strong>
-                                <small class="text-muted">{{ cambio.fecha|date:"d/m/Y H:i" }}</small>
+
+        <div class="col-md-4">
+            <!-- Historial de cambios -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 style="color: white;">Historial de Cambios</h5>
+                </div>
+                <div class="card-body" style="background-color: #2b2b2b; color: white;">
+                    <div class="timeline">
+                        {% for cambio in problema.cambios.all %}
+                        <div class="timeline-item mb-3">
+                            <div class="timeline-item-marker">
+                                <div class="timeline-item-marker-indicator bg-{% if cambio.campo == 'estado' %}primary{% else %}secondary{% endif %}"></div>
                             </div>
-                            <p class="mb-1">
-                                {% if cambio.campo == 'estado' %}
-                                Cambió el estado de <span class="text-danger">{{ cambio.valor_anterior }}</span> a <span class="text-success">{{ cambio.valor_nuevo }}</span>
-                                {% elif cambio.campo == 'usuario_asignado' %}
-                                {% if cambio.valor_nuevo == 'None' %}
-                                Eliminó la asignación (antes: {{ cambio.valor_anterior }})
-                                {% else %}
-                                Asignó el problema a <span class="text-success">{{ cambio.valor_nuevo }}</span> (antes: {{ cambio.valor_anterior }})
-                                {% endif %}
-                                {% else %}
-                                {{ cambio.campo|title }}: {{ cambio.valor_nuevo }}
-                                {% endif %}
-                            </p>
+                            <div class="timeline-item-content">
+                                <div class="d-flex justify-content-between">
+                                    <strong>{{ cambio.usuario.nombre|default:"Sistema" }}</strong>
+                                    <small class="text-muted">{{ cambio.fecha|date:"d/m/Y H:i" }}</small>
+                                </div>
+                                <p class="mb-1">
+                                    {% if cambio.campo == 'estado' %}
+                                    Cambió el estado de <span class="text-danger">{{ cambio.valor_anterior }}</span> a <span class="text-success">{{ cambio.valor_nuevo }}</span>
+                                    {% elif cambio.campo == 'usuario_asignado' %}
+                                    {% if cambio.valor_nuevo == 'None' %}
+                                    Eliminó la asignación (antes: {{ cambio.valor_anterior }})
+                                    {% else %}
+                                    Asignó el problema a <span class="text-success">{{ cambio.valor_nuevo }}</span> (antes: {{ cambio.valor_anterior }})
+                                    {% endif %}
+                                    {% else %}
+                                    {{ cambio.campo|title }}: {{ cambio.valor_nuevo }}
+                                    {% endif %}
+                                </p>
+                            </div>
                         </div>
+                        {% empty %}
+                        <p class="text-muted">No hay cambios registrados.</p>
+                        {% endfor %}
                     </div>
-                    {% empty %}
-                    <p class="text-muted">No hay cambios registrados.</p>
-                    {% endfor %}
                 </div>
             </div>
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    body {
+        background-color: #1d1d1d;
+        color: white;
+    }
+
+    .card {
+        background-color: #2b2b2b;
+        color: white;
+    }
+
+    .timeline {
+        position: relative;
+        max-width: 100%;
+    }
+
+    .timeline:before {
+        content: '';
+        position: absolute;
+        left: 50%;
+        width: 2px;
+        height: 100%;
+        background: #e9ecef;
+    }
+
+    .timeline-item {
+        position: relative;
+        width: 50%;
+        padding: 20px 40px;
+        box-sizing: border-box;
+    }
+
+    .timeline-item:nth-child(even) {
+        left: 50%;
+    }
+
+    .timeline-item:nth-child(odd) {
+        left: 0;
+    }
+
+    .timeline-item:before {
+        content: '';
+        position: absolute;
+        top: 20px;
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        background: #fff;
+        border: 2px solid #e9ecef;
+    }
+
+    .timeline-item-marker {
+        position: absolute;
+        top: 0;
+        left: 50%;
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        background: #fff;
+        border: 2px solid #e9ecef;
+    }
+
+    .timeline-item-marker-indicator {
+        position: absolute;
+        top: -6px;
+        left: 50%;
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+    }
+
+    .timeline-item-content {
+        position: relative;
+        background: #3c3c3c;
+        padding: 20px 30px;
+        border-radius: 6px;
+    }
+
+    .timeline-item-content:before {
+        content: '';
+        position: absolute;
+        top: 20px;
+        left: -15px;
+        border-width: 15px;
+        border-style: solid;
+        border-color: transparent #3c3c3c transparent transparent;
+    }
+
+    .timeline-item-content:after {
+        content: '';
+        position: absolute;
+        top: 20px;
+        right: -15px;
+        border-width: 15px;
+        border-style: solid;
+        border-color: transparent transparent transparent #3c3c3c;
+    }
+
+    .timeline-item-content h6,
+    .timeline-item-content p {
+        margin: 10px 0;
+        color: white;
+    }
+
+    .btn-warning {
+        background-color: orange;
+        color: white;
+    }
+
+    .btn-warning:hover {
+        background-color: darkorange;
+        color: white;
+    }
+</style>
 {% endblock %}

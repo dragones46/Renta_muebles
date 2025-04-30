@@ -60,16 +60,13 @@
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link" href="{% url 'lista_preguntas' %}">
-                                <i class="fas fa-question-circle"></i> Preguntas
-                            </a>
-                        </li>
-                        <li class="nav-item">
                             <a class="nav-link" href="{% url 'ver_carrito' %}">
                                 <i class="fas fa-shopping-cart"></i> Carrito
                                 <span class="badge bg-danger">
                                     {% if request.session.logueo and request.session.logueo.carrito %}
                                         {{ request.session.logueo.carrito.items_count }}
+                                    {% elif request.session.carrito_session %}
+                                        {{ request.session.carrito_session.items_count }}
                                     {% else %}
                                         0
                                     {% endif %}

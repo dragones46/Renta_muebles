@@ -64,71 +64,95 @@ def muebles_list(request):
 
 # ==================== RENTA DE MUEBLES ====================
 
-@login_requerido
 def rentar_mueble(request, mueble_id):
-    logueo = request.session.get("logueo")
-    usuario = Usuario.objects.get(id=logueo["id"])
     mueble = get_object_or_404(Mueble, id=mueble_id)
 
     if request.method == 'POST':
         form = RentaForm(request.POST)
         if form.is_valid():
-            try:
-                fecha_inicio = form.cleaned_data['fecha_inicio']
-                fecha_fin = form.cleaned_data['fecha_fin']
+            fecha_inicio = form.cleaned_data['fecha_inicio']
+            fecha_fin = form.cleaned_data['fecha_fin']
+            dias = (fecha_fin - fecha_inicio).days + 1
 
-                # Guardar la renta
-                renta = Renta(
-                    mueble=mueble,
-                    usuario=usuario,
-                    fecha_inicio=fecha_inicio,
-                    fecha_fin=fecha_fin,
-                    duracion_meses=form.cleaned_data.get('duracion_meses', 0),
-                    duracion_dias=form.cleaned_data.get('duracion_dias', 0)
-                )
-                renta.save()
-
-                # Agregar el mueble al carrito con las fechas
-                carrito, creado = Carrito.objects.get_or_create(usuario=usuario)
-
-                # Verificar si ya existe un ítem igual en el carrito
-                item_existente = carrito.items.filter(
-                    mueble=mueble,
-                    fecha_inicio=fecha_inicio,
-                    fecha_fin=fecha_fin
-                ).first()
-
-                if item_existente:
-                    item_existente.cantidad += 1
-                    item_existente.save()
-                    messages.success(request, f"Se ha incrementado la cantidad de {mueble.nombre} en el carrito.")
-                else:
-                    ItemCarrito.objects.create(
-                        carrito=carrito,
+            if request.user.is_authenticated:
+                # Usuario logueado - usar modelo Carrito
+                usuario = request.user
+                try:
+                    # Guardar la renta
+                    renta = Renta(
                         mueble=mueble,
-                        cantidad=1,
+                        usuario=usuario,
+                        fecha_inicio=fecha_inicio,
+                        fecha_fin=fecha_fin,
+                        duracion_meses=form.cleaned_data.get('duracion_meses', 0),
+                        duracion_dias=form.cleaned_data.get('duracion_dias', 0)
+                    )
+                    renta.save()
+
+                    carrito, _ = Carrito.objects.get_or_create(usuario=usuario)
+                    
+                    item_existente = carrito.items.filter(
+                        mueble=mueble,
                         fecha_inicio=fecha_inicio,
                         fecha_fin=fecha_fin
-                    )
-                    messages.success(request, f"{mueble.nombre} ha sido agregado al carrito.")
+                    ).first()
 
-                # Actualizar la sesión
-                if "logueo" in request.session:
-                    request.session["logueo"]["carrito"]["items_count"] = carrito.items.count()
-                    request.session.modified = True
+                    if item_existente:
+                        item_existente.cantidad += 1
+                        item_existente.save()
+                    else:
+                        ItemCarrito.objects.create(
+                            carrito=carrito,
+                            mueble=mueble,
+                            cantidad=1,
+                            fecha_inicio=fecha_inicio,
+                            fecha_fin=fecha_fin
+                        )
+                    
+                    # Actualizar sesión
+                    if "logueo" in request.session:
+                        request.session["logueo"]["carrito"]["items_count"] = carrito.items.count()
+                        request.session.modified = True
+                except Exception as e:
+                    messages.error(request, f"Error al procesar la renta: {str(e)}")
+                    return redirect('rentar_mueble', mueble_id=mueble_id)
+            else:
+                # Usuario no logueado - usar sesión
+                if 'carrito_session' not in request.session:
+                    request.session['carrito_session'] = {
+                        'items': {},
+                        'items_count': 0,
+                        'domicilio': None,
+                        'servicio_instalacion': False
+                    }
+                
+                item_key = f"{mueble.id}_{fecha_inicio}_{fecha_fin}"
+                
+                if item_key in request.session['carrito_session']['items']:
+                    request.session['carrito_session']['items'][item_key]['cantidad'] += 1
+                else:
+                    request.session['carrito_session']['items'][item_key] = {
+                        'mueble_id': mueble.id,
+                        'cantidad': 1,
+                        'fecha_inicio': fecha_inicio.isoformat(),
+                        'fecha_fin': fecha_fin.isoformat()
+                    }
+                
+                # Actualizar contador
+                request.session['carrito_session']['items_count'] = sum(
+                    item['cantidad'] for item in request.session['carrito_session']['items'].values()
+                )
+                request.session.modified = True
 
-                return redirect('ver_carrito')
-
-            except Exception as e:
-                messages.error(request, f"Error al procesar la renta: {str(e)}")
-                return redirect('rentar_mueble', mueble_id=mueble_id)
-    else:
-        form = RentaForm(initial={'mueble': mueble})
-
+            messages.success(request, f"{mueble.nombre} agregado al carrito")
+            return redirect('ver_carrito')
+    
     return render(request, 'muebles/mueble/rentar_mueble.html', {
-        'form': form,
+        'form': RentaForm(initial={'mueble': mueble}),
         'mueble': mueble,
     })
+
+
 
 def contacto(request):
     return render(request, 'muebles/contacto/contacto.html')
@@ -147,6 +171,36 @@ def login(request):
                 # Obtener el carrito del usuario
                 carrito, created = Carrito.objects.get_or_create(usuario=user)
 
+                # Si tenía items en sesión, transferirlos al carrito
+                if 'carrito_session' in request.session:
+                    for key, item_data in request.session['carrito_session'].items():
+                        try:
+                            mueble = Mueble.objects.get(id=item_data['mueble_id'])
+                            fecha_inicio = datetime.strptime(item_data['fecha_inicio'], '%Y-%m-%d').date()
+                            fecha_fin = datetime.strptime(item_data['fecha_fin'], '%Y-%m-%d').date()
+                            
+                            item_existente = carrito.items.filter(
+                                mueble=mueble,
+                                fecha_inicio=fecha_inicio,
+                                fecha_fin=fecha_fin
+                            ).first()
+
+                            if item_existente:
+                                item_existente.cantidad += item_data['cantidad']
+                                item_existente.save()
+                            else:
+                                ItemCarrito.objects.create(
+                                    carrito=carrito,
+                                    mueble=mueble,
+                                    cantidad=item_data['cantidad'],
+                                    fecha_inicio=fecha_inicio,
+                                    fecha_fin=fecha_fin
+                                )
+                        except Exception as e:
+                            continue
+                    
+                    del request.session['carrito_session']
+
                 request.session["logueo"] = {
                     "id": user.id,
                     "nombre": user.nombre,
@@ -156,12 +210,14 @@ def login(request):
                     "foto": user.foto.url if user.foto else None,
                     "carrito": {
                         "id": carrito.id,
-                        "items_count": carrito.items.count()  # Asegurarse de contar los items actuales
+                        "items_count": carrito.items.count()
                     }
                 }
-                request.session.modified = True  # Importante para guardar los cambios
+                request.session.modified = True
+                
+                # Redirigir a la URL guardada o al índice
                 messages.success(request, "Bienvenido " + user.nombre)
-                return redirect("index")
+                return redirect('index')
             else:
                 messages.warning(request, "Contraseña incorrecta.")
         except Usuario.DoesNotExist:
@@ -276,58 +332,92 @@ def perfil(request):
 
     return render(request, 'muebles/perfil/perfil.html', {'user': user})
 
+@login_requerido
+def perfil_cliente(request):
+    logueo = request.session.get("logueo")
+    usuario = Usuario.objects.get(id=logueo["id"])
+    
+    # Obtener historial de alquileres
+    rentas = Renta.objects.filter(usuario=usuario).order_by('-fecha_inicio')
+    
+    return render(request, 'muebles/perfil/perfil_cliente.html', {
+        'usuario': usuario,
+        'rentas': rentas
+    })
+
 # ==================== CARRITO DE COMPRAS ====================
 
-@login_requerido
 def agregar_al_carrito(request, mueble_id):
-    logueo = request.session.get("logueo")
     mueble = get_object_or_404(Mueble, id=mueble_id)
-    usuario = Usuario.objects.get(id=logueo["id"])
 
     if request.method == 'POST':
         form = RentaForm(request.POST)
         if form.is_valid():
             fecha_inicio = form.cleaned_data['fecha_inicio']
             fecha_fin = form.cleaned_data['fecha_fin']
+            dias = (fecha_fin - fecha_inicio).days + 1
 
-            carrito, creado = Carrito.objects.get_or_create(usuario=usuario)
-
-            # Verificar si el mueble ya está en el carrito con las mismas fechas
-            item_existente = carrito.items.filter(
-                mueble=mueble,
-                fecha_inicio=fecha_inicio,
-                fecha_fin=fecha_fin
-            ).first()
-
-            if item_existente:
-                item_existente.cantidad += 1
-                item_existente.save()
-                messages.success(request, f"Se ha incrementado la cantidad de {mueble.nombre} en el carrito.")
-            else:
-                ItemCarrito.objects.create(
-                    carrito=carrito,
+            if request.user.is_authenticated:
+                # Usuario logueado - usar modelo Carrito
+                carrito, _ = Carrito.objects.get_or_create(usuario=request.user)
+                
+                item_existente = carrito.items.filter(
                     mueble=mueble,
-                    cantidad=1,
                     fecha_inicio=fecha_inicio,
                     fecha_fin=fecha_fin
-                )
-                messages.success(request, f"{mueble.nombre} ha sido agregado al carrito.")
+                ).first()
 
-            # Actualizar la sesión
-            request.session["logueo"]["carrito"]["items_count"] = carrito.items.count()
-            request.session.modified = True
+                if item_existente:
+                    item_existente.cantidad += 1
+                    item_existente.save()
+                else:
+                    ItemCarrito.objects.create(
+                        carrito=carrito,
+                        mueble=mueble,
+                        cantidad=1,
+                        fecha_inicio=fecha_inicio,
+                        fecha_fin=fecha_fin
+                    )
+                
+                # Actualizar sesión
+                if "logueo" in request.session:
+                    request.session["logueo"]["carrito"]["items_count"] = carrito.items.count()
+                    request.session.modified = True
+            else:
+                # Usuario no logueado - usar sesión
+                if 'carrito_session' not in request.session:
+                    request.session['carrito_session'] = {}
+                
+                item_key = f"{mueble.id}_{fecha_inicio}_{fecha_fin}"
+                
+                if item_key in request.session['carrito_session']:
+                    request.session['carrito_session'][item_key]['cantidad'] += 1
+                else:
+                    request.session['carrito_session'][item_key] = {
+                        'mueble_id': mueble.id,
+                        'cantidad': 1,
+                        'fecha_inicio': fecha_inicio.isoformat(),
+                        'fecha_fin': fecha_fin.isoformat()
+                    }
+                
+                request.session.modified = True
 
+            messages.success(request, f"{mueble.nombre} agregado al carrito")
             return redirect('ver_carrito')
-    else:
-        form = RentaForm()
+    
+    return redirect('detalle_mueble', mueble_id=mueble.id)
 
-    return render(request, 'muebles/mueble/rentar_mueble.html', {
-        'form': form,
-        'mueble': mueble,
-    })
-
-@login_requerido
 def eliminar_del_carrito(request, item_id):
+    # Si no está logueado, eliminar de la sesión
+    if 'logueo' not in request.session:
+        if 'carrito_session' in request.session and item_id in request.session['carrito_session']:
+            nombre_mueble = Mueble.objects.get(id=request.session['carrito_session'][item_id]['mueble_id']).nombre
+            del request.session['carrito_session'][item_id]
+            request.session.modified = True
+            messages.success(request, f"{nombre_mueble} ha sido eliminado del carrito.")
+        return redirect('ver_carrito')
+
+    # Usuario logueado - lógica original
     logueo = request.session.get("logueo")
     usuario = Usuario.objects.get(id=logueo["id"])
     carrito = get_object_or_404(Carrito, usuario=usuario)
@@ -336,7 +426,6 @@ def eliminar_del_carrito(request, item_id):
     nombre_mueble = item.mueble.nombre
     item.delete()
 
-    # Actualizar la sesión
     request.session["logueo"]["carrito"]["items_count"] = carrito.items.count()
     request.session.modified = True
 
@@ -350,68 +439,161 @@ def eliminar_del_carrito(request, item_id):
 
     return redirect('ver_carrito')
 
-@login_requerido
 def actualizar_cantidad(request, item_id):
-    logueo = request.session.get("logueo")
-    usuario = Usuario.objects.get(id=logueo["id"])
-    carrito = get_object_or_404(Carrito, usuario=usuario)
-    item = get_object_or_404(ItemCarrito, id=item_id, carrito=carrito)
-
     if request.method == 'POST':
         cantidad = int(request.POST.get('cantidad', 1))
 
-        if cantidad < 1:
-            messages.warning(request, f"La cantidad mínima permitida es 1. Si deseas eliminar {item.mueble.nombre}, usa el botón 'Eliminar'.")
-        elif cantidad > 10:  # Also add a maximum limit if needed
-            messages.warning(request, f"La cantidad máxima permitida por artículo es 10. Para cantidades mayores, contáctanos.")
+        if request.user.is_authenticated:
+            # Usuario logueado - actualizar en base de datos
+            carrito = get_object_or_404(Carrito, usuario=request.user)
+            item = get_object_or_404(ItemCarrito, id=item_id, carrito=carrito)
+            
+            if cantidad < 1:
+                messages.warning(request, f"La cantidad mínima permitida es 1. Si deseas eliminar {item.mueble.nombre}, usa el botón 'Eliminar'.")
+            elif cantidad > 10:
+                messages.warning(request, f"La cantidad máxima permitida por artículo es 10. Para cantidades mayores, contáctanos.")
+            else:
+                item.cantidad = cantidad
+                item.save()
+                messages.success(request, f"La cantidad de {item.mueble.nombre} ha sido actualizada a {cantidad}.")
+            
+            # Actualizar la sesión
+            if "logueo" in request.session:
+                request.session["logueo"]["carrito"]["items_count"] = carrito.items.count()
+                request.session.modified = True
         else:
-            item.cantidad = cantidad
-            item.save()
-            messages.success(request, f"La cantidad de {item.mueble.nombre} ha sido actualizada a {cantidad}.")
-
-        # Actualizar la sesión
-        request.session["logueo"]["carrito"]["items_count"] = carrito.items.count()
-        request.session.modified = True
+            # Usuario no logueado - actualizar en sesión
+            if 'carrito_session' in request.session and item_id in request.session['carrito_session']:
+                if cantidad < 1:
+                    mueble = Mueble.objects.get(id=request.session['carrito_session'][item_id]['mueble_id'])
+                    messages.warning(request, f"La cantidad mínima permitida es 1. Si deseas eliminar {mueble.nombre}, usa el botón 'Eliminar'.")
+                elif cantidad > 10:
+                    mueble = Mueble.objects.get(id=request.session['carrito_session'][item_id]['mueble_id'])
+                    messages.warning(request, f"La cantidad máxima permitida por artículo es 10. Para cantidades mayores, contáctanos.")
+                else:
+                    request.session['carrito_session'][item_id]['cantidad'] = cantidad
+                    request.session.modified = True
+                    mueble = Mueble.objects.get(id=request.session['carrito_session'][item_id]['mueble_id'])
+                    messages.success(request, f"La cantidad de {mueble.nombre} ha sido actualizada a {cantidad}.")
 
     return redirect('ver_carrito')
 
-@login_requerido
 def ver_carrito(request):
+    # Si no está logueado pero tiene items en sesión
     if 'logueo' not in request.session:
-        messages.warning(request, 'Debes iniciar sesión para ver tu carrito')
-        return redirect('login')
+        if 'carrito_session' in request.session and request.session['carrito_session'].get('items'):
+            # Convertir carrito de sesión a formato similar al del modelo
+            items_session = []
+            subtotal = 0
+            hoy = timezone.now().date()
+            ahorro_total = 0
+            
+            for key, item_data in request.session['carrito_session']['items'].items():
+                try:
+                    mueble = Mueble.objects.get(id=item_data['mueble_id'])
+                    fecha_inicio = datetime.strptime(item_data['fecha_inicio'], '%Y-%m-%d').date()
+                    fecha_fin = datetime.strptime(item_data['fecha_fin'], '%Y-%m-%d').date()
+                    dias = (fecha_fin - fecha_inicio).days + 1
+                    
+                    # Calcular subtotal
+                    if mueble.en_oferta:
+                        precio_diario = mueble.precio_con_descuento
+                        ahorro_por_dia = mueble.precio_diario - mueble.precio_con_descuento
+                        ahorro_total_item = ahorro_por_dia * item_data['cantidad'] * dias
+                        ahorro_total += ahorro_total_item
+                    else:
+                        precio_diario = mueble.precio_diario
+                        ahorro_por_dia = 0
+                        ahorro_total_item = 0
+                    
+                    subtotal_item = precio_diario * item_data['cantidad'] * dias
+                    subtotal += subtotal_item
+                    
+                    # Crear un objeto similar al ItemCarrito pero con datos de sesión
+                    item = {
+                        'mueble': mueble,
+                        'cantidad': item_data['cantidad'],
+                        'fecha_inicio': fecha_inicio,
+                        'fecha_fin': fecha_fin,
+                        'dias': dias,
+                        'subtotal': subtotal_item,
+                        'ahorro_total': ahorro_total_item,
+                        'ahorro_por_dia': ahorro_por_dia,
+                        'id': key  # Usamos la clave como ID temporal
+                    }
+                    
+                    items_session.append(item)
+                except Mueble.DoesNotExist:
+                    continue
+            
+            # Calcular total con servicios adicionales
+            costo_domicilio = 0
+            if request.session['carrito_session'].get('domicilio'):
+                costo_domicilio = Carrito.COSTO_DOMICILIO
+            
+            costo_instalacion = 0
+            if request.session['carrito_session'].get('servicio_instalacion'):
+                costo_instalacion = Carrito.COSTO_INSTALACION_COMPLETO
+            
+            total = subtotal + costo_domicilio + costo_instalacion
+            
+            return render(request, 'muebles/carrito/ver_carrito.html', {
+                'items': items_session,
+                'subtotal': subtotal,
+                'total': total,
+                'ahorro_total': ahorro_total,
+                'costo_domicilio': costo_domicilio,
+                'costo_instalacion': costo_instalacion,
+                'items_count': request.session['carrito_session']['items_count'],
+                'hoy': hoy,
+                'usuario_no_logueado': True,
+                'carrito': {
+                    'domicilio': request.session['carrito_session'].get('domicilio'),
+                    'servicio_instalacion': request.session['carrito_session'].get('servicio_instalacion', False)
+                }
+            })
+        else:
+            # Carrito vacío para usuario no logueado
+            return render(request, 'muebles/carrito/ver_carrito.html', {
+                'items': [],
+                'subtotal': 0,
+                'total': 0,
+                'ahorro_total': 0,
+                'costo_domicilio': 0,
+                'costo_instalacion': 0,
+                'items_count': 0,
+                'hoy': timezone.now().date(),
+                'usuario_no_logueado': True,
+                'carrito': {
+                    'domicilio': None,
+                    'servicio_instalacion': False
+                }
+            })
 
+    # Resto de la lógica para usuarios logueados...
     try:
         usuario = Usuario.objects.get(id=request.session['logueo']['id'])
         carrito = Carrito.objects.get(usuario=usuario)
 
         items = carrito.items.all().select_related('mueble')
         ahorro_total = 0
+        comision_total = 0
 
-        # Procesar cada item del carrito
         for item in items:
-            # Calcular días de renta
-            if item.fecha_inicio and item.fecha_fin:
-                item.dias = (item.fecha_fin - item.fecha_inicio).days + 1
-            else:
-                item.dias = 1
-
-            # Calcular ahorros si está en oferta
+            item.dias = (item.fecha_fin - item.fecha_inicio).days + 1
             if item.mueble.en_oferta:
                 item.ahorro_por_dia = item.mueble.precio_diario - item.mueble.precio_con_descuento
                 item.ahorro_total = (item.mueble.precio_diario * item.cantidad * item.dias) - item.subtotal()
                 ahorro_total += item.ahorro_total
-            else:
-                item.ahorro_por_dia = 0
-                item.ahorro_total = 0
+            
+            item.comision = (item.mueble.precio_diario * item.mueble.comision / 100) * item.cantidad * item.dias
+            comision_total += item.comision
 
-        # Calcular totales
         subtotal = sum(item.subtotal() for item in items)
         costo_domicilio = carrito.COSTO_DOMICILIO if carrito.domicilio else 0
         costo_instalacion = carrito.COSTO_INSTALACION_COMPLETO if carrito.servicio_instalacion else 0
         total = subtotal + costo_domicilio + costo_instalacion
 
-        # Actualizar conteo de items en sesión
         request.session['logueo']['carrito']['items_count'] = carrito.items.count()
         request.session.modified = True
 
@@ -423,128 +605,141 @@ def ver_carrito(request):
             'costo_domicilio': costo_domicilio,
             'costo_instalacion': costo_instalacion,
             'ahorro_total': ahorro_total,
+            'comision_total': comision_total,
             'hoy': timezone.now().date(),
+            'usuario_no_logueado': False
         })
 
-    except Usuario.DoesNotExist:
-        messages.error(request, 'Usuario no encontrado')
-        return redirect('index')
     except Exception as e:
         messages.error(request, f'Error al cargar el carrito: {str(e)}')
         return redirect('index')
 
 
-@login_requerido
-def agregar_direccion(request):
-    logueo = request.session.get("logueo")
-    usuario = Usuario.objects.get(id=logueo["id"])
-    carrito = get_object_or_404(Carrito, usuario=usuario)
 
+
+def agregar_direccion(request):
     if request.method == 'POST':
         domicilio = request.POST.get('domicilio')
 
         if domicilio:
-            carrito.domicilio = domicilio
-            carrito.save()
+            if request.user.is_authenticated:
+                carrito = get_object_or_404(Carrito, usuario=request.user)
+                carrito.domicilio = domicilio
+                carrito.save()
+            else:
+                if 'carrito_session' not in request.session:
+                    request.session['carrito_session'] = {}
+                request.session['carrito_session']['domicilio'] = domicilio
+                request.session.modified = True
+            
             messages.success(request, 'Dirección agregada exitosamente')
         else:
             messages.error(request, 'Dirección no válida')
 
-        return redirect('ver_carrito')
+    return redirect('ver_carrito')
 
-
-@login_requerido
 def agregar_instalacion(request):
-    logueo = request.session.get("logueo")
-    usuario = Usuario.objects.get(id=logueo["id"])
-    carrito = get_object_or_404(Carrito, usuario=usuario)
-
     if request.method == 'POST':
         servicio_instalacion = request.POST.get('servicio_instalacion') == 'on'
 
-        if servicio_instalacion:
-            carrito.servicio_instalacion = True
+        if request.user.is_authenticated:
+            carrito = get_object_or_404(Carrito, usuario=request.user)
+            carrito.servicio_instalacion = servicio_instalacion
             carrito.save()
+        else:
+            if 'carrito_session' not in request.session:
+                request.session['carrito_session'] = {}
+            request.session['carrito_session']['servicio_instalacion'] = servicio_instalacion
+            request.session.modified = True
+        
+        if servicio_instalacion:
             messages.success(request, 'Servicio de instalación agregado al carrito')
         else:
-            messages.error(request, 'No se pudo agregar el servicio de instalación')
+            messages.success(request, 'Servicio de instalación removido del carrito')
 
-        return redirect('ver_carrito')
+    return redirect('ver_carrito')
 
-@login_requerido
 def actualizar_direccion(request):
-    logueo = request.session.get("logueo")
-    usuario = Usuario.objects.get(id=logueo["id"])
-    carrito = get_object_or_404(Carrito, usuario=usuario)
-
     if request.method == 'POST':
         domicilio = request.POST.get('domicilio')
 
         if domicilio:
-            if carrito.domicilio:
-                # Si ya hay una dirección, actualízala
+            if request.user.is_authenticated:
+                carrito = get_object_or_404(Carrito, usuario=request.user)
                 carrito.domicilio = domicilio
                 carrito.save()
-                messages.success(request, 'Dirección actualizada exitosamente')
             else:
-                # Si no hay una dirección, agrégala
-                carrito.domicilio = domicilio
-                carrito.save()
-                messages.success(request, 'Dirección agregada exitosamente')
+                if 'carrito_session' not in request.session:
+                    request.session['carrito_session'] = {}
+                request.session['carrito_session']['domicilio'] = domicilio
+                request.session.modified = True
+            
+            messages.success(request, 'Dirección actualizada exitosamente')
         else:
             messages.error(request, 'Dirección no válida')
 
-        return redirect('ver_carrito')
+    return redirect('ver_carrito')
 
-
-@login_requerido
 def actualizar_instalacion(request):
-    logueo = request.session.get("logueo")
-    usuario = Usuario.objects.get(id=logueo["id"])
-    carrito = get_object_or_404(Carrito, usuario=usuario)
-
     if request.method == 'POST':
         servicio_instalacion = request.POST.get('servicio_instalacion') == 'on'
 
-        if servicio_instalacion != carrito.servicio_instalacion:
+        if request.user.is_authenticated:
+            carrito = get_object_or_404(Carrito, usuario=request.user)
             carrito.servicio_instalacion = servicio_instalacion
             carrito.save()
+        else:
+            if 'carrito_session' not in request.session:
+                request.session['carrito_session'] = {}
+            request.session['carrito_session']['servicio_instalacion'] = servicio_instalacion
+            request.session.modified = True
+        
+        if servicio_instalacion:
+            messages.success(request, 'Servicio de instalación agregado al carrito')
+        else:
+            messages.success(request, 'Servicio de instalación removido del carrito')
 
-            if carrito.servicio_instalacion:
-                messages.success(request, 'Servicio de instalación agregado al carrito')
-            else:
-                messages.success(request, 'Servicio de instalación removido del carrito')
-
-        return redirect('ver_carrito')
+    return redirect('ver_carrito')
 
 
-@login_requerido
 def eliminar_domicilio(request):
-    logueo = request.session.get("logueo")
-    usuario = Usuario.objects.get(id=logueo["id"])
-    carrito = get_object_or_404(Carrito, usuario=usuario)
-
-    carrito.domicilio = None
-    carrito.save()
+    if request.user.is_authenticated:
+        carrito = get_object_or_404(Carrito, usuario=request.user)
+        carrito.domicilio = None
+        carrito.save()
+    else:
+        if 'carrito_session' in request.session and 'domicilio' in request.session['carrito_session']:
+            del request.session['carrito_session']['domicilio']
+            request.session.modified = True
+    
     messages.success(request, "Domicilio eliminado correctamente.")
     return redirect('ver_carrito')
 
-@login_requerido
 def eliminar_instalacion(request):
-    logueo = request.session.get("logueo")
-    usuario = Usuario.objects.get(id=logueo["id"])
-    carrito = get_object_or_404(Carrito, usuario=usuario)
-
-    carrito.servicio_instalacion = False
-    carrito.save()
+    if request.user.is_authenticated:
+        carrito = get_object_or_404(Carrito, usuario=request.user)
+        carrito.servicio_instalacion = False
+        carrito.save()
+    else:
+        if 'carrito_session' in request.session and 'servicio_instalacion' in request.session['carrito_session']:
+            del request.session['carrito_session']['servicio_instalacion']
+            request.session.modified = True
+    
     messages.success(request, "Servicio de instalación eliminado correctamente.")
     return redirect('ver_carrito')
 
 # ==================== PROCESO DE PAGO ====================
-
 @login_requerido
 def procesar_pago(request):
     logueo = request.session.get("logueo")
+    
+    # Si el usuario no está logueado pero tiene items en sesión
+    if not logueo and 'carrito_session' in request.session and request.session['carrito_session']:
+        messages.info(request, "Por favor inicia sesión o regístrate para completar tu compra")
+        request.session['next_url'] = reverse('procesar_pago')
+        return redirect('login')
+    
+    # Resto de la lógica original para usuarios logueados
     usuario = Usuario.objects.get(id=logueo["id"])
     carrito = get_object_or_404(Carrito, usuario=usuario)
 
@@ -564,15 +759,28 @@ def procesar_pago(request):
                 servicio_instalacion=carrito.servicio_instalacion
             )
 
+            comision_total = 0
+            
             # Crear los detalles del pedido
             for item in carrito.items.all():
+                dias = (item.fecha_fin - item.fecha_inicio).days + 1
+                comision = (item.mueble.precio_diario * item.mueble.comision / 100) * item.cantidad * dias
+                ganancia_propietario = (item.mueble.precio_diario - (item.mueble.precio_diario * item.mueble.comision / 100)) * item.cantidad * dias
+                
                 DetallePedido.objects.create(
                     pedido=pedido,
                     mueble=item.mueble,
                     cantidad=item.cantidad,
                     precio_unitario=item.mueble.precio_diario,
-                    subtotal=item.subtotal()
+                    subtotal=item.subtotal(),
+                    comision=comision,
+                    ganancia_propietario=ganancia_propietario
                 )
+                comision_total += comision
+
+            # Actualizar comisión total
+            pedido.comision_total = comision_total
+            pedido.save()
 
             # Limpiar el carrito
             carrito.items.all().delete()
@@ -590,6 +798,7 @@ def procesar_pago(request):
     except Exception as e:
         messages.error(request, f"Error al procesar el pago: {str(e)}")
         return redirect('ver_carrito')
+
 
 # ==================== VISTAS DE ADMINISTRACIÓN ====================
 
@@ -1551,31 +1760,53 @@ def configurar_cookies(request):
 from django.core.paginator import Paginator
 
 @login_requerido(roles_permitidos=[2])
+def perfil_propietario(request):
+    logueo = request.session.get("logueo")
+    usuario = Usuario.objects.get(id=logueo["id"])
+    propietario = get_object_or_404(Propietario, usuario=usuario)
+    
+    # Estadísticas financieras
+    muebles = Mueble.objects.filter(propietario=propietario)
+    total_ganancias = sum(m.precio_final_propietario for m in muebles)
+    
+    return render(request, 'muebles/perfil/perfil_propietario.html', {
+        'usuario': usuario,
+        'propietario': propietario,
+        'total_ganancias': total_ganancias
+    })
+
+# views.py
+@login_requerido(roles_permitidos=[2])
 def propietario_inicio(request):
     logueo = request.session.get("logueo")
     usuario = Usuario.objects.get(id=logueo["id"])
     propietario = get_object_or_404(Propietario, usuario=usuario)
 
-    # Estadísticas para el dashboard del propietario
+    # Estadísticas
     total_muebles = Mueble.objects.filter(propietario=propietario).count()
-    muebles_en_oferta = Mueble.objects.filter(
-        propietario=propietario,
-        descuento__gt=0,
-        fecha_fin_descuento__gte=timezone.now().date()
-    ).count()
-
-    # Obtener rentas de los muebles del propietario
-    rentas = Renta.objects.filter(
+    muebles_activos = Mueble.objects.filter(propietario=propietario, activo=True).count()
+    
+    # Pedidos recientes que incluyen sus muebles
+    pedidos = Pedido.objects.filter(
+        detalles__mueble__propietario=propietario
+    ).distinct().order_by('-fecha')[:5]
+    
+    # Calcular ganancias
+    ganancias_totales = DetallePedido.objects.filter(
         mueble__propietario=propietario
-    ).order_by('-fecha_inicio')[:5]
+    ).aggregate(
+        total=Sum('ganancia_propietario'),
+        comision=Sum('comision')
+    )
 
     context = {
         'propietario': propietario,
         'total_muebles': total_muebles,
-        'muebles_en_oferta': muebles_en_oferta,
-        'rentas_recientes': rentas,
+        'muebles_activos': muebles_activos,
+        'pedidos_recientes': pedidos,
+        'ganancias_totales': ganancias_totales['total'] or 0,
+        'comision_total': ganancias_totales['comision'] or 0,
     }
-
     return render(request, 'muebles/propietario/inicio.html', context)
 
 
@@ -1584,6 +1815,13 @@ def propietario_muebles(request):
     logueo = request.session.get("logueo")
     usuario = Usuario.objects.get(id=logueo["id"])
     propietario = get_object_or_404(Propietario, usuario=usuario)
+
+    muebles = Mueble.objects.filter(propietario=propietario).annotate(
+        ganancia_neta=ExpressionWrapper(
+            F('precio_con_descuento') * (100 - F('comision')) / 100,
+            output_field=FloatField()
+        )
+    ).order_by('-id')
 
     # Obtener parámetros de búsqueda/filtro
     search = request.GET.get('search', '')
@@ -1769,7 +2007,20 @@ from datetime import datetime
 
 # Decorador personalizado para verificar rol de soporte técnico
 
-@rol_requerido(roles_permitidos=[4])
+@login_requerido(roles_permitidos=[4])
+def perfil_soporte(request):
+    logueo = request.session.get("logueo")
+    usuario = Usuario.objects.get(id=logueo["id"])
+    
+    # Problemas asignados
+    problemas = ReporteProblema.objects.filter(usuario_asignado=usuario)
+    
+    return render(request, 'muebles/perfil/perfil_soporte.html', {
+        'usuario': usuario,
+        'problemas': problemas
+    })
+
+@login_requerido(roles_permitidos=[4])
 def soporte_tecnico_inicio(request):
     # Estadísticas para el dashboard
     total_problemas = ReporteProblema.objects.count()
@@ -1789,7 +2040,7 @@ def soporte_tecnico_inicio(request):
     }
     return render(request, 'muebles/soporte_tecnico/inicio.html', context)
 
-@rol_requerido(roles_permitidos=[4])
+@login_requerido(roles_permitidos=[4])
 def lista_problemas(request):
     # Filtros
     estado = request.GET.get('estado', '')
@@ -1830,7 +2081,7 @@ def lista_problemas(request):
     }
     return render(request, 'muebles/soporte_tecnico/lista_problemas.html', context)
 
-@rol_requerido(roles_permitidos=[4])
+@login_requerido(roles_permitidos=[4])
 def detalle_problema(request, problema_id):
     problema = get_object_or_404(ReporteProblema, id=problema_id)
     
@@ -1915,32 +2166,52 @@ def detalle_problema(request, problema_id):
     }
     return render(request, 'muebles/soporte_tecnico/detalle_problema.html', context)
 
-@rol_requerido(roles_permitidos=[4])
+@login_requerido
+def reportar_problema_usuario(request):
+    if request.method == 'POST':
+        form = ReporteProblemaForm(request.POST, request.FILES)
+        if form.is_valid():
+            problema = form.save(commit=False)
+            problema.usuario_reporte_id = request.session['logueo']['id']
+
+            # Procesar captura de pantalla si existe
+            if 'captura_pantalla' in request.FILES:
+                captura = request.FILES['captura_pantalla']
+                nombre_archivo = f"captura_{datetime.now().strftime('%Y%m%d_%H%M%S')}_{captura.name}"
+                problema.captura_pantalla.save(nombre_archivo, captura)
+
+            problema.save()
+            notificar_nuevo_problema(problema)
+            messages.success(request, 'Problema reportado correctamente. El equipo de soporte lo revisará pronto.')
+            return redirect('index')
+    else:
+        form = ReporteProblemaForm()
+
+    return render(request, 'muebles/problemas/reportar_problema_usuario.html', {'form': form})
+
+@login_requerido(roles_permitidos=[4])
 def reportar_problema(request):
     if request.method == 'POST':
         form = ReporteProblemaForm(request.POST, request.FILES)
         if form.is_valid():
             problema = form.save(commit=False)
             problema.usuario_reporte_id = request.session['logueo']['id']
-            
+
             # Procesar captura de pantalla si existe
             if 'captura_pantalla' in request.FILES:
                 captura = request.FILES['captura_pantalla']
-                # Renombrar el archivo para evitar conflictos
                 nombre_archivo = f"captura_{datetime.now().strftime('%Y%m%d_%H%M%S')}_{captura.name}"
                 problema.captura_pantalla.save(nombre_archivo, captura)
-            
+
             problema.save()
-            
-            # Notificar al equipo de soporte
             notificar_nuevo_problema(problema)
-            
             messages.success(request, 'Problema reportado correctamente. El equipo de soporte lo revisará pronto.')
             return redirect('lista_problemas')
     else:
         form = ReporteProblemaForm()
-    
+
     return render(request, 'muebles/soporte_tecnico/reportar_problema.html', {'form': form})
+
 
 def notificar_nuevo_problema(problema):
     # En una aplicación real, aquí podrías enviar un email o notificación
