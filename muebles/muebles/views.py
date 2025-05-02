@@ -1784,7 +1784,7 @@ def propietario_inicio(request):
 
     # Estadísticas
     total_muebles = Mueble.objects.filter(propietario=propietario).count()
-    muebles_activos = Mueble.objects.filter(propietario=propietario, activo=True).count()
+    muebles_activos = Mueble.objects.filter(propietario=propietario).count()
     
     # Pedidos recientes que incluyen sus muebles
     pedidos = Pedido.objects.filter(
@@ -1816,23 +1816,20 @@ def propietario_muebles(request):
     usuario = Usuario.objects.get(id=logueo["id"])
     propietario = get_object_or_404(Propietario, usuario=usuario)
 
+    # Retrieve all muebles for the propietario
     muebles = Mueble.objects.filter(propietario=propietario).annotate(
         ganancia_neta=ExpressionWrapper(
-            F('precio_con_descuento') * (100 - F('comision')) / 100,
+            F('precio_diario') * (100 - F('comision')) / 100,
             output_field=FloatField()
         )
-    ).order_by('-id')
+    ).order_by('id')
 
     # Obtener parámetros de búsqueda/filtro
     search = request.GET.get('search', '')
     oferta_filter = request.GET.get('oferta', '')
     hoy = timezone.now().date()
 
-
-    # Obtener solo los muebles del propietario actual
-    muebles = Mueble.objects.filter(propietario=propietario).order_by('-id')
-
-    # Aplicar filtros
+    # Apply filters
     if search:
         try:
             # Intentar buscar por ID
@@ -1847,17 +1844,13 @@ def propietario_muebles(request):
 
     if oferta_filter == '1':
         # Muebles en oferta: tienen descuento > 0 Y (no tienen fecha fin O fecha fin >= hoy)
-        muebles = muebles.filter(
-            descuento__gt=0
-        ).filter(
-            Q(fecha_fin_descuento__gte=hoy) | Q(fecha_fin_descuento__isnull=True)
-        )
+        muebles = [mueble for mueble in muebles if mueble.en_oferta]
     elif oferta_filter == '0':
         # Muebles sin oferta: descuento = 0 O fecha fin < hoy
-        muebles = muebles.filter(
-            Q(descuento=0) |
-            Q(fecha_fin_descuento__lt=hoy)
-        )
+        muebles = [mueble for mueble in muebles if not mueble.en_oferta]
+
+    # Sort by precio_con_descuento in Python
+    muebles = sorted(muebles, key=lambda mueble: mueble.precio_con_descuento)
 
     # Paginación - mantener los parámetros de búsqueda
     paginator = Paginator(muebles, 10)
@@ -1888,6 +1881,7 @@ def propietario_muebles(request):
     }
 
     return render(request, 'muebles/propietario/muebles.html', context)
+
 
 
 @login_requerido(roles_permitidos=[2])
@@ -1927,7 +1921,7 @@ def propietario_crear_mueble(request):
             messages.error(request, f'Error al crear el mueble: {str(e)}')
             return redirect('propietario_muebles')
 
-    return render(request, 'muebles/propietario/crear_mueble.html', {
+    return render(request, 'muebles/propietario/muebles.html', {
         'propietario': propietario,
         'hoy': timezone.now().date().isoformat(),
     })
@@ -1970,7 +1964,7 @@ def propietario_editar_mueble(request, id):
             messages.error(request, f'Error al actualizar el mueble: {str(e)}')
             return redirect('propietario_editar_mueble', id=id)
 
-    return render(request, 'muebles/propietario/editar_mueble.html', {
+    return render(request, 'muebles/propietario/muebles.html', {
         'mueble': mueble,
         'propietario': propietario,
         'hoy': timezone.now().date().isoformat(),

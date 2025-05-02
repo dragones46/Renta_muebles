@@ -12,7 +12,7 @@
                 <div class="card-header bg-primary text-white">
                     <h5 class="card-title">Mis Muebles</h5>
                 </div>
-                <div class="card-body">
+                <div class="card-body text-white">
                     <h3 class="display-4">{{ total_muebles }}</h3>
                     <p class="card-text">Total de muebles registrados</p>
                     <a href="{% url 'propietario_muebles' %}" class="btn btn-primary">
@@ -22,25 +22,25 @@
             </div>
         </div>
         
-        <div class="col-md-4 mb-4">
+        <div class="col-md-4 mb-4 text-white">
             <div class="card">
-                <div class="card-header bg-success text-white">
+                <div class="card-header bg-success">
                     <h5 class="card-title">Mis Ganancias</h5>
                 </div>
                 <div class="card-body">
-                    <h3 class="display-4">${{ ganancias_totales|intcomma }}</h3>
+                    <h3 class="display-4 text-white">${{ ganancias_totales|intcomma }}</h3>
                     <p class="card-text">Total ganado después de comisiones</p>
                 </div>
             </div>
         </div>
         
-        <div class="col-md-4 mb-4">
+        <div class="col-md-4 mb-4 text-white">
             <div class="card">
                 <div class="card-header bg-warning text-dark">
                     <h5 class="card-title">Comisiones</h5>
                 </div>
                 <div class="card-body">
-                    <h3 class="display-4">${{ comision_total|intcomma }}</h3>
+                    <h3 class="display-4 text-white">${{ comision_total|intcomma }}</h3>
                     <p class="card-text">Total en comisiones de servicio</p>
                 </div>
             </div>
@@ -48,7 +48,7 @@
     </div>
     
     <div class="card mt-4">
-        <div class="card-header">
+        <div class="card-header text-white">
             <h5>Pedidos Recientes</h5>
         </div>
         <div class="card-body">
