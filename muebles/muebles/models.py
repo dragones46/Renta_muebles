@@ -142,6 +142,7 @@ class Mueble(models.Model):
         """Calcula lo que realmente recibe el propietario"""
         return self.precio_diario - self.comision_servicio
 
+
 class Renta(models.Model):
     mueble = models.ForeignKey(Mueble, on_delete=models.CASCADE)
     fecha_inicio = models.DateField()
@@ -162,38 +163,85 @@ class Renta(models.Model):
 
 
 
-
-
 class Carrito(models.Model):
-    usuario = models.OneToOneField(Usuario, on_delete=models.CASCADE, related_name='carrito')
+    usuario = models.OneToOneField(
+        settings.AUTH_USER_MODEL, 
+        on_delete=models.CASCADE, 
+        related_name='carrito',
+        null=True,
+        blank=True
+    )
+    session_key = models.CharField(max_length=40, null=True, blank=True)
     domicilio = models.CharField(max_length=255, null=True, blank=True)
     servicio_instalacion = models.BooleanField(default=False)
-    COSTO_DOMICILIO = 20000  # Constante para el costo
-    COSTO_INSTALACION_COMPLETO = 50000  # Nuevo costo para instalación completa
-    COSTO_INSTALACION_LIMIPO = 30000  # Nuevo costo para instalación limpio
+    COSTO_DOMICILIO = 20000
+    COSTO_INSTALACION_COMPLETO = 50000
     fecha_creacion = models.DateTimeField(auto_now_add=True)
+    fecha_actualizacion = models.DateTimeField(auto_now=True)
 
     def __str__(self):
-        return f"Carrito de {self.usuario.nombre}"
+        if self.usuario:
+            return f"Carrito de {self.usuario.username}"
+        return f"Carrito de sesión {self.session_key}"
 
     def calcular_total(self):
         total = sum(item.subtotal() for item in self.items.all())
         if self.domicilio:
             total += self.COSTO_DOMICILIO
         if self.servicio_instalacion:
-            total += self.COSTO_INSTALACION_COMPLETO  # Ajusta según el tipo de instalación
+            total += self.COSTO_INSTALACION_COMPLETO
         return total
 
+    @classmethod
+    def obtener_carrito(cls, request):
+        if request.user.is_authenticated:
+            carrito, creado = cls.objects.get_or_create(usuario=request.user)
+        else:
+            if not request.session.session_key:
+                request.session.create()
+            session_key = request.session.session_key
+            carrito, creado = cls.objects.get_or_create(session_key=session_key)
+        return carrito
 
-
+    def migrar_a_usuario(self, usuario):
+        """Migra el carrito de sesión a un usuario"""
+        if self.usuario:
+            return  # Ya tiene usuario
+        
+        # Verificar si el usuario ya tiene un carrito
+        usuario_carrito, creado = Carrito.objects.get_or_create(usuario=usuario)
+        
+        if not creado:  # Si ya tenía carrito, mover los items
+            for item in self.items.all():
+                item_existente = usuario_carrito.items.filter(
+                    mueble=item.mueble,
+                    fecha_inicio=item.fecha_inicio,
+                    fecha_fin=item.fecha_fin
+                ).first()
+                
+                if item_existente:
+                    item_existente.cantidad += item.cantidad
+                    item_existente.save()
+                    item.delete()
+                else:
+                    item.carrito = usuario_carrito
+                    item.save()
+            
+            # Actualizar domicilio e instalación si no estaban definidos
+            if not usuario_carrito.domicilio and self.domicilio:
+                usuario_carrito.domicilio = self.domicilio
+            if not usuario_carrito.servicio_instalacion and self.servicio_instalacion:
+                usuario_carrito.servicio_instalacion = self.servicio_instalacion
+            usuario_carrito.save()
+        
+        self.delete()  # Eliminar el carrito de sesión
 
 class ItemCarrito(models.Model):
     carrito = models.ForeignKey(Carrito, on_delete=models.CASCADE, related_name='items')
-    mueble = models.ForeignKey(Mueble, on_delete=models.CASCADE)
+    mueble = models.ForeignKey('Mueble', on_delete=models.CASCADE)
     cantidad = models.PositiveIntegerField(default=1)
     fecha_inicio = models.DateField()
     fecha_fin = models.DateField()
-    dias = models.PositiveIntegerField(default=1)  # Campo real para almacenar los días
     
     def save(self, *args, **kwargs):
         # Calcular días automáticamente al guardar

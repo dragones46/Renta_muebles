@@ -7,57 +7,47 @@
 <style>
     /* Estilos generales */
     body {
-        background-color: #3b3b3b;;
-        /* Fondo oscuro */
+        background-color: #3b3b3b;
         color: #ffffff;
-        /* Texto blanco */
     }
 
-    /* Estilos para la tarjeta de perfil */
     .card {
         background-color: #2a2a2a;
-        /* Fondo oscuro para la tarjeta */
         border: 1px solid #444;
-        /* Borde sutil */
         border-radius: 10px;
         box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
     }
 
     .card-header {
         background-color: #1a1a1a;
-        /* Fondo oscuro para el encabezado */
         border-bottom: 1px solid #444;
-        /* Borde sutil */
     }
 
     .card-header h3 {
         color: #ff8c00;
-        /* Texto naranja */
-    }
-
-    .card-body {
-        color: #ffffff;
-        /* Texto blanco */
     }
 
     .card-body p strong {
         color: #ff8c00;
-        /* Texto naranja para las etiquetas */
     }
 
-    /* Estilos para los botones "Editar Perfil" y "Cambiar Contraseña" */
+    .card-body {
+        color: #ffffff;
+    }
+
     .btn-primary {
         background-color: #ff8c00;
-        /* Botón naranja */
         border: none;
         transition: background-color 0.3s ease;
     }
 
     .btn-primary:hover {
         background-color: #e67600;
-        /* Naranja más oscuro al pasar el mouse */
     }
 
+    .img-fluid.rounded-circle {
+        border: 3px solid #11ff00;
+    }
     .btn-primary:active,
     .btn-primary:focus {
         background-color: #cc6600 !important;
@@ -148,6 +138,16 @@
                     <p><strong>Dirección:</strong> {{ user.direccion }}</p>
                     <p><strong>Rol:</strong> {{ user.get_rol_display }}</p>
                     <p><strong>Estado:</strong> {{ user.get_estado_display }}</p>
+
+                    <p><strong>Segmento:</strong> 
+                        {% if user.propietario.display_segmento %}
+                            {{ user.propietario.display_segmento }}
+                        {% else %}
+                            No tiene segmento
+                        {% endif %}
+                    </p>
+                    
+
                     <div class="d-flex justify-content-between align-items-center mt-3">
                         <button type="button" class="btn btn-primary" data-bs-toggle="modal"
                             data-bs-target="#editarPerfilModal">
@@ -158,6 +158,28 @@
                             Cambiar Contraseña
                         </button>
                     </div>
+<br>
+                    {% if user.rol == 3 %}
+                    <h4>Historial de Alquileres</h4>
+                    <ul>
+                        {% for renta in user.renta_set.all %}
+                        <li>{{ renta.mueble.nombre }} - Desde: {{ renta.fecha_inicio }} Hasta: {{ renta.fecha_fin }}</li>
+                        {% empty %}
+                        <li>No hay alquileres registrados.</li>
+                        {% endfor %}
+                    </ul>
+                    {% endif %}
+<br>
+                    {% if user.rol == 4 %}
+                    <h4>Problemas Asignados</h4>
+                    <ul>
+                        {% for problema in user.problemas_asignados.all %}
+                        <li>{{ problema.titulo }} - Estado: {{ problema.get_estado_display }}</li>
+                        {% empty %}
+                        <li>No hay problemas asignados.</li>
+                        {% endfor %}
+                    </ul>
+                    {% endif %}
                 </div>
             </div>
         </div>

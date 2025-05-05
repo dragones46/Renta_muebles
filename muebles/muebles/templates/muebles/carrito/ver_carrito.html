@@ -5,6 +5,7 @@
 
 {% block contenedor %}
 <style>
+    /* Todos tus estilos CSS aquí (mantenlos igual) */
     :root {
         --primary-color: #4CAF50;
         --secondary-color: #2196F3;
@@ -454,176 +455,172 @@
     </div>
 
     {% if items %}
-    <div class="carrito-items-container">
-        {% for item in items %}
-        <div class="carrito-item" data-nombre="{{ item.mueble.nombre }}" style="animation-delay: {{ forloop.counter0|divisibleby:2|yesno:'0s,0s' }}">
-            {% if item.mueble.en_oferta %}
-            <div class="oferta-sticker">{{ item.mueble.descuento }}% OFF</div>
-            {% endif %}
-    
-            <img src="{{ item.mueble.imagen.url }}" alt="{{ item.mueble.nombre }}">
-    
-            <div class="item-info">
-                <h3>{{ item.mueble.nombre }}</h3>
-                <div class="fechas-renta">
-                    <p><strong>Fechas:</strong> {{ item.fecha_inicio|date:"d/m/Y" }} - {{ item.fecha_fin|date:"d/m/Y" }}</p>
-                    <p><strong>Días:</strong> {{ item.dias }}</p>
-                </div>
-    
+        <div class="carrito-items-container">
+            {% for item in items %}
+            <div class="carrito-item" data-nombre="{{ item.mueble.nombre }}" style="animation-delay: {{ forloop.counter0|divisibleby:2|yesno:'0s,0s' }}">
                 {% if item.mueble.en_oferta %}
-                <p class="precio-original">${{ item.mueble.precio_diario|intcomma }}/día</p>
-                <p class="precio-descuento">${{ item.mueble.precio_con_descuento|intcomma }}/día</p>
-                <p class="ahorro-por-dia">Ahorras: ${{ item.ahorro_por_dia|floatformat:0 }}/día</p>
-                {% else %}
-                <p style="font-size: 1.2rem;">${{ item.mueble.precio_diario|floatformat:0 }}/día</p>
+                <div class="oferta-sticker">{{ item.mueble.descuento }}% OFF</div>
                 {% endif %}
-            </div>
-    
-            <div class="cantidad-control">
-                <form method="post" action="{% url 'actualizar_cantidad' item.id %}" class="cantidad-form">
-                    {% csrf_token %}
-                    <div class="cantidad-control-container">
-                        <button type="button" class="cantidad-btn decrement-btn" onclick="decrementQuantity(this)">-</button>
-                        <input type="number" name="cantidad" value="{{ item.cantidad }}" min="1" class="cantidad-input" onchange="this.parentNode.parentNode.submit()">
-                        <button type="button" class="cantidad-btn increment-btn" onclick="incrementQuantity(this)">+</button>
+
+                <img src="{{ item.mueble.imagen.url }}" alt="{{ item.mueble.nombre }}">
+
+                <div class="item-info">
+                    <h3>{{ item.mueble.nombre }}</h3>
+                    <div class="fechas-renta">
+                        <p><strong>Fechas:</strong> {{ item.fecha_inicio|date:"d/m/Y" }} - {{ item.fecha_fin|date:"d/m/Y" }}</p>
+                        <p><strong>Días:</strong> {{ item.dias }}</p>
                     </div>
-                </form>
-                <div class="warning-message" style="color: red; display: none;">
-                    La cantidad mínima permitida es 1. Si deseas eliminar este producto, usa el botón 'Eliminar'
+
+                    {% if item.mueble.en_oferta %}
+                    <p class="precio-original">${{ item.mueble.precio_diario|intcomma }}/día</p>
+                    <p class="precio-descuento">${{ item.mueble.precio_con_descuento|intcomma }}/día</p>
+                    <p class="ahorro-por-dia">Ahorras: ${{ item.ahorro_por_dia|floatformat:0 }}/día</p>
+                    {% else %}
+                    <p style="font-size: 1.2rem;">${{ item.mueble.precio_diario|floatformat:0 }}/día</p>
+                    {% endif %}
+                </div>
+
+                <div class="cantidad-control">
+                    <form method="post" action="{% url 'actualizar_cantidad' item.id %}" class="cantidad-form">
+                        {% csrf_token %}
+                        <div class="cantidad-control-container">
+                            <button type="button" class="cantidad-btn decrement-btn" onclick="decrementQuantity(this)">-</button>
+                            <input type="number" name="cantidad" value="{{ item.cantidad }}" min="1" class="cantidad-input" onchange="this.parentNode.parentNode.submit()">
+                            <button type="button" class="cantidad-btn increment-btn" onclick="incrementQuantity(this)">+</button>
+                        </div>
+                    </form>
+                    <div class="warning-message" style="color: red; display: none;">
+                        La cantidad mínima permitida es 1. Si deseas eliminar este producto, usa el botón 'Eliminar'
+                    </div>
+                </div>
+
+                <div class="precio-container">
+                    <span class="precio-total">${{ item.subtotal|floatformat:0 }}</span>
+                    {% if item.mueble.en_oferta %}
+                    <span class="ahorro-total">Ahorro: ${{ item.ahorro_total|intcomma }}</span>
+                    {% endif %}
+                    <a href="{% url 'eliminar_del_carrito' item.id %}" class="btn-eliminar">
+                        <i class="bi bi-trash-fill"></i> Eliminar
+                    </a>
                 </div>
             </div>
-    
-            <div class="precio-container">
-                <span class="precio-total">${{ item.subtotal|floatformat:0 }}</span>
-                {% if item.mueble.en_oferta %}
-                <span class="ahorro-total">Ahorro: ${{ item.ahorro_total|intcomma }}</span>
-                {% endif %}
-                <a href="{% url 'eliminar_del_carrito' item.id %}" class="btn-eliminar">
-                    <i class="bi bi-trash-fill"></i> Eliminar
-                </a>
+            {% endfor %}
+        </div>
+
+        <div class="carrito-summary">
+            <h3 class="summary-title">Resumen de Compra</h3>
+
+            {% if ahorro_total > 0 %}
+            <div class="summary-line ahorro">
+                <span>Ahorro total:</span>
+                <span>${{ ahorro_total|floatformat:0 }}</span>
             </div>
-        </div>
-        {% endfor %}
-    </div>
-    
-    <div class="carrito-summary">
-        <h3 class="summary-title">Resumen de Compra</h3>
-    
-        {% if ahorro_total > 0 %}
-        <div class="summary-line ahorro">
-            <span>Ahorro total:</span>
-            <span>${{ ahorro_total|floatformat:0 }}</span>
-        </div>
-        {% endif %}
-    
-        <div class="summary-line">
-            <span>Subtotal:</span>
-            <span>${{ subtotal|floatformat:0 }}</span>
-        </div>
-    
-        {% if carrito and carrito.domicilio %}
-        <div class="summary-line">
-            <span>Domicilio:</span>
-            <span>${{ costo_domicilio|floatformat:0 }}</span>
-        </div>
-        {% endif %}
-    
-        {% if carrito and carrito.servicio_instalacion %}
-        <div class="summary-line">
-            <span>Instalación:</span>
-            <span>${{ costo_instalacion|floatformat:0 }}</span>
-        </div>
-        {% endif %}
-    
-        <div class="summary-line total">
-            <span>Total a pagar:</span>
-            <span>${{ total|floatformat:0 }}</span>
-        </div>
-    
-        {% if usuario_no_logueado %}
-            <div class="alert alert-info">
-                <strong>¡Estás viendo el carrito como invitado!</strong> 
-                Para proceder al pago, por favor <a href="{% url 'login' %}?next={% url 'procesar_pago' %}" class="alert-link">inicia sesión</a> 
-                o <a href="{% url 'registro' %}" class="alert-link">regístrate</a>.
+            {% endif %}
+
+            <div class="summary-line">
+                <span>Subtotal:</span>
+                <span>${{ subtotal|floatformat:0 }}</span>
             </div>
-            
-            <button class="btn-pagar" disabled>
-                <i class="bi bi-credit-card-fill"></i> Inicia sesión para pagar
-            </button>
-            <div class="text-center mt-3">
-                <a href="{% url 'login' %}?next={% url 'procesar_pago' %}" class="btn btn-primary">
-                    <i class="bi bi-box-arrow-in-right"></i> Iniciar sesión
-                </a>
-                <a href="{% url 'registro' %}" class="btn btn-success ml-2">
-                    <i class="bi bi-person-plus"></i> Registrarse
-                </a>
+
+            {% if carrito and carrito.domicilio %}
+            <div class="summary-line">
+                <span>Domicilio:</span>
+                <span>${{ costo_domicilio|floatformat:0 }}</span>
             </div>
-        {% else %}
-            <form method="post" action="{% url 'procesar_pago' %}">
+            {% endif %}
+
+            {% if carrito and carrito.servicio_instalacion %}
+            <div class="summary-line">
+                <span>Instalación:</span>
+                <span>${{ costo_instalacion|floatformat:0 }}</span>
+            </div>
+            {% endif %}
+
+            <div class="summary-line total">
+                <span>Total a pagar:</span>
+                <span>${{ total|floatformat:0 }}</span>
+            </div>
+
+            {% if usuario_no_logueado %}
+                <div class="alert alert-info">
+                    <strong>¡Estás viendo el carrito como invitado!</strong>
+                    Para proceder al pago, por favor <a href="{% url 'login' %}?next={% url 'procesar_pago' %}" class="alert-link">inicia sesión</a> o <a href="{% url 'registro' %}" class="alert-link">regístrate</a>.
+                </div>
+
+                <button class="btn-pagar" disabled>
+                    <i class="bi bi-credit-card-fill"></i> Inicia sesión para pagar
+                </button>
+                <div class="text-center mt-3">
+                    <a href="{% url 'login' %}?next={% url 'procesar_pago' %}" class="btn btn-primary">
+                        <i class="bi bi-box-arrow-in-right"></i> Iniciar sesión
+                    </a>
+                    <a href="{% url 'registro' %}" class="btn btn-success ml-2">
+                        <i class="bi bi-person-plus"></i> Registrarse
+                    </a>
+                </div>
+            {% else %}
+                <form method="post" action="{% url 'procesar_pago' %}">
+                    {% csrf_token %}
+                    <button type="submit" class="btn-pagar">
+                        <i class="bi bi-credit-card-fill"></i> Proceder al Pago
+                    </button>
+                </form>
+            {% endif %}
+        </div>
+
+        {% if items %}
+        <!-- Formularios de domicilio e instalación solo para usuarios logueados -->
+        <div class="domicilio-form">
+            <h3>Agregar Dirección de Entrega</h3>
+            <form method="post" action="{% url 'actualizar_direccion' %}">
                 {% csrf_token %}
-                <button type="submit" class="btn-pagar">
-                    <i class="bi bi-credit-card-fill"></i> Proceder al Pago
+                <div class="form-group">
+                    <label for="id_domicilio">Dirección completa:</label>
+                    <input type="text" name="domicilio" id="id_domicilio" placeholder="Ingresa tu dirección completa" value="{{ carrito.domicilio|default:'' }}" required>
+                </div>
+                <button type="submit" class="btn-direccion">
+                    <i class="bi bi-house-check-fill"></i>
+                    {% if carrito.domicilio %}
+                    Actualizar Dirección
+                    {% else %}
+                    Agregar Dirección
+                    {% endif %}
                 </button>
             </form>
-        {% endif %}
-    </div>
-    
-    {% if not usuario_no_logueado %}
-    <!-- Formularios de domicilio e instalación solo para usuarios logueados -->
-    <div class="domicilio-form">
-        <h3>Agregar Dirección de Entrega</h3>
-        <form method="post" action="{% url 'actualizar_direccion' %}">
-            {% csrf_token %}
-            <div class="form-group">
-                <label for="id_domicilio">Dirección completa:</label>
-                <input type="text" name="domicilio" id="id_domicilio" placeholder="Ingresa tu dirección completa"
-                    value="{{ carrito.domicilio|default:'' }}" required>
-            </div>
-            <button type="submit" class="btn-direccion">
-                <i class="bi bi-house-check-fill"></i>
-                {% if carrito.domicilio %}
-                Actualizar Dirección
-                {% else %}
-                Agregar Dirección
-                {% endif %}
-            </button>
-        </form>
-    </div>
-    
-    <div class="instalacion-form">
-        <h3>Servicio de Instalación</h3>
-        <form method="post" action="{% url 'actualizar_instalacion' %}">
-            {% csrf_token %}
-            <div class="form-group">
-                <label for="id_servicio_instalacion" class="form-check-label">
-                    <input type="checkbox" name="servicio_instalacion" id="id_servicio_instalacion" {% if carrito.servicio_instalacion %}checked{% endif %}>
-                    Agregar Servicio de Instalación Completo
-                </label>
-            </div>
-            <button type="submit" class="btn-direccion">
-                <i class="bi bi-wrench-adjustable"></i>
-                {% if carrito.servicio_instalacion %}
-                Remover Instalación
-                {% else %}
-                Agregar Instalación
-                {% endif %}
-            </button>
-        </form>
-    </div>
-    {% endif %}
-
-    {% else %}
-    <div class="empty-cart">
-        <div class="empty-cart-icon">
-            <i class="bi bi-cart-x"></i>
         </div>
-        <h3>Tu carrito de compras está vacío</h3>
-        <p>Parece que aún no has agregado ningún mueble a tu carrito. Explora nuestro catálogo y encuentra los muebles
-            perfectos para tu hogar.</p>
-        <a href="{% url 'muebles' %}" class="btn-explorar">
-            <i class="bi bi-search"></i> Explorar Muebles
-        </a>
-    </div>
+
+        <div class="instalacion-form">
+            <h3>Servicio de Instalación</h3>
+            <form method="post" action="{% url 'actualizar_instalacion' %}">
+                {% csrf_token %}
+                <div class="form-group">
+                    <label for="id_servicio_instalacion" class="form-check-label">
+                        <input type="checkbox" name="servicio_instalacion" id="id_servicio_instalacion" {% if carrito.servicio_instalacion %}checked{% endif %}>
+                        Agregar Servicio de Instalación Completo
+                    </label>
+                </div>
+                <button type="submit" class="btn-direccion">
+                    <i class="bi bi-wrench-adjustable"></i>
+                    {% if carrito.servicio_instalacion %}
+                    Remover Instalación
+                    {% else %}
+                    Agregar Instalación
+                    {% endif %}
+                </button>
+            </form>
+        </div>
+        {% endif %}
+    {% else %}
+        <div class="empty-cart">
+            <div class="empty-cart-icon">
+                <i class="bi bi-cart-x"></i>
+            </div>
+            <h3>Tu carrito de compras está vacío</h3>
+            <p>Parece que aún no has agregado ningún mueble a tu carrito. Explora nuestro catálogo y encuentra los muebles perfectos para tu hogar.</p>
+            <a href="{% url 'muebles' %}" class="btn-explorar">
+                <i class="bi bi-search"></i> Explorar Muebles
+            </a>
+        </div>
     {% endif %}
 </div>
 

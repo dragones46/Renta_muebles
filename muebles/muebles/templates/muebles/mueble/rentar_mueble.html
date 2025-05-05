@@ -58,6 +58,16 @@
 
 <div class="renta-container">
     <h1>Rentar {{ mueble.nombre }}</h1>
+
+    {% if usuario_no_logueado %}
+    <div class="alert alert-warning">
+        <strong>¡Estás rentando como invitado!</strong> 
+        Para guardar tu historial de rentas, por favor 
+        <a href="{% url 'login' %}?next={% url 'rentar_mueble' mueble.id %}" class="alert-link">inicia sesión</a> o 
+        <a href="{% url 'registro' %}" class="alert-link">regístrate</a>.
+    </div>
+    {% endif %}
+
     <form method="post">
         {% csrf_token %}
         <div class="mb-3">
