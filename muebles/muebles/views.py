@@ -392,7 +392,13 @@ def eliminar_del_carrito(request, item_id):
     nombre_mueble = item.mueble.nombre
     item.delete()
 
-    # Actualizar la sesión correctamente
+    # Si no quedan items, limpiar servicios
+    if not carrito.items.exists():
+        carrito.domicilio = None
+        carrito.servicio_instalacion = False
+        carrito.save()
+
+    # Actualizar la sesión
     if request.user.is_authenticated and "logueo" in request.session:
         request.session["logueo"]["carrito"]["items_count"] = carrito.items.count()
     else:
@@ -402,7 +408,6 @@ def eliminar_del_carrito(request, item_id):
 
     messages.success(request, f"{nombre_mueble} ha sido eliminado del carrito.")
     return redirect('ver_carrito')
-
 
 def actualizar_cantidad(request, item_id):
     carrito = Carrito.obtener_carrito(request)
@@ -432,20 +437,26 @@ def ver_carrito(request):
     
     # Calcular ahorros y subtotales
     ahorro_total = 0
-    for item in items:
-        item.dias = (item.fecha_fin - item.fecha_inicio).days + 1
-        if item.mueble.en_oferta:
-            item.ahorro_por_dia = item.mueble.precio_diario - item.mueble.precio_con_descuento
-            item.ahorro_total = (item.mueble.precio_diario * item.cantidad * item.dias) - item.subtotal()
-            ahorro_total += item.ahorro_total
-        else:
-            item.ahorro_por_dia = 0
-            item.ahorro_total = 0
+    subtotal = 0
+    costo_domicilio = 0
+    costo_instalacion = 0
+    total = 0
 
-    subtotal = sum(item.subtotal() for item in items)
-    costo_domicilio = carrito.COSTO_DOMICILIO if carrito.domicilio else 0
-    costo_instalacion = carrito.COSTO_INSTALACION_COMPLETO if carrito.servicio_instalacion else 0
-    total = subtotal + costo_domicilio + costo_instalacion
+    if items.exists():  # Solo si hay items
+        for item in items:
+            item.dias = (item.fecha_fin - item.fecha_inicio).days + 1
+            if item.mueble.en_oferta:
+                item.ahorro_por_dia = item.mueble.precio_diario - item.mueble.precio_con_descuento
+                item.ahorro_total = (item.mueble.precio_diario * item.cantidad * item.dias) - item.subtotal()
+                ahorro_total += item.ahorro_total
+            else:
+                item.ahorro_por_dia = 0
+                item.ahorro_total = 0
+
+        subtotal = sum(item.subtotal() for item in items)
+        costo_domicilio = carrito.COSTO_DOMICILIO if carrito.domicilio else 0
+        costo_instalacion = carrito.COSTO_INSTALACION_COMPLETO if carrito.servicio_instalacion else 0
+        total = subtotal + costo_domicilio + costo_instalacion
 
     # Actualizar conteo en sesión
     request.session['carrito_items_count'] = carrito.items.count()
@@ -459,8 +470,9 @@ def ver_carrito(request):
         'costo_instalacion': costo_instalacion,
         'ahorro_total': ahorro_total,
         'usuario_no_logueado': not request.user.is_authenticated,
-        'domicilio': carrito.domicilio,  
-        'servicio_instalacion': carrito.servicio_instalacion,  
+        'domicilio': carrito.domicilio if items.exists() else None,  # Solo mostrar si hay items
+        'servicio_instalacion': carrito.servicio_instalacion if items.exists() else None,  # Solo mostrar si hay items
+        'carrito_vacio': not items.exists(),  # Nueva variable para saber si el carrito está vacío
     }
     
     return render(request, 'muebles/carrito/ver_carrito.html', context)
@@ -477,7 +489,7 @@ def agregar_direccion(request):
             carrito.domicilio = domicilio
             carrito.save()
             
-            messages.success(request, 'Dirección de entrega actualizada correctamente')
+            messages.success(request, 'Dirección de entrega agregada correctamente')
         else:
             messages.error(request, 'Debes ingresar una dirección válida')
     
@@ -499,16 +511,25 @@ def agregar_instalacion(request):
     
     return redirect('ver_carrito')
 
-def actualizar_direccion(request):
+def actualizar_direccion(request): 
     carrito = Carrito.obtener_carrito(request)
     
     if request.method == 'POST':
+        if not carrito.items.exists():
+            messages.error(request, 'Debes tener items en el carrito para agregar una dirección')
+            return redirect('ver_carrito')
+            
         domicilio = request.POST.get('domicilio')
 
         if domicilio:
+            if carrito.domicilio:
+                mensaje = 'Dirección actualizada exitosamente'
+            else:
+                mensaje = 'Dirección agregada exitosamente'
+
             carrito.domicilio = domicilio
             carrito.save()
-            messages.success(request, 'Dirección actualizada exitosamente')
+            messages.success(request, mensaje)
         else:
             messages.error(request, 'Dirección no válida')
 
@@ -518,6 +539,11 @@ def actualizar_instalacion(request):
     carrito = Carrito.obtener_carrito(request)
     
     if request.method == 'POST':
+        # Solo permitir si hay items en el carrito
+        if not carrito.items.exists():
+            messages.error(request, 'Debes tener items en el carrito para agregar servicios')
+            return redirect('ver_carrito')
+            
         servicio_instalacion = request.POST.get('servicio_instalacion') == 'on'
         carrito.servicio_instalacion = servicio_instalacion
         carrito.save()
@@ -528,6 +554,14 @@ def actualizar_instalacion(request):
             messages.success(request, 'Servicio de instalación removido del carrito')
 
     return redirect('ver_carrito')
+
+
+
+
+
+    
+
+
 
 
 def eliminar_domicilio(request):

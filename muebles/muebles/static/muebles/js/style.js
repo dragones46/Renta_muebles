@@ -72,3 +72,58 @@ function autoDismissAlerts() {
 
 // Ejecutar cuando el DOM esté cargado
 document.addEventListener('DOMContentLoaded', autoDismissAlerts);
+
+
+// Funciones para mostrar/ocultar el loading
+function showGlobalLoading() {
+    document.body.classList.add('loading');
+    document.getElementById('globalLoading').classList.add('active');
+}
+
+function hideGlobalLoading() {
+    document.body.classList.remove('loading');
+    document.getElementById('globalLoading').classList.remove('active');
+}
+
+// Mostrar loading al hacer clic en enlaces
+document.addEventListener('DOMContentLoaded', function() {
+    // Mostrar loading en enlaces normales
+    document.querySelectorAll('a:not([target="_blank"])').forEach(link => {
+        link.addEventListener('click', function(e) {
+            if (this.href && this.href !== '#') {
+                showGlobalLoading();
+            }
+        });
+    });
+    
+    // Mostrar loading al enviar formularios
+    document.querySelectorAll('form').forEach(form => {
+        form.addEventListener('submit', function() {
+            showGlobalLoading();
+        });
+    });
+    
+    // Manejar el botón de retroceso del navegador
+    window.addEventListener('pageshow', function() {
+        hideGlobalLoading();
+    });
+    
+    // Ocultar loading cuando la página termine de cargar
+    window.addEventListener('load', function() {
+        hideGlobalLoading();
+    });
+});
+
+// Para peticiones AJAX (si las usas)
+$(document).ajaxStart(function() {
+    showGlobalLoading();
+}).ajaxStop(function() {
+    hideGlobalLoading();
+});
+
+// Interceptar todas las acciones CRUD
+document.querySelectorAll('[data-action="delete"], [data-action="edit"], [data-action="add"]').forEach(btn => {
+    btn.addEventListener('click', function() {
+        showGlobalLoading();
+    });
+});
