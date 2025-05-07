@@ -1,11 +1,10 @@
-<!-- templates/muebles/propietario/inicio.html -->
 {% extends 'muebles/propietario/bar_propietario.html' %}
 {% load humanize %}
 
 {% block contenedor %}
 <div class="container mt-4">
     <h2>Panel de Propietario</h2>
-    
+
     <div class="row mt-4">
         <div class="col-md-4 mb-4">
             <div class="card">
@@ -21,7 +20,7 @@
                 </div>
             </div>
         </div>
-        
+
         <div class="col-md-4 mb-4 text-white">
             <div class="card">
                 <div class="card-header bg-success">
@@ -33,7 +32,7 @@
                 </div>
             </div>
         </div>
-        
+
         <div class="col-md-4 mb-4 text-white">
             <div class="card">
                 <div class="card-header bg-warning text-dark">
@@ -46,7 +45,7 @@
             </div>
         </div>
     </div>
-    
+
     <div class="card mt-4">
         <div class="card-header text-white">
             <h5>Pedidos Recientes</h5>
@@ -88,6 +87,46 @@
                 No hay pedidos recientes que incluyan tus muebles.
             </div>
             {% endif %}
+        </div>
+    </div>
+
+    <div class="mt-4">
+        <a href="{% url 'exportar_excel' %}" class="btn btn-success">
+            <i class="fas fa-file-excel"></i> Exportar a Excel
+        </a>
+        <button class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#eliminarTodoModal">
+            <i class="fas fa-trash"></i> Eliminar Todo
+        </button>
+    </div>
+</div>
+
+<!-- Modal para Eliminar Todo -->
+<div class="modal fade" id="eliminarTodoModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content" style="background-color: #1a1a1a;">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">
+                    <i class="fas fa-trash"></i> Eliminar Todo
+                </h5>
+                <button type="button" class="close text-white" data-bs-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <form method="post" action="{% url 'eliminar_todo' %}">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <p>¿Estás seguro de que deseas eliminar todos los datos?</p>
+                    <p class="text-danger">Esta acción no se puede deshacer.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="fas fa-times"></i> Cancelar
+                    </button>
+                    <button type="submit" class="btn btn-danger">
+                        <i class="fas fa-trash"></i> Confirmar Eliminación
+                    </button>
+                </div>
+            </form>
         </div>
     </div>
 </div>

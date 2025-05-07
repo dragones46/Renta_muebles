@@ -114,8 +114,13 @@ urlpatterns = [
 
 
  # Perfiles específicos
-    path('perfil/cliente/', views.perfil_cliente, name='perfil_cliente'),
+    path('perfil/', views.perfil, name='perfil'),
+    path('perfil/admin/', views.perfil_admin, name='perfil_admin'),
     path('perfil/propietario/', views.perfil_propietario, name='perfil_propietario'),
+    path('perfil/cliente/', views.perfil_cliente, name='perfil_cliente'),
     path('perfil/soporte/', views.perfil_soporte, name='perfil_soporte'),
 
+# Exel
+    path('propietarios/exportar-excel/', views.exportar_excel, name='exportar_excel'),
+    path('propietarios/eliminar-todo/', views.eliminar_todo, name='eliminar_todo'),
 ]

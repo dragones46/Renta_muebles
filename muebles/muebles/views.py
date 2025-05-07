@@ -284,52 +284,73 @@ def logout(request):
 def perfil(request):
     logueo = request.session.get("logueo")
     user = Usuario.objects.get(id=logueo["id"])
+    
+    # Redirigir según el rol
+    if user.rol == 1:  # Admin
+        return redirect('admin_inicio')
+    elif user.rol == 2:  # Propietario
+        return redirect('perfil_propietario')
+    elif user.rol == 3:  # Cliente
+        return redirect('perfil_cliente')
+    elif user.rol == 4:  # Soporte
+        return redirect('perfil_soporte')
+    else:
+        messages.error(request, "Rol no reconocido")
+        return redirect('index')
 
+@login_requerido(roles_permitidos=[1])
+def perfil_admin(request):
+    logueo = request.session.get("logueo")
+    user = Usuario.objects.get(id=logueo["id"])
+    
     if request.method == 'POST':
-        nombre = request.POST.get('nombre')
-        email = request.POST.get('email')
-        direccion = request.POST.get('direccion')
-        foto = request.FILES.get('foto')
+        # Lógica de actualización del perfil
+        pass
+    
+    return render(request, 'muebles/perfil/perfil_admin.html', {'user': user})
 
-        if Usuario.objects.filter(email=email).exclude(id=user.id).exists():
-            messages.warning(request, "El correo ya está registrado.")
-            return redirect('perfil')
+@login_requerido(roles_permitidos=[2])
+def perfil_propietario(request):
+    logueo = request.session.get("logueo")
+    user = Usuario.objects.get(id=logueo["id"])
+    propietario = get_object_or_404(Propietario, usuario=user)
+    
+    # Estadísticas para el propietario
+    muebles = Mueble.objects.filter(propietario=propietario)
+    total_muebles = muebles.count()
+    total_ganancias = sum(m.precio_final_propietario for m in muebles)
+    
+    return render(request, 'muebles/perfil/perfil_propietario.html', {
+        'user': user,
+        'propietario': propietario,
+        'total_muebles': total_muebles,
+        'total_ganancias': total_ganancias
+    })
 
-        user.nombre = nombre
-        user.email = email
-        user.direccion = direccion
-
-        if foto:
-            user.foto = foto
-
-        user.save()
-
-        # Actualizar sesión
-        request.session["logueo"] = {
-            "id": user.id,
-            "nombre": user.nombre,
-            "email": user.email,
-            "rol": user.rol,
-            "nombre_rol": user.get_rol_display(),
-            "foto": user.foto.url if user.foto else None
-        }
-
-        messages.success(request, "Perfil actualizado exitosamente.")
-        return redirect('perfil')
-
-    return render(request, 'muebles/perfil/perfil.html', {'user': user})
-
-@login_requerido
+@login_requerido(roles_permitidos=[3])
 def perfil_cliente(request):
     logueo = request.session.get("logueo")
-    usuario = Usuario.objects.get(id=logueo["id"])
+    user = Usuario.objects.get(id=logueo["id"])
     
-    # Obtener historial de alquileres
-    rentas = Renta.objects.filter(usuario=usuario).order_by('-fecha_inicio')
+    # Historial de alquileres
+    rentas = Renta.objects.filter(usuario=user).order_by('-fecha_inicio')
     
-    return render(request, 'muebles/perfil/perfil_cliente.html', {
-        'usuario': usuario,
+    return render(request, 'muebles/perfil/perfil.html', {
+        'user': user,
         'rentas': rentas
+    })
+
+@login_requerido(roles_permitidos=[4])
+def perfil_soporte(request):
+    logueo = request.session.get("logueo")
+    user = Usuario.objects.get(id=logueo["id"])
+    
+    # Problemas asignados
+    problemas = ReporteProblema.objects.filter(usuario_asignado=user)
+    
+    return render(request, 'muebles/perfil/perfil_soporte.html', {
+        'user': user,
+        'problemas': problemas
     })
 
 # ==================== CARRITO DE COMPRAS ====================
@@ -612,13 +633,13 @@ def procesar_pago(request):
             )
 
             comision_total = 0
-            
+
             # Crear los detalles del pedido
             for item in carrito.items.all():
                 dias = (item.fecha_fin - item.fecha_inicio).days + 1
                 comision = (item.mueble.precio_diario * item.mueble.comision / 100) * item.cantidad * dias
                 ganancia_propietario = (item.mueble.precio_diario - (item.mueble.precio_diario * item.mueble.comision / 100)) * item.cantidad * dias
-                
+
                 DetallePedido.objects.create(
                     pedido=pedido,
                     mueble=item.mueble,
@@ -1611,21 +1632,6 @@ def configurar_cookies(request):
 
 from django.core.paginator import Paginator
 
-@login_requerido(roles_permitidos=[2])
-def perfil_propietario(request):
-    logueo = request.session.get("logueo")
-    usuario = Usuario.objects.get(id=logueo["id"])
-    propietario = get_object_or_404(Propietario, usuario=usuario)
-    
-    # Estadísticas financieras
-    muebles = Mueble.objects.filter(propietario=propietario)
-    total_ganancias = sum(m.precio_final_propietario for m in muebles)
-    
-    return render(request, 'muebles/perfil/perfil_propietario.html', {
-        'usuario': usuario,
-        'propietario': propietario,
-        'total_ganancias': total_ganancias
-    })
 
 # views.py
 @login_requerido(roles_permitidos=[2])
@@ -1637,12 +1643,12 @@ def propietario_inicio(request):
     # Estadísticas
     total_muebles = Mueble.objects.filter(propietario=propietario).count()
     muebles_activos = Mueble.objects.filter(propietario=propietario).count()
-    
+
     # Pedidos recientes que incluyen sus muebles
     pedidos = Pedido.objects.filter(
         detalles__mueble__propietario=propietario
     ).distinct().order_by('-fecha')[:5]
-    
+
     # Calcular ganancias
     ganancias_totales = DetallePedido.objects.filter(
         mueble__propietario=propietario
@@ -1852,19 +1858,6 @@ import os
 from datetime import datetime
 
 # Decorador personalizado para verificar rol de soporte técnico
-
-@login_requerido(roles_permitidos=[4])
-def perfil_soporte(request):
-    logueo = request.session.get("logueo")
-    usuario = Usuario.objects.get(id=logueo["id"])
-    
-    # Problemas asignados
-    problemas = ReporteProblema.objects.filter(usuario_asignado=usuario)
-    
-    return render(request, 'muebles/perfil/perfil_soporte.html', {
-        'usuario': usuario,
-        'problemas': problemas
-    })
 
 @login_requerido(roles_permitidos=[4])
 def soporte_tecnico_inicio(request):
@@ -2161,3 +2154,54 @@ def estadisticas_problemas(request):
         'tiempo_promedio': tiempo_promedio_str,
     }
     return render(request, 'muebles/soporte_tecnico/estadisticas.html', context)
+
+# ================================EXCEL===============================
+import pandas as pd
+from django.http import HttpResponse
+
+@login_requerido(roles_permitidos=[2])
+def exportar_excel(request):
+    logueo = request.session.get("logueo")
+    usuario = Usuario.objects.get(id=logueo["id"])
+    propietario = get_object_or_404(Propietario, usuario=usuario)
+
+    # Obtener todos los muebles del propietario
+    muebles = Mueble.objects.filter(propietario=propietario)
+
+    # Crear un DataFrame de pandas
+    data = {
+        'ID': [mueble.id for mueble in muebles],
+        'Nombre': [mueble.nombre for mueble in muebles],
+        'Precio Diario': [mueble.precio_diario for mueble in muebles],
+        'Descuento': [mueble.descuento for mueble in muebles],
+        'Comisión': [mueble.comision for mueble in muebles],  # Changed from comision_propietario to comision
+        'Ganancia Propietario': [mueble.precio_final_propietario for mueble in muebles],
+    }
+
+    df = pd.DataFrame(data)
+
+    # Crear una respuesta HTTP con el archivo Excel
+    response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    response['Content-Disposition'] = 'attachment; filename=muebles.xlsx'
+
+    df.to_excel(response, index=False)
+    return response
+
+@login_requerido(roles_permitidos=[2])
+def eliminar_todo(request):
+    logueo = request.session.get("logueo")
+    usuario = Usuario.objects.get(id=logueo["id"])
+    propietario = get_object_or_404(Propietario, usuario=usuario)
+
+    if request.method == 'POST':
+        # Actualizar todos los muebles del propietario para restablecer ganancias y comisiones
+        Mueble.objects.filter(propietario=propietario).update(
+            precio_diario=0,  # Restablecer el precio diario a 0
+            comision=0       # Restablecer la comisión a 0
+        )
+
+        messages.success(request, "Las ganancias y comisiones han sido restablecidas correctamente.")
+        return redirect('propietario_inicio')
+
+    return redirect('propietario_inicio')
+

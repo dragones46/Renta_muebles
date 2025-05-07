@@ -64,9 +64,9 @@
                                 <i class="fas fa-shopping-cart"></i> Carrito
                                 <span class="badge bg-danger">
                                     {% if request.session.logueo and request.session.logueo.carrito %}
-                                        {{ request.session.logueo.carrito.items_count }}
+                                    {{ request.session.logueo.carrito.items_count }}
                                     {% else %}
-                                        {{ request.session.carrito_items_count|default:0 }}
+                                    {{ request.session.carrito_items_count|default:0 }}
                                     {% endif %}
                                 </span>
                             </a>
@@ -88,38 +88,60 @@
                             <!-- En la parte del dropdown del usuario -->
                             <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdown"
                                 style="background-color: black;">
-                                <li><a class="dropdown-item" href="{% url 'perfil' %}">Ver Perfil</a></li>
                                 {% if request.session.logueo.rol == 1 %}
-                                <li>
-                                    <hr class="dropdown-divider">
-                                </li>
                                 <li><a class="dropdown-item" href="{% url 'admin_inicio' %}">
-                                        <i class="bi bi-shield-lock"></i> Admin
-                                    </a></li>
-                                {% endif %}
-                                {% if request.session.logueo.rol == 2 %}
+                                        <i class="bi bi-shield-lock"></i> Panel Admin
+                                    </a>
+                                </li>
                                 <li>
                                     <hr class="dropdown-divider">
                                 </li>
+                                <li><a class="dropdown-item" href="{% url 'perfil_admin' %}">
+                                        <i class="bi bi-person"></i> Perfil Admin
+                                    </a>
+                                </li>
+
+                                {% elif request.session.logueo.rol == 2 %}
                                 <li><a class="dropdown-item" href="{% url 'propietario_inicio' %}">
-                                        <i class="bi bi-shield-lock"></i> Propietario
+                                        <i class="bi bi-house-gear"></i> Panel Propietario
                                     </a>
                                 </li>
-                                {% endif %}
-                                {% if request.session.logueo and request.session.logueo.rol == 4 %}
                                 <li>
                                     <hr class="dropdown-divider">
                                 </li>
-                                <li class="nav-item">
-                                    <a class="nav-link" href="{% url 'soporte_tecnico_inicio' %}">
-                                        <i class="fas fa-cogs"></i> Soporte Técnico
+                                <li><a class="dropdown-item" href="{% url 'perfil_propietario' %}">
+                                        <i class="bi bi-person"></i> Perfil Propietario
+                                    </a>
+                                </li>
+
+                                {% elif request.session.logueo.rol == 3 %}
+                                <li><a class="dropdown-item" href="{% url 'perfil_cliente' %}">
+                                        <i class="bi bi-person"></i> Perfil Cliente
+                                    </a>
+                                </li>
+
+                                {% elif request.session.logueo.rol == 4 %}
+                                <li><a class="dropdown-item" href="{% url 'soporte_tecnico_inicio' %}">
+                                        <i class="bi bi-tools"></i> Panel Soporte
+                                    </a>
+                                </li>
+
+                                <li>
+                                    <hr class="dropdown-divider">
+                                </li>
+
+                                <li><a class="dropdown-item" href="{% url 'perfil_soporte' %}">
+                                        <i class="bi bi-person"></i> Perfil Soporte
                                     </a>
                                 </li>
                                 {% endif %}
                                 <li>
                                     <hr class="dropdown-divider">
                                 </li>
-                                <li><a class="dropdown-item" href="{% url 'logout' %}">Cerrar Sesión</a></li>
+                                <li><a class="dropdown-item" href="{% url 'logout' %}">
+                                        <i class="bi bi-box-arrow-right"></i> Cerrar Sesión
+                                   </a>
+                            </li>
                             </ul>
                         </li>
                         {% else %}
@@ -137,7 +159,6 @@
         <div class="global-loading" id="globalLoading">
             <div class="loading-spinner"></div>
         </div>
-        <!-- Contenido -->
         <!-- Contenido -->
         <div class="content container mt-5">
             {% if messages %}

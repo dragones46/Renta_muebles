@@ -63,40 +63,71 @@
                             {% endif %}
                         </a>
                         <!-- En la parte del dropdown del usuario -->
-                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdown"
-                            style="background-color: black;">
-                            <li><a class="dropdown-item" href="{% url 'perfil' %}">Ver Perfil</a></li>
-                            {% if request.session.logueo.rol == 1 %}
-                            <li>
-                                <hr class="dropdown-divider">
-                            </li>
-                            <li><a class="dropdown-item" href="{% url 'admin_inicio' %}">
-                                    <i class="bi bi-shield-lock"></i> Admin
-                                </a></li>
-                            {% endif %}
-                            {% if request.session.logueo.rol == 2 %}
-                            <li>
-                                <hr class="dropdown-divider">
-                            </li>
-                            <li><a class="dropdown-item" href="{% url 'propietario_inicio' %}">
-                                    <i class="bi bi-shield-lock"></i> Propietario
-                                </a></li>
-                            {% endif %}
-                            <li>
-                                <hr class="dropdown-divider">
-                            </li>
-                            <li><a class="dropdown-item" href="{% url 'logout' %}">Cerrar Sesión</a></li>
-                        </ul>
+                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdown" style="background-color: black;">
+                        {% if request.session.logueo.rol == 1 %}
+                        <li><a class="dropdown-item" href="{% url 'admin_inicio' %}">
+                                <i class="bi bi-shield-lock"></i> Panel Admin
+                            </a>
+                        </li>
+                        <li>
+                            <hr class="dropdown-divider">
+                        </li>
+                        <li><a class="dropdown-item" href="{% url 'perfil_admin' %}">
+                                <i class="bi bi-person"></i> Perfil Admin
+                            </a>
+                        </li>
+
+                        {% elif request.session.logueo.rol == 2 %}
+                        <li><a class="dropdown-item" href="{% url 'propietario_inicio' %}">
+                                <i class="bi bi-house-gear"></i> Panel Propietario
+                            </a>
+                        </li>
+                        <li>
+                            <hr class="dropdown-divider">
+                        </li>
+                        <li><a class="dropdown-item" href="{% url 'perfil_propietario' %}">
+                                <i class="bi bi-person"></i> Perfil Propietario
+                            </a>
+                        </li>
+
+                        {% elif request.session.logueo.rol == 3 %}
+                        <li><a class="dropdown-item" href="{% url 'perfil_cliente' %}">
+                                <i class="bi bi-person"></i> Perfil Cliente
+                            </a>
+                        </li>
+                        {% elif request.session.logueo.rol == 4 %}
+                        <li><a class="dropdown-item" href="{% url 'soporte_tecnico_inicio' %}">
+                                <i class="bi bi-tools"></i> Panel Soporte
+                            </a>
+                        </li>
+
+                        <li>
+                            <hr class="dropdown-divider">
+                        </li>
+
+                        <li><a class="dropdown-item" href="{% url 'perfil_soporte' %}">
+                                <i class="bi bi-person"></i> Perfil Soporte
+                            </a>
+                        </li>
+                        {% endif %}
+                        <li>
+                            <hr class="dropdown-divider">
+                        </li>
+                        <li><a class="dropdown-item" href="{% url 'logout' %}">
+                                <i class="bi bi-box-arrow-right"></i> Cerrar Sesión
+                           </a>
                     </li>
-                    {% else %}
-                    <li class="nav-item">
-                        <a class="btn btn-success-3d me-3" href="{% url 'login' %}">Iniciar sesión</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="btn btn-primary-3d" href="{% url 'registro' %}">Registrarse</a>
-                    </li>
-                    {% endif %}
-                </ul>
+                    </ul>
+                </li>
+                {% else %}
+                <li class="nav-item">
+                    <a class="btn btn-success-3d me-3" href="{% url 'login' %}">Iniciar sesión</a>
+                </li>
+                <li class="nav-item">
+                    <a class="btn btn-primary-3d" href="{% url 'registro' %}">Registrarse</a>
+                </li>
+                {% endif %}
+            </ul>
             </div>
         </div>
     </nav>

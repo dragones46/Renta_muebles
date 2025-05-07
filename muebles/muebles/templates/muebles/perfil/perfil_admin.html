@@ -1,16 +1,15 @@
 {% extends 'muebles/barNav.html' %}
 {% load static %}
 
-{% block titulo %}Perfil de Cliente - Renta de Muebles{% endblock %}
+{% block titulo %}Perfil de Administrador - Renta de Muebles{% endblock %}
 
 {% block contenedor %}
 <style>
-    /* Estilos generales */
+    /* Estilos generales (los mismos que en perfil_cliente) */
     body {
         background-color: #3b3b3b;
         color: #ffffff;
     }
-
     .card {
         background-color: #2a2a2a;
         border: 1px solid #444;
@@ -114,13 +113,16 @@
         border-color: #ff8c00;
         /* Borde naranja para inputs inválidos */
     }
+
+
 </style>
+
 <div class="container mt-5">
     <div class="row justify-content-center">
-        <div class="col-md-8">
+        <div class="col-md-10">
             <div class="card shadow">
                 <div class="card-header bg-primary text-white">
-                    <h3 class="mb-0">Mi Perfil</h3>
+                    <h3 class="mb-0">Panel de Administrador</h3>
                 </div>
                 <div class="card-body">
                     <div class="row">
@@ -137,6 +139,9 @@
                                 <button class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#cambiarContrasenaModal">
                                     <i class="bi bi-key"></i> Cambiar Contraseña
                                 </button>
+                                <a href="{% url 'admin_inicio' %}" class="btn btn-outline-success">
+                                    <i class="bi bi-speedometer2"></i> Panel de Control
+                                </a>
                             </div>
                         </div>
                         <div class="col-md-8">
@@ -145,45 +150,61 @@
                                 <hr>
                                 <p><strong>Nombre:</strong> {{ user.nombre }}</p>
                                 <p><strong>Correo:</strong> {{ user.email }}</p>
-                                <p><strong>Dirección:</strong> {{ user.direccion|default:"No especificada" }}</p>
-                                <p><strong>Teléfono:</strong> {{ user.telefono|default:"No especificado" }}</p>
+                                <p><strong>Rol:</strong> {{ user.get_rol_display }}</p>
+                                <p><strong>Último acceso:</strong> {{ user.last_login|date:"d/m/Y H:i" }}</p>
                             </div>
                             
                             <div class="mb-3">
-                                <h5>Historial de Alquileres</h5>
+                                <h5>Estadísticas del Sistema</h5>
                                 <hr>
-                                {% if rentas %}
-                                    <div class="table-responsive">
-                                        <table class="table table-hover">
-                                            <thead>
-                                                <tr>
-                                                    <th>Mueble</th>
-                                                    <th>Fecha Inicio</th>
-                                                    <th>Fecha Fin</th>
-                                                    <th>Estado</th>
-                                                    <th>Total</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                {% for renta in rentas %}
-                                                <tr>
-                                                    <td>{{ renta.mueble.nombre }}</td>
-                                                    <td>{{ renta.fecha_inicio|date:"d/m/Y" }}</td>
-                                                    <td>{{ renta.fecha_fin|date:"d/m/Y" }}</td>
-                                                    <td>
-                                                        <span class="badge bg-{% if renta.estado == 'completado' %}success{% elif renta.estado == 'activo' %}primary{% else %}warning{% endif %}">
-                                                            {{ renta.get_estado_display }}
-                                                        </span>
-                                                    </td>
-                                                    <td>${{ renta.total|floatformat:2 }}</td>
-                                                </tr>
-                                                {% endfor %}
-                                            </tbody>
-                                        </table>
+                                <div class="row">
+                                    <div class="col-md-4">
+                                        <div class="card bg-dark mb-3">
+                                            <div class="card-body text-center">
+                                                <h2 class="text-warning">{{ total_usuarios }}</h2>
+                                                <p class="mb-0">Usuarios</p>
+                                            </div>
+                                        </div>
                                     </div>
-                                {% else %}
-                                    <div class="alert alert-info">No tienes alquileres registrados.</div>
-                                {% endif %}
+                                    <div class="col-md-4">
+                                        <div class="card bg-dark mb-3">
+                                            <div class="card-body text-center">
+                                                <h2 class="text-warning">{{ total_muebles }}</h2>
+                                                <p class="mb-0">Muebles</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="card bg-dark mb-3">
+                                            <div class="card-body text-center">
+                                                <h2 class="text-warning">{{ total_pedidos }}</h2>
+                                                <p class="mb-0">Pedidos</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <h5>Acciones Rápidas</h5>
+                                <hr>
+                                <div class="d-flex flex-wrap gap-2">
+                                    <a href="{% url 'admin_usuarios' %}" class="btn btn-outline-info">
+                                        <i class="bi bi-people-fill"></i> Gestionar Usuarios
+                                    </a>
+                                    <a href="{% url 'admin_muebles' %}" class="btn btn-outline-info">
+                                        <i class="bi bi-box-seam"></i> Gestionar Muebles
+                                    </a>
+                                    <a href="{% url 'admin_pedidos' %}" class="btn btn-outline-info">
+                                        <i class="bi bi-receipt"></i> Ver Pedidos
+                                    </a>
+                                    <a href="{% url 'admin_faq_lista' %}" class="btn btn-outline-info">
+                                        <i class="bi bi-question-circle"></i> Gestionar FAQs
+                                    </a>
+                                    <a href="{% url 'admin_lista_preguntas' %}" class="btn btn-outline-info">
+                                        <i class="bi bi-question-circle"></i> Gestionar Preguntas
+                                    </a>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -307,4 +328,5 @@
         background-color: #f8f9fa;
     }
 </style>
+
 {% endblock %}

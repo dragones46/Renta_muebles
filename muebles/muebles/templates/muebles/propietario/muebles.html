@@ -315,6 +315,7 @@
                     <th>ID</th>
                     <th>Nombre</th>
                     <th>Precio</th>
+                    <th>Comisión (%)</th> 
                     <th>Descuento</th>
                     <th>Imagen</th>
                     <th>Acciones</th>
@@ -333,6 +334,7 @@
                         ${{ mueble.precio_diario|intcomma }}
                         {% endif %}
                     </td>
+                    <td>{{ mueble.comision }}%</td>
                     <td>
                         {% if mueble.en_oferta %}
                         <span class="badge badge-oferta">{{ mueble.descuento }}% OFF</span>

@@ -1,16 +1,15 @@
 {% extends 'muebles/barNav.html' %}
 {% load static %}
 
-{% block titulo %}Perfil de Cliente - Renta de Muebles{% endblock %}
+{% block titulo %}Perfil de Soporte Técnico - Renta de Muebles{% endblock %}
 
 {% block contenedor %}
 <style>
-    /* Estilos generales */
+    /* Estilos generales (los mismos que en perfil_cliente) */
     body {
         background-color: #3b3b3b;
         color: #ffffff;
     }
-
     .card {
         background-color: #2a2a2a;
         border: 1px solid #444;
@@ -114,13 +113,16 @@
         border-color: #ff8c00;
         /* Borde naranja para inputs inválidos */
     }
+
+
 </style>
+
 <div class="container mt-5">
     <div class="row justify-content-center">
-        <div class="col-md-8">
+        <div class="col-md-10">
             <div class="card shadow">
                 <div class="card-header bg-primary text-white">
-                    <h3 class="mb-0">Mi Perfil</h3>
+                    <h3 class="mb-0">Panel de Soporte Técnico</h3>
                 </div>
                 <div class="card-body">
                     <div class="row">
@@ -137,6 +139,9 @@
                                 <button class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#cambiarContrasenaModal">
                                     <i class="bi bi-key"></i> Cambiar Contraseña
                                 </button>
+                                <a href="{% url 'soporte_tecnico_inicio' %}" class="btn btn-outline-success">
+                                    <i class="bi bi-speedometer2"></i> Panel de Control
+                                </a>
                             </div>
                         </div>
                         <div class="col-md-8">
@@ -145,44 +150,87 @@
                                 <hr>
                                 <p><strong>Nombre:</strong> {{ user.nombre }}</p>
                                 <p><strong>Correo:</strong> {{ user.email }}</p>
-                                <p><strong>Dirección:</strong> {{ user.direccion|default:"No especificada" }}</p>
-                                <p><strong>Teléfono:</strong> {{ user.telefono|default:"No especificado" }}</p>
+                                <p><strong>Rol:</strong> {{ user.get_rol_display }}</p>
+                                <p><strong>Último acceso:</strong> {{ user.last_login|date:"d/m/Y H:i" }}</p>
                             </div>
                             
                             <div class="mb-3">
-                                <h5>Historial de Alquileres</h5>
+                                <h5>Estadísticas de Problemas</h5>
                                 <hr>
-                                {% if rentas %}
+                                <div class="row">
+                                    <div class="col-md-3">
+                                        <div class="card bg-dark mb-3">
+                                            <div class="card-body text-center">
+                                                <h2 class="text-warning">{{ total_problemas }}</h2>
+                                                <p class="mb-0">Total</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <div class="card bg-dark mb-3">
+                                            <div class="card-body text-center">
+                                                <h2 class="text-warning">{{ problemas_abiertos }}</h2>
+                                                <p class="mb-0">Abiertos</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <div class="card bg-dark mb-3">
+                                            <div class="card-body text-center">
+                                                <h2 class="text-warning">{{ problemas_en_progreso }}</h2>
+                                                <p class="mb-0">En Progreso</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <div class="card bg-dark mb-3">
+                                            <div class="card-body text-center">
+                                                <h2 class="text-warning">{{ problemas_resueltos }}</h2>
+                                                <p class="mb-0">Resueltos</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <h5>Problemas Asignados</h5>
+                                <hr>
+                                {% if problemas %}
                                     <div class="table-responsive">
                                         <table class="table table-hover">
                                             <thead>
                                                 <tr>
-                                                    <th>Mueble</th>
-                                                    <th>Fecha Inicio</th>
-                                                    <th>Fecha Fin</th>
+                                                    <th>ID</th>
+                                                    <th>Título</th>
                                                     <th>Estado</th>
-                                                    <th>Total</th>
+                                                    <th>Fecha</th>
+                                                    <th>Acciones</th>
                                                 </tr>
                                             </thead>
                                             <tbody>
-                                                {% for renta in rentas %}
+                                                {% for problema in problemas %}
                                                 <tr>
-                                                    <td>{{ renta.mueble.nombre }}</td>
-                                                    <td>{{ renta.fecha_inicio|date:"d/m/Y" }}</td>
-                                                    <td>{{ renta.fecha_fin|date:"d/m/Y" }}</td>
+                                                    <td>#{{ problema.id }}</td>
+                                                    <td>{{ problema.titulo }}</td>
                                                     <td>
-                                                        <span class="badge bg-{% if renta.estado == 'completado' %}success{% elif renta.estado == 'activo' %}primary{% else %}warning{% endif %}">
-                                                            {{ renta.get_estado_display }}
+                                                        <span class="badge bg-{% if problema.estado == 'abierto' %}warning{% elif problema.estado == 'en_progreso' %}primary{% else %}success{% endif %}">
+                                                            {{ problema.get_estado_display }}
                                                         </span>
                                                     </td>
-                                                    <td>${{ renta.total|floatformat:2 }}</td>
+                                                    <td>{{ problema.fecha_reporte|date:"d/m/Y" }}</td>
+                                                    <td>
+                                                        <a href="{% url 'detalle_problema' problema.id %}" class="btn btn-sm btn-outline-info">
+                                                            <i class="bi bi-eye"></i> Ver
+                                                        </a>
+                                                    </td>
                                                 </tr>
                                                 {% endfor %}
                                             </tbody>
                                         </table>
                                     </div>
                                 {% else %}
-                                    <div class="alert alert-info">No tienes alquileres registrados.</div>
+                                    <div class="alert alert-info">No tienes problemas asignados actualmente.</div>
                                 {% endif %}
                             </div>
                         </div>
@@ -307,4 +355,5 @@
         background-color: #f8f9fa;
     }
 </style>
+
 {% endblock %}
