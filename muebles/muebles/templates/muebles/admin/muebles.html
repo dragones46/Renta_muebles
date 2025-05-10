@@ -274,7 +274,7 @@
         </button>
     </div>
 
-    <!-- Sección de Búsqueda y Filtros - Estilo similar a FAQ -->
+    <!-- Sección de Búsqueda y Filtros -->
     <div class="card mb-4 bg-dark">
         <div class="card-body">
             <form method="get" class="row g-3">
@@ -295,17 +295,17 @@
                     </select>
                 </div>
 
-                <!-- Filtro por propietario -->
+                <!-- Filtro por proveedor -->
                 <div class="col-md-3">
-                    <label for="propietario" class="form-label">Propietario</label>
-                    <select class="form-select" id="propietario" name="propietario">
+                    <label for="proveedor" class="form-label">Proveedor</label>
+                    <select class="form-select" id="proveedor" name="proveedor">
                         <option value="">Todos</option>
-                        {% for propietario in propietarios %}
-                        <option value="{{ propietario.id }}" {% if propietario_filter == propietario.id|stringformat:"s" %}selected{% endif %}>
-                            {% if propietario.tipo == 'individual' %}
-                                {{ propietario.usuario.nombre }} (Individual)
+                        {% for proveedor in proveedores %}
+                        <option value="{{ proveedor.id }}" {% if proveedor_filter == proveedor.id|stringformat:"s" %}selected{% endif %}>
+                            {% if proveedor.nombre_empresa %}
+                                {{ proveedor.nombre_empresa }} (Empresa)
                             {% else %}
-                                {{ propietario.nombre_empresa|default:propietario.usuario.nombre }} (Empresa)
+                                {{ proveedor.usuario.nombre }} (Individual)
                             {% endif %}
                         </option>
                         {% endfor %}
@@ -335,13 +335,13 @@
                     <th>Nombre</th>
                     <th>Precio</th>
                     <th>Descuento</th>
-                    <th>Propietario</th>
+                    <th>Proveedor</th>
                     <th>Imagen</th>
                     <th>Acciones</th>
                 </tr>
             </thead>
             <tbody>
-                {% for mueble in muebles  %}
+                {% for mueble in muebles %}
                 <tr>
                     <td>{{ mueble.id }}</td>
                     <td>{{ mueble.nombre }}</td>
@@ -364,16 +364,16 @@
                         {% endif %}
                     </td>
                     <td>
-                        {% if mueble.propietario.tipo == 'individual' %}
-                            <span class="propietario-individual">
-                                <i class="bi bi-person"></i> {{ mueble.propietario.usuario.nombre }}
+                        {% if mueble.proveedor.nombre_empresa %}
+                            <span class="proveedor-empresa">
+                                <i class="bi bi-building"></i> {{ mueble.proveedor.nombre_empresa }}
                             </span>
                         {% else %}
-                            <span class="propietario-empresa">
-                                <i class="bi bi-building"></i> {{ mueble.propietario.nombre_empresa|default:mueble.propietario.usuario.nombre }}
+                            <span class="proveedor-individual">
+                                <i class="bi bi-person"></i> {{ mueble.proveedor.usuario.nombre }}
                             </span>
                         {% endif %}
-                        <small class="text-muted d-block">ID: {{ mueble.propietario.id }}</small>
+                        <small class="text-muted d-block">ID: {{ mueble.proveedor.id }}</small>
                     </td>
                     <td>
                         {% if mueble.imagen %}
@@ -400,55 +400,54 @@
                 {% endfor %}
             </tbody>
         </table>
-    
-<!-- Paginación -->
-<nav aria-label="Page navigation">
-    <ul class="pagination justify-content-center">
-        {% if page_obj.has_previous %}
-        <li class="page-item">
-            <a class="page-link" href="?page=1{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">
-                <i class="fas fa-angle-double-left"></i>
-            </a>
-        </li>
-        <li class="page-item">
-            <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">
-                <i class="fas fa-angle-left"></i>
-            </a>
-        </li>
-        {% endif %}
 
-        {% for num in page_obj.paginator.page_range %}
-        {% if page_obj.number == num %}
-        <li class="page-item active"><a class="page-link" href="#">{{ num }}</a></li>
-        {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
-        <li class="page-item">
-            <a class="page-link" href="?page={{ num }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">{{ num }}</a>
-        </li>
-        {% endif %}
-        {% endfor %}
+        <!-- Paginación -->
+        <nav aria-label="Page navigation">
+            <ul class="pagination justify-content-center">
+                {% if page_obj.has_previous %}
+                <li class="page-item">
+                    <a class="page-link" href="?page=1{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">
+                        <i class="fas fa-angle-double-left"></i>
+                    </a>
+                </li>
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">
+                        <i class="fas fa-angle-left"></i>
+                    </a>
+                </li>
+                {% endif %}
 
-        {% if page_obj.has_next %}
-        <li class="page-item">
-            <a class="page-link" href="?page={{ page_obj.next_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">
-                <i class="fas fa-angle-right"></i>
-            </a>
-        </li>
-        <li class="page-item">
-            <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">
-                <i class="fas fa-angle-double-right"></i>
-            </a>
-        </li>
-        {% endif %}
-    </ul>
-</nav>
-{% else %}
-<div class="alert alert-info text-center">
-    <i class="fas fa-info-circle me-2"></i> No se encontraron muebles con los filtros aplicados.
-</div>
-{% endif %}
-</div>
-</div>
+                {% for num in page_obj.paginator.page_range %}
+                {% if page_obj.number == num %}
+                <li class="page-item active"><a class="page-link" href="#">{{ num }}</a></li>
+                {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ num }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">{{ num }}</a>
+                </li>
+                {% endif %}
+                {% endfor %}
 
+                {% if page_obj.has_next %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.next_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">
+                        <i class="fas fa-angle-right"></i>
+                    </a>
+                </li>
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">
+                        <i class="fas fa-angle-double-right"></i>
+                    </a>
+                </li>
+                {% endif %}
+            </ul>
+        </nav>
+    </div>
+    {% else %}
+    <div class="alert alert-info text-center">
+        <i class="fas fa-info-circle me-2"></i> No se encontraron muebles con los filtros aplicados.
+    </div>
+    {% endif %}
+</div>
 
 <!-- Modal para Crear Mueble -->
 <div class="modal fade" id="crearMuebleModal" tabindex="-1" aria-hidden="true">
@@ -488,20 +487,20 @@
                         <input type="date" class="form-control" name="fecha_fin_descuento">
                     </div>
                     <div class="form-group">
-                        <label class="form-label">Propietario</label>
-                        <select class="form-select" name="propietario" required>
-                            <option value="">Seleccione un propietario</option>
-                            {% for propietario in propietarios %}
-                            <option value="{{ propietario.id }}">
-                                {% if propietario.tipo == 'individual' %}
-                                    {{ propietario.usuario.nombre }} (Propietario Individual)
+                        <label class="form-label">Proveedor</label>
+                        <select class="form-select" name="proveedor" required>
+                            <option value="">Seleccione un proveedor</option>
+                            {% for proveedor in proveedores %}
+                            <option value="{{ proveedor.id }}">
+                                {% if proveedor.nombre_empresa %}
+                                    {{ proveedor.nombre_empresa }} (Empresa)
                                 {% else %}
-                                    {{ propietario.nombre_empresa|default:propietario.usuario.nombre }} (Empresa)
+                                    {{ proveedor.usuario.nombre }} (Individual)
                                 {% endif %}
                             </option>
                             {% endfor %}
                         </select>
-                        <small class="text-muted">Seleccione a qué empresa o usuario pertenece este mueble</small>
+                        <small class="text-muted">Seleccione a qué proveedor pertenece este mueble</small>
                     </div>
                     <div class="form-group">
                         <label class="form-label">Imagen del Mueble</label>
@@ -548,7 +547,7 @@
                     </div>
                     <div class="form-group">
                         <label class="form-label">Precio Diario ($)</label>
-                        <input type="text" class="form-control" name="precio_diario" 
+                        <input type="text" class="form-control" name="precio_diario"
                                value="{{ mueble.precio_diario|floatformat:0 }}" required>
                         <small class="text-muted">Ingrese el valor sin puntos ni comas (ej: 1000000)</small>
                     </div>
@@ -562,31 +561,31 @@
                                value="{{ mueble.fecha_fin_descuento|date:'Y-m-d' }}">
                     </div>
                     <div class="form-group">
-                        <label class="form-label">Propietario Actual</label>
+                        <label class="form-label">Proveedor Actual</label>
                         <div class="alert alert-info">
-                            {% if mueble.propietario.tipo == 'individual' %}
-                                <strong>{{ mueble.propietario.usuario.nombre }}</strong> (Propietario Individual)
+                            {% if mueble.proveedor.nombre_empresa %}
+                                <strong>{{ mueble.proveedor.nombre_empresa }}</strong> (Empresa)
                             {% else %}
-                                <strong>{{ mueble.propietario.nombre_empresa|default:mueble.propietario.usuario.nombre }}</strong> (Empresa)
+                                <strong>{{ mueble.proveedor.usuario.nombre }}</strong> (Individual)
                             {% endif %}
                         </div>
 
-                        <label class="form-label">Cambiar Propietario</label>
-                        <select class="form-select" name="propietario">
-                            <option value="">Mantener propietario actual</option>
-                            {% for propietario in propietarios %}
-                            {% if propietario.id != mueble.propietario.id %}
-                            <option value="{{ propietario.id }}">
-                                {% if propietario.tipo == 'individual' %}
-                                    {{ propietario.usuario.nombre }} (Propietario Individual)
+                        <label class="form-label">Cambiar Proveedor</label>
+                        <select class="form-select" name="proveedor">
+                            <option value="">Mantener proveedor actual</option>
+                            {% for proveedor in proveedores %}
+                            {% if proveedor.id != mueble.proveedor.id %}
+                            <option value="{{ proveedor.id }}">
+                                {% if proveedor.nombre_empresa %}
+                                    {{ proveedor.nombre_empresa }} (Empresa)
                                 {% else %}
-                                    {{ propietario.nombre_empresa|default:propietario.usuario.nombre }} (Empresa)
+                                    {{ proveedor.usuario.nombre }} (Individual)
                                 {% endif %}
                             </option>
                             {% endif %}
                             {% endfor %}
                         </select>
-                        <small class="text-muted">Seleccione solo si desea cambiar el propietario</small>
+                        <small class="text-muted">Seleccione solo si desea cambiar el proveedor</small>
                     </div>
                     <div class="form-group">
                         <label class="form-label">Imagen Actual</label>

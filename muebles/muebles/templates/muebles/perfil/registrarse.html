@@ -1,15 +1,13 @@
 {% extends 'muebles/barnav.html' %}
 {% load static %}
-{% block titulo %}Registro - Renta de Muebles{% endblock %}
+{% block titulo %}Registro de Usuario - Renta de Muebles{% endblock %}
 
 {% block contenedor %}
 <style>
     /* Estilos para el formulario de registro */
     .card {
         background-color: #2a2a2a;
-        /* Fondo oscuro para la tarjeta */
         border: 1px solid #444;
-        /* Borde sutil */
         border-radius: 10px;
         box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
     }
@@ -20,37 +18,28 @@
     .form-control,
     .btn-primary {
         color: #ffffff !important;
-        /* Texto blanco */
     }
 
     .form-control {
         background-color: #444;
-        /* Fondo oscuro para los inputs */
         border: 1px solid #666;
-        /* Borde sutil */
         color: #ffffff;
-        /* Texto blanco */
     }
 
     .form-control:focus {
         background-color: #555;
-        /* Fondo más claro al enfocar */
         border-color: #ff8c00;
-        /* Borde naranja al enfocar */
         color: #ffffff;
-        /* Texto blanco */
     }
 
     .btn-primary {
         background-color: #ff8c00;
-        /* Botón naranja */
         border: none;
         transition: background-color 0.3s ease;
     }
 
     .btn-primary:hover {
         background-color: #e67600;
-        /* Naranja más oscuro al pasar el mouse */
     }
 </style>
 
@@ -59,50 +48,67 @@
         <div class="col-md-6">
             <div class="card shadow">
                 <div class="card-body">
-                    <h1 class="card-title text-center">Registro</h1>
+                    <h1 class="card-title text-center">Registro de Usuario</h1>
                     <p class="text-center">Únete a nuestra comunidad para rentar los mejores muebles.</p>
-                    <form method="post">
+                    <form method="post" enctype="multipart/form-data" style="color: white;">
                         {% csrf_token %}
-                        <div class="mb-3">
-                            <label for="nombre" class="form-label">Nombre:</label>
+                        <div class="form-group">
+                            <label for="nombre">Nombre</label>
                             <input type="text" class="form-control" id="nombre" name="nombre" required>
                         </div>
-                        <div class="mb-3">
-                            <label for="email" class="form-label">Email:</label>
+                        <div class="form-group">
+                            <label for="email">Email</label>
                             <input type="email" class="form-control" id="email" name="email" required>
                         </div>
-                        <div class="mb-3">
-                            <label for="direccion" class="form-label">Dirección:</label>
+                        <div class="form-group">
+                            <label for="direccion">Dirección</label>
                             <input type="text" class="form-control" id="direccion" name="direccion" required>
                         </div>
-                        <div class="mb-3">
-                            <label for="segmento" class="form-label">Segmento:</label>
-                            <select class="form-control" id="segmento" name="segmento" required>
-                                <option value="A">Proveedores (Fábricas, Galerías, Tiendas)</option>
-                                <option value="B">Personas Naturales</option>
-                                <option value="C">Personas Naturales Propietarias de Inmuebles</option>
-                            </select>
+                        <div class="form-group">
+                            <label for="telefono">Tel&eacute;fono</label>
+                            <input type="text" class="form-control" id="telefono" name="telefono" required>
                         </div>
-                        <div class="mb-3">
-                            <label for="nombre_empresa" class="form-label">Nombre de la Empresa:</label>
-                            <input type="text" class="form-control" id="nombre_empresa" name="nombre_empresa">
-                        </div>
-                        <div class="mb-3">
-                            <label for="telefono" class="form-label">Teléfono:</label>
-                            <input type="tel" class="form-control" id="telefono" name="telefono" required pattern="[0-9]{8,15}" title="Por favor, ingrese un número de teléfono válido (solo números)">
-                        </div>
-                        <div class="mb-3">
-                            <label for="password" class="form-label">Contraseña:</label>
+                        <div class="form-group">
+                            <label for="password">Contraseña</label>
                             <input type="password" class="form-control" id="password" name="password" required>
                         </div>
-                        <div class="mb-3">
-                            <label for="confirm_password" class="form-label">Confirmar Contraseña:</label>
-                            <input type="password" class="form-control" id="confirm_password" name="confirm_password"
+                        <div class="form-group">
+                            <label for="tipo_usuario">Tipo de Usuario</label>
+                            <select class="form-control" id="tipo_usuario" name="tipo_usuario" required>
+                                <option value="3">Cliente</option>
+                                <option value="2">Proveedor</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="tipo_documento">Tipo de Documento</label>
+                            <select class="form-control" id="tipo_documento" name="tipo_documento" required>
+                                <option value="CC">Cédula de Ciudadanía</option>
+                                <option value="NIT">NIT de Empresa</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="numero_documento">Número de Documento</label>
+                            <input type="text" class="form-control" id="numero_documento" name="numero_documento"
                                 required>
                         </div>
-                        <div class="d-grid">
-                            <button type="submit" class="btn btn-primary">Registrarse</button>
+                        <div class="form-group">
+                            <label for="tipo_persona">Tipo de Persona</label>
+                            <select class="form-control" id="tipo_persona" name="tipo_persona" required>
+                                <option value="natural">Persona Natural</option>
+                                <option value="juridica">Persona Jurídica</option>
+                            </select>
                         </div>
+                        <div class="form-group" id="empresa_fields" style="display: none;">
+                            <div class="form-group">
+                                <label for="nombre_empresa">Nombre de la Empresa</label>
+                                <input type="text" class="form-control" id="nombre_empresa" name="nombre_empresa">
+                            </div>
+                            <div class="form-group">
+                                <label for="telefono">Teléfono</label>
+                                <input type="text" class="form-control" id="telefono" name="telefono_empresa">
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Registrarse</button>
                     </form>
                 </div>
             </div>
@@ -111,10 +117,15 @@
 </div>
 
 <script>
-    document.getElementById('segmento').addEventListener('change', function() {
+    document.getElementById('tipo_usuario').addEventListener('change', function () {
         const nombreEmpresaField = document.getElementById('nombre_empresa_field');
-        nombreEmpresaField.style.display = this.value === 'A' ? 'block' : 'none';
+        nombreEmpresaField.style.display = this.value === '2' ? 'block' : 'none';
     });
 </script>
-
+<script>
+    document.getElementById('tipo_usuario').addEventListener('change', function() {
+        const empresaFields = document.getElementById('empresa_fields');
+        empresaFields.style.display = this.value === '2' ? 'block' : 'none';
+    });
+</script>
 {% endblock %}

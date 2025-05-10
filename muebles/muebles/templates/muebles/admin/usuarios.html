@@ -204,7 +204,7 @@
 
     /* Cambiar el color de la flecha en los selects */
     .form-select {
-        background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='white' d='M7.247 11.14 2.451 5.658C1.885 5.013 2.345 4 3.204 4h-4-4v-15.5a1 1 0 0 1-15.5-15.5H12.5a1 1 0 0 1 15.5 15.5z'/%3e%3c/svg%3e");
+        background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='white' d='M7.247 11.14 2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 0 1 .753 1.659l-4.796 5.48a1 1 0 0 1-1.506 0z'/%3e%3c/svg%3e");
     }
 
     /* Cambiar el color del placeholder a gris claro */
@@ -236,16 +236,16 @@
     }
 
     .img-thumbnail {
-    max-width: 100px;
-    height: auto;
-    background-color: #2a2a2a;
-    border: 3px solid #ece9e9;
-    padding: 2px;
-}
+        max-width: 100px;
+        height: auto;
+        background-color: #2a2a2a;
+        border: 3px solid #ece9e9;
+        padding: 2px;
+    }
 
     .rounded-circle {
-    border-radius: 50% !important;
-}
+        border-radius: 50% !important;
+    }
 </style>
 
 <div class="container mt-4">
@@ -313,7 +313,9 @@
                     <th>ID</th>
                     <th>Nombre</th>
                     <th>Email</th>
-                    <th>Segmento</th>
+                    <th>Tipo Documento</th>
+                    <th>Número Documento</th>
+                    <th>Tipo Persona</th>
                     <th>Rol</th>
                     <th>Estado</th>
                     <th>Imagen</th>
@@ -326,19 +328,9 @@
                     <td>{{ info.usuario.id }}</td>
                     <td>{{ info.usuario.nombre }}</td>
                     <td>{{ info.usuario.email }}</td>
-                    <td>
-                        {% if info.tipo_propietario.es_propietario %}
-                            {% if info.tipo_propietario.segmento == 'A' %}
-                            <span class="badge bg-primary">Proveedor</span>
-                            {% elif info.tipo_propietario.segmento == 'B' %}
-                            <span class="badge bg-info">Persona Natural</span>
-                            {% elif info.tipo_propietario.segmento == 'C' %}
-                            <span class="badge bg-warning">Prop. Inmueble</span>
-                            {% endif %}
-                        {% else %}
-                            <span class="badge bg-secondary">No aplica</span>
-                        {% endif %}
-                    </td>
+                    <td>{{ info.usuario.get_tipo_documento_display }}</td>
+                    <td>{{ info.usuario.numero_documento }}</td>
+                    <td>{{ info.usuario.get_tipo_persona_display }}</td>
                     <td>{{ info.usuario.get_rol_display }}</td>
                     <td>
                         <span class="badge bg-{% if info.usuario.estado == 1 %}success{% else %}danger{% endif %}">
@@ -417,7 +409,7 @@
 
 <!-- Modal para Crear Usuario -->
 <div class="modal fade" id="crearUsuarioModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog">
+    <div class="modal-dialog modal-lg">
         <div class="modal-content" style="background-color: #1a1a1a;">
             <div class="modal-header border-orange">
                 <h5 class="modal-title text-orange">
@@ -430,60 +422,77 @@
             <form method="post" enctype="multipart/form-data" action="{% url 'crear_usuario' %}">
                 {% csrf_token %}
                 <div class="modal-body">
-                    <div class="form-group">
-                        <label class="form-label">Nombre *</label>
-                        <input type="text" class="form-control" name="nombre" required>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Email *</label>
-                        <input type="email" class="form-control" name="email" required>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Dirección *</label>
-                        <input type="text" class="form-control" name="direccion" required>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Contraseña *</label>
-                        <input type="password" class="form-control" name="password" required>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Rol *</label>
-                        <select class="form-select" name="rol" required>
-                            {% for rol in roles %}
-                            <option value="{{ rol.0 }}">{{ rol.1 }}</option>
-                            {% endfor %}
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Estado *</label>
-                        <select class="form-select" name="estado" required>
-                            {% for estado in estados %}
-                            <option value="{{ estado.0 }}">{{ estado.1 }}</option>
-                            {% endfor %}
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Segmento</label>
-                        <select class="form-select" name="segmento" id="segmento">
-                            <option value="">No es propietario</option>
-                            <option value="A">Proveedores (Fábricas, Galerías, Tiendas)</option>
-                            <option value="B">Personas Naturales</option>
-                            <option value="C">Personas Naturales Propietarias de Inmuebles</option>
-                        </select>
-                    </div>
-                    <div class="form-group" id="empresa_fields" style="display: none;">
-                        <div class="form-group">
-                            <label class="form-label">Nombre de la Empresa</label>
-                            <input type="text" class="form-control" name="nombre_empresa">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label class="form-label">Nombre *</label>
+                                <input type="text" class="form-control" name="nombre" required>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Email *</label>
+                                <input type="email" class="form-control" name="email" required>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Dirección *</label>
+                                <input type="text" class="form-control" name="direccion" required>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Contraseña *</label>
+                                <input type="password" class="form-control" name="password" required>
+                            </div>
                         </div>
-                        <div class="form-group">
-                            <label class="form-label">Teléfono</label>
-                            <input type="text" class="form-control" name="telefono">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label class="form-label">Tipo de Documento *</label>
+                                <select class="form-select" name="tipo_documento" required>
+                                    <option value="">Seleccione...</option>
+                                    <option value="CC">Cédula de Ciudadanía</option>
+                                    <option value="NIT">NIT de Empresa</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Número de Documento *</label>
+                                <input type="text" class="form-control" name="numero_documento" required>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Tipo de Persona *</label>
+                                <select class="form-select" name="tipo_persona" required>
+                                    <option value="natural">Persona Natural</option>
+                                    <option value="juridica">Persona Jurídica</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Teléfono</label>
+                                <input type="text" class="form-control" name="telefono">
+                            </div>
                         </div>
                     </div>
-                    <div class="form-group">
-                        <label class="form-label">Foto de perfil</label>
-                        <input type="file" class="form-control" name="foto">
+                    
+                    <div class="row mt-3">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label class="form-label">Rol *</label>
+                                <select class="form-select" name="rol" required>
+                                    {% for rol in roles %}
+                                    <option value="{{ rol.0 }}">{{ rol.1 }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Estado *</label>
+                                <select class="form-select" name="estado" required>
+                                    {% for estado in estados %}
+                                    <option value="{{ estado.0 }}">{{ estado.1 }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label class="form-label">Foto de perfil</label>
+                                <input type="file" class="form-control" name="foto">
+                            </div>
+                        </div>
                     </div>
                 </div>
                 <div class="modal-footer border-orange">
@@ -502,7 +511,7 @@
 <!-- Modal para Editar Usuario -->
 {% for info in usuarios_info %}
 <div class="modal fade" id="editarUsuarioModal{{ info.usuario.id }}" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog">
+    <div class="modal-dialog modal-lg">
         <div class="modal-content" style="background-color: #1a1a1a;">
             <div class="modal-header border-orange">
                 <h5 class="modal-title text-orange">
@@ -515,65 +524,81 @@
             <form method="post" enctype="multipart/form-data" action="{% url 'editar_usuario' info.usuario.id %}">
                 {% csrf_token %}
                 <div class="modal-body">
-                    <div class="form-group">
-                        <label class="form-label">Nombre *</label>
-                        <input type="text" class="form-control" name="nombre" value="{{ info.usuario.nombre }}" required>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Email *</label>
-                        <input type="email" class="form-control" name="email" value="{{ info.usuario.email }}" required>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Dirección *</label>
-                        <input type="text" class="form-control" name="direccion" value="{{ info.usuario.direccion }}" required>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Nueva Contraseña</label>
-                        <input type="password" class="form-control" name="password" placeholder="Dejar en blanco para no cambiar">
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Rol *</label>
-                        <select class="form-select" name="rol" required>
-                            {% for rol in roles %}
-                            <option value="{{ rol.0 }}" {% if rol.0 == info.usuario.rol %}selected{% endif %}>{{ rol.1 }}</option>
-                            {% endfor %}
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Estado *</label>
-                        <select class="form-select" name="estado" required>
-                            {% for estado in estados %}
-                            <option value="{{ estado.0 }}" {% if estado.0 == info.usuario.estado %}selected{% endif %}>{{ estado.1 }}</option>
-                            {% endfor %}
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Segmento</label>
-                        <select class="form-select" name="segmento" id="segmento_{{ info.usuario.id }}">
-                            <option value="" {% if not info.tipo_propietario.es_propietario %}selected{% endif %}>No es propietario</option>
-                            <option value="A" {% if info.tipo_propietario.es_propietario and info.tipo_propietario.segmento == 'A' %}selected{% endif %}>Proveedores (Fábricas, Galerías, Tiendas)</option>
-                            <option value="B" {% if info.tipo_propietario.es_propietario and info.tipo_propietario.segmento == 'B' %}selected{% endif %}>Personas Naturales</option>
-                            <option value="C" {% if info.tipo_propietario.es_propietario and info.tipo_propietario.segmento == 'C' %}selected{% endif %}>Personas Naturales Propietarias de Inmuebles</option>
-                        </select>
-                    </div>
-                    <div class="form-group" id="empresa_fields_{{ info.usuario.id }}" style="display: none;">
-                        <div class="form-group">
-                            <label class="form-label">Nombre de la Empresa</label>
-                            <input type="text" class="form-control" name="nombre_empresa" value="{{ info.tipo_propietario.nombre_empresa }}">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label class="form-label">Nombre *</label>
+                                <input type="text" class="form-control" name="nombre" value="{{ info.usuario.nombre }}" required>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Email *</label>
+                                <input type="email" class="form-control" name="email" value="{{ info.usuario.email }}" required>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Dirección *</label>
+                                <input type="text" class="form-control" name="direccion" value="{{ info.usuario.direccion }}" required>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Nueva Contraseña</label>
+                                <input type="password" class="form-control" name="password" placeholder="Dejar en blanco para no cambiar">
+                            </div>
                         </div>
-                        <div class="form-group">
-                            <label class="form-label">Teléfono</label>
-                            <input type="text" class="form-control" name="telefono" value="{{ info.tipo_propietario.telefono }}">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label class="form-label">Tipo de Documento *</label>
+                                <select class="form-select" name="tipo_documento" required>
+                                    <option value="CC" {% if info.usuario.tipo_documento == 'CC' %}selected{% endif %}>Cédula de Ciudadanía</option>
+                                    <option value="NIT" {% if info.usuario.tipo_documento == 'NIT' %}selected{% endif %}>NIT de Empresa</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Número de Documento *</label>
+                                <input type="text" class="form-control" name="numero_documento" value="{{ info.usuario.numero_documento }}" required>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Tipo de Persona *</label>
+                                <select class="form-select" name="tipo_persona" required>
+                                    <option value="natural" {% if info.usuario.tipo_persona == 'natural' %}selected{% endif %}>Persona Natural</option>
+                                    <option value="juridica" {% if info.usuario.tipo_persona == 'juridica' %}selected{% endif %}>Persona Jurídica</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Teléfono</label>
+                                <input type="text" class="form-control" name="telefono" value="{{ info.usuario.telefono }}">
+                            </div>
                         </div>
                     </div>
-                    <div class="form-group">
-                        <label class="form-label">Foto de perfil</label>
-                        {% if info.usuario.foto %}
-                        <div class="mb-2">
-                            <img src="{{ info.usuario.foto.url }}" width="100" class="img-thumbnail">
+                    
+                    <div class="row mt-3">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label class="form-label">Rol *</label>
+                                <select class="form-select" name="rol" required>
+                                    {% for rol in roles %}
+                                    <option value="{{ rol.0 }}" {% if rol.0 == info.usuario.rol %}selected{% endif %}>{{ rol.1 }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Estado *</label>
+                                <select class="form-select" name="estado" required>
+                                    {% for estado in estados %}
+                                    <option value="{{ estado.0 }}" {% if estado.0 == info.usuario.estado %}selected{% endif %}>{{ estado.1 }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
                         </div>
-                        {% endif %}
-                        <input type="file" class="form-control" name="foto">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label class="form-label">Foto de perfil</label>
+                                {% if info.usuario.foto %}
+                                <div class="mb-2">
+                                    <img src="{{ info.usuario.foto.url }}" width="100" class="img-thumbnail">
+                                </div>
+                                {% endif %}
+                                <input type="file" class="form-control" name="foto">
+                            </div>
+                        </div>
                     </div>
                 </div>
                 <div class="modal-footer border-orange">
@@ -626,64 +651,6 @@
     </div>
 </div>
 {% endfor %}
-
-<script>
-    // Mostrar/ocultar campo de nombre de empresa según selección (para crear)
-    document.getElementById('segmento').addEventListener('change', function() {
-        const empresaFields = document.getElementById('empresa_fields');
-        empresaFields.style.display = this.value === 'A' ? 'block' : 'none';
-    });
-
-    // Mostrar/ocultar campo de nombre de empresa según selección (para editar)
-    {% for info in usuarios_info %}
-    document.getElementById('segmento_{{ info.usuario.id }}').addEventListener('change', function() {
-        const empresaFields = document.getElementById('empresa_fields_{{ info.usuario.id }}');
-        empresaFields.style.display = this.value === 'A' ? 'block' : 'none';
-    });
-
-    // Inicializar estado al cargar la página
-    document.addEventListener('DOMContentLoaded', function() {
-        const tipoSelect = document.getElementById('segmento_{{ info.usuario.id }}');
-        if (tipoSelect) {
-            tipoSelect.dispatchEvent(new Event('change'));
-        }
-    });
-    {% endfor %}
-</script>
-<script>
-    $(document).ready(function() {
-        // Mostrar/ocultar campos de empresa al cambiar el tipo de propietario
-        $('#segmento').change(function() {
-            if ($(this).val() === 'A') {
-                $('#empresa_fields').show();
-            } else {
-                $('#empresa_fields').hide();
-            }
-        });
-
-        // Para los modales de edición
-        {% for info in usuarios_info %}
-        $('#segmento_{{ info.usuario.id }}').change(function() {
-            if ($(this).val() === 'A') {
-                $('#empresa_fields_{{ info.usuario.id }}').show();
-            } else {
-                $('#empresa_fields_{{ info.usuario.id }}').hide();
-            }
-        });
-        {% endfor %}
-
-        // Mostrar mensajes de error/success
-        {% if messages %}
-            {% for message in messages %}
-                {% if message.tags == 'error' %}
-                    toastr.error('{{ message }}');
-                {% else %}
-                    toastr.success('{{ message }}');
-                {% endif %}
-            {% endfor %}
-        {% endif %}
-    });
-</script>
 
 <script>
     $(document).ready(function () {

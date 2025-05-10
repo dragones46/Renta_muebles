@@ -67,11 +67,10 @@ def muebles_list(request):
 def rentar_mueble(request, mueble_id):
     mueble = get_object_or_404(Mueble, id=mueble_id)
     
-    # Verificar si el usuario está logueado o es invitado
     if request.user.is_authenticated:
         usuario = request.user
     else:
-        usuario = None  # Usuario invitado
+        usuario = None
 
     if request.method == 'POST':
         form = RentaForm(request.POST)
@@ -80,7 +79,6 @@ def rentar_mueble(request, mueble_id):
                 fecha_inicio = form.cleaned_data['fecha_inicio']
                 fecha_fin = form.cleaned_data['fecha_fin']
 
-                # Para usuarios logueados, guardamos la renta en la base de datos
                 if usuario:
                     renta = Renta(
                         mueble=mueble,
@@ -92,10 +90,8 @@ def rentar_mueble(request, mueble_id):
                     )
                     renta.save()
 
-                # Obtener o crear el carrito (para usuarios logueados o invitados)
                 carrito = Carrito.obtener_carrito(request)
 
-                # Verificar si ya existe un ítem igual en el carrito
                 item_existente = carrito.items.filter(
                     mueble=mueble,
                     fecha_inicio=fecha_inicio,
@@ -116,12 +112,10 @@ def rentar_mueble(request, mueble_id):
                     )
                     messages.success(request, f"{mueble.nombre} ha sido agregado al carrito.")
 
-                # Actualizar la sesión
                 if request.user.is_authenticated and "logueo" in request.session:
                     request.session["logueo"]["carrito"]["items_count"] = carrito.items.count()
                     request.session.modified = True
                 else:
-                    # Para invitados, guardamos el conteo en la sesión normal
                     request.session['carrito_items_count'] = carrito.items.count()
 
                 return redirect('ver_carrito')
@@ -165,30 +159,7 @@ def login(request):
                     
                     if carrito_invitado and carrito_invitado.items.exists():
                         # Migrar items del carrito de invitado al carrito del usuario
-                        for item in carrito_invitado.items.all():
-                            # Verificar si ya existe un ítem igual en el carrito del usuario
-                            item_existente = carrito_usuario.items.filter(
-                                mueble=item.mueble,
-                                fecha_inicio=item.fecha_inicio,
-                                fecha_fin=item.fecha_fin
-                            ).first()
-                            
-                            if item_existente:
-                                item_existente.cantidad += item.cantidad
-                                item_existente.save()
-                            else:
-                                item.carrito = carrito_usuario
-                                item.save()
-                        
-                        # Migrar dirección y servicio de instalación si existen
-                        if carrito_invitado.domicilio:
-                            carrito_usuario.domicilio = carrito_invitado.domicilio
-                        if carrito_invitado.servicio_instalacion:
-                            carrito_usuario.servicio_instalacion = carrito_invitado.servicio_instalacion
-                        carrito_usuario.save()
-                        
-                        # Eliminar el carrito de invitado
-                        carrito_invitado.delete()
+                        carrito_invitado.migrar_a_usuario(user)
 
                 # Configurar la sesión
                 request.session["logueo"] = {
@@ -214,15 +185,19 @@ def login(request):
 
     return render(request, 'muebles/perfil/login.html')
 
+
 def registro(request):
     if request.method == 'POST':
         nombre = request.POST.get('nombre')
         email = request.POST.get('email')
         direccion = request.POST.get('direccion')
         password = request.POST.get('password')
-        segmento = request.POST.get('segmento')
-        nombre_empresa = request.POST.get('nombre_empresa')
+        tipo_usuario = int(request.POST.get('tipo_usuario', 3))  # Default to cliente
+        tipo_documento = request.POST.get('tipo_documento')
+        numero_documento = request.POST.get('numero_documento')
+        nombre_empresa = request.POST.get('nombre_empresa', '')
         telefono = request.POST.get('telefono')
+        tipo_persona = request.POST.get('tipo_persona', 'natural')
 
         # Validaciones
         if not re.match("^[A-Za-z\\s]+$", nombre):
@@ -250,15 +225,19 @@ def registro(request):
                     username=email,
                     direccion=direccion,
                     password=make_password(password),
+                    rol=tipo_usuario,
+                    tipo_documento=tipo_documento,
+                    numero_documento=numero_documento,
+                    tipo_persona=tipo_persona,
+                    telefono=telefono
                 )
-                usuario.save()  # ¡IMPORTANTE! Guardar el usuario primero
+                usuario.save()
                 Carrito.objects.create(usuario=usuario)
 
-                # 4. Si es propietario, crear el registro en Propietario
-                if segmento:  # Solo si se especificó segmento
-                    Propietario.objects.create(
-                        usuario=usuario,  # Ahora usuario ya está guardado
-                        segmento=segmento,
+                # Si es proveedor, crear el registro en Propietario
+                if tipo_usuario == 2:  # Proveedor
+                    Proveedor.objects.create(
+                        usuario=usuario,
                         nombre_empresa=nombre_empresa,
                         telefono=telefono,
                     )
@@ -313,16 +292,16 @@ def perfil_admin(request):
 def perfil_propietario(request):
     logueo = request.session.get("logueo")
     user = Usuario.objects.get(id=logueo["id"])
-    propietario = get_object_or_404(Propietario, usuario=user)
+    proveedor = get_object_or_404(Proveedor, usuario=user)
     
     # Estadísticas para el propietario
-    muebles = Mueble.objects.filter(propietario=propietario)
+    muebles = Mueble.objects.filter(proveedor=proveedor)
     total_muebles = muebles.count()
     total_ganancias = sum(m.precio_final_propietario for m in muebles)
     
     return render(request, 'muebles/perfil/perfil_propietario.html', {
         'user': user,
-        'propietario': propietario,
+        'proveedor': proveedor,
         'total_muebles': total_muebles,
         'total_ganancias': total_ganancias
     })
@@ -691,15 +670,12 @@ def admin_inicio(request):
 # CRUD Muebles
 @login_requerido(roles_permitidos=[1, 2])
 def admin_muebles(request):
-    # Obtener parámetros de búsqueda/filtro
     search = request.GET.get('search', '')
     oferta_filter = request.GET.get('oferta', '')
-    propietario_filter = request.GET.get('propietario', '')
+    proveedor_filter = request.GET.get('proveedor', '')
 
-    # Obtener todos los muebles
     muebles = Mueble.objects.all().order_by('-id')
 
-    # Aplicar filtros
     if search:
         try:
             mueble_id = int(search)
@@ -712,64 +688,62 @@ def admin_muebles(request):
 
     if oferta_filter:
         if oferta_filter == '1':
-            muebles = muebles.filter(descuento__gt=0)
+            muebles = [mueble for mueble in muebles if mueble.en_oferta]
         elif oferta_filter == '0':
-            muebles = muebles.filter(descuento=0)
+            muebles = [mueble for mueble in muebles if not mueble.en_oferta]
 
-    if propietario_filter:
-        muebles = muebles.filter(propietario__id=propietario_filter)
+    if proveedor_filter:
+        muebles = muebles.filter(proveedor__id=proveedor_filter)
 
     # Paginación
-    paginator = Paginator(muebles, 10)  # 10 FAQs por página
+    paginator = Paginator(muebles, 10)
     page_number = request.GET.get('page')
 
     try:
         page_obj = paginator.page(page_number)
     except PageNotAnInteger:
-        # Si page no es un entero, mostrar primera página
         page_obj = paginator.page(1)
     except EmptyPage:
-        # Si page está fuera de rango, mostrar última página
         page_obj = paginator.page(paginator.num_pages)
-    # Obtener todos los propietarios para el dropdown
-    propietarios = Propietario.objects.all().select_related('usuario')
+
+    proveedores = Proveedor.objects.all().select_related('usuario')
 
     context = {
         'muebles': page_obj,
         'page_obj': page_obj,
-        'propietarios': propietarios,
+        'proveedores': proveedores,
         'search': search,
         'oferta_filter': oferta_filter,
-        'propietario_filter': propietario_filter,
+        'proveedor_filter': proveedor_filter,
         'is_paginated': page_obj.has_other_pages(),
     }
 
     return render(request, 'muebles/admin/muebles.html', context)
 
 # views.py
-@login_requerido(roles_permitidos=[1, 2])  # Admin y propietarios
+@login_requerido(roles_permitidos=[1, 2])
 def crear_mueble(request):
     if request.method == 'POST':
         try:
             nombre = request.POST.get('nombre')
             descripcion = request.POST.get('descripcion')
             precio_diario = request.POST.get('precio_diario')
-            propietario_id = request.POST.get('propietario')
+            proveedor_id = request.POST.get('proveedor')
             descuento = request.POST.get('descuento', 0)
             fecha_fin_descuento = request.POST.get('fecha_fin_descuento')
             imagen = request.FILES.get('imagen')
 
-            if not all([nombre, precio_diario, propietario_id]):
+            if not all([nombre, precio_diario, proveedor_id]):
                 messages.error(request, 'Todos los campos obligatorios deben ser completados.')
                 return redirect('admin_muebles')
 
-            propietario = Propietario.objects.get(id=propietario_id)
+            proveedor = Proveedor.objects.get(id=proveedor_id)
 
             mueble = Mueble(
                 nombre=nombre,
                 descripcion=descripcion,
                 precio_diario=precio_diario,
-                propietario=propietario,
+                proveedor=proveedor,
                 descuento=descuento if descuento else 0,
                 fecha_fin_descuento=fecha_fin_descuento if fecha_fin_descuento else None,
                 imagen=imagen
@@ -785,45 +759,32 @@ def crear_mueble(request):
 
     return redirect('admin_muebles')
 
-from django.core.exceptions import ValidationError
-
 @login_requerido(roles_permitidos=[1, 2])
 def editar_mueble(request, id):
     try:
         mueble = Mueble.objects.get(id=id)
 
         if request.method == 'POST':
-            # Obtener los datos del formulario
             nombre = request.POST.get('nombre')
             descripcion = request.POST.get('descripcion')
             precio_diario = request.POST.get('precio_diario')
-            propietario_id = request.POST.get('propietario')
+            proveedor_id = request.POST.get('proveedor')
             descuento = request.POST.get('descuento', 0)
             fecha_fin_descuento = request.POST.get('fecha_fin_descuento')
             imagen = request.FILES.get('imagen')
 
-            # Convertir precio_diario a un entero
-            try:
-                precio_diario = int(precio_diario.replace('.', '').replace(',', ''))
-            except ValueError:
-                messages.error(request, 'El precio diario debe ser un número entero válido.')
+            if not all([nombre, precio_diario]):
+                messages.error(request, 'Nombre y precio diario son campos obligatorios.')
                 return redirect('admin_muebles')
 
-            # Actualizar solo los campos proporcionados (no requerir todos)
-            if nombre:
-                mueble.nombre = nombre
-            if descripcion is not None:  # Permitir cadena vacía
-                mueble.descripcion = descripcion
-            if precio_diario:
-                mueble.precio_diario = precio_diario
-            if propietario_id:
-                mueble.propietario = Propietario.objects.get(id=propietario_id)
-            if descuento is not None:  # Permitir 0
-                mueble.descuento = descuento
-            if fecha_fin_descuento:
-                mueble.fecha_fin_descuento = fecha_fin_descuento
-            elif fecha_fin_descuento == '':  # Si se envía vacío, limpiar el campo
-                mueble.fecha_fin_descuento = None
+            mueble.nombre = nombre
+            mueble.descripcion = descripcion
+            mueble.precio_diario = precio_diario
+            mueble.descuento = descuento if descuento else 0
+            mueble.fecha_fin_descuento = fecha_fin_descuento if fecha_fin_descuento else None
+
+            if proveedor_id:
+                mueble.proveedor = Proveedor.objects.get(id=proveedor_id)
 
             if imagen:
                 mueble.imagen = imagen
@@ -834,6 +795,7 @@ def editar_mueble(request, id):
                 return redirect('admin_muebles')
             except Exception as e:
                 messages.error(request, f'Error al actualizar el mueble: {str(e)}')
+                return redirect('admin_muebles')
 
     except Mueble.DoesNotExist:
         messages.error(request, 'El mueble que intentas editar no existe.')
@@ -854,6 +816,7 @@ def eliminar_mueble(request, id):
         messages.error(request, f'Error al eliminar el mueble: {str(e)}')
 
     return redirect('admin_muebles')
+
 
 # CRUD Usuarios
 @login_requerido(roles_permitidos=[1])
@@ -888,24 +851,22 @@ def admin_usuarios(request):
     usuarios_info = []
     for usuario in usuarios:
         try:
-            propietario = usuario.propietario
-            tipo_propietario = {
-                'es_propietario': True,
-                'segmento': propietario.segmento,
-                'nombre_empresa': propietario.nombre_empresa if propietario.segmento == 'A' else None,
-                'telefono': propietario.telefono
+            proveedor = usuario.proveedor
+            tipo_proveedor = {
+                'es_proveedor': True,
+                'nombre_empresa': proveedor.nombre_empresa,
+                'telefono': proveedor.telefono
             }
-        except Propietario.DoesNotExist:
-            tipo_propietario = {
-                'es_propietario': False,
-                'segmento': None,
+        except Proveedor.DoesNotExist:
+            tipo_proveedor = {
+                'es_proveedor': False,
                 'nombre_empresa': None,
                 'telefono': None
             }
 
         usuarios_info.append({
             'usuario': usuario,
-            'tipo_propietario': tipo_propietario
+            'tipo_proveedor': tipo_proveedor
         })
 
     # Paginación
@@ -923,7 +884,6 @@ def admin_usuarios(request):
         'usuarios_info': page_obj,
         'roles': Usuario.ROLES,
         'estados': Usuario.ESTADO,
-        'segmentos': Propietario.SEGMENTOS,
         'page_obj': page_obj,
         'is_paginated': paginator.num_pages > 1,
         'search_query': search_query,
@@ -932,6 +892,7 @@ def admin_usuarios(request):
     }
 
     return render(request, 'muebles/admin/usuarios.html', context)
+
 
 @login_requerido(roles_permitidos=[1])
 def crear_usuario(request):
@@ -963,7 +924,7 @@ def crear_usuario(request):
                         if not usuario.pk:
                             raise ValueError("El usuario no tiene ID asignado")
                             
-                        Propietario.objects.create(
+                        Proveedor.objects.create(
                             usuario=usuario,
                             segmento=segmento,
                             nombre_empresa=form.cleaned_data.get('nombre_empresa', ''),
@@ -991,7 +952,7 @@ def crear_usuario(request):
         'form': form,
         'roles': Usuario.ROLES,
         'estados': Usuario.ESTADO,
-        'segmentos': Propietario.SEGMENTOS,
+        'segmentos': Proveedor.SEGMENTOS,
         'modo': 'crear'
     })
 
@@ -1017,7 +978,7 @@ def editar_usuario(request, id):
             'usuario': usuario,
             'roles': Usuario.ROLES,
             'estados': Usuario.ESTADO,
-            'segmentos': Propietario.SEGMENTOS
+            'segmentos': Proveedor.SEGMENTOS
         })
 
     except Usuario.DoesNotExist:
@@ -1638,79 +1599,66 @@ from django.core.paginator import Paginator
 def propietario_inicio(request):
     logueo = request.session.get("logueo")
     usuario = Usuario.objects.get(id=logueo["id"])
-    propietario = get_object_or_404(Propietario, usuario=usuario)
+    proveedor = get_object_or_404(Proveedor, usuario=usuario)
 
-    # Estadísticas
-    total_muebles = Mueble.objects.filter(propietario=propietario).count()
-    muebles_activos = Mueble.objects.filter(propietario=propietario).count()
+    total_muebles = Mueble.objects.filter(proveedor=proveedor).count()
+    muebles_activos = Mueble.objects.filter(proveedor=proveedor).count()
 
-    # Pedidos recientes que incluyen sus muebles
     pedidos = Pedido.objects.filter(
-        detalles__mueble__propietario=propietario
+        detalles__mueble__proveedor=proveedor
     ).distinct().order_by('-fecha')[:5]
 
-    # Calcular ganancias
     ganancias_totales = DetallePedido.objects.filter(
-        mueble__propietario=propietario
+        mueble__proveedor=proveedor
     ).aggregate(
         total=Sum('ganancia_propietario'),
         comision=Sum('comision')
     )
 
     context = {
-        'propietario': propietario,
+        'proveedor': proveedor,
         'total_muebles': total_muebles,
         'muebles_activos': muebles_activos,
         'pedidos_recientes': pedidos,
         'ganancias_totales': ganancias_totales['total'] or 0,
         'comision_total': ganancias_totales['comision'] or 0,
     }
-    return render(request, 'muebles/propietario/inicio.html', context)
-
+    return render(request, 'muebles/proveedor/inicio.html', context)
 
 @login_requerido(roles_permitidos=[2])
 def propietario_muebles(request):
     logueo = request.session.get("logueo")
     usuario = Usuario.objects.get(id=logueo["id"])
-    propietario = get_object_or_404(Propietario, usuario=usuario)
+    proveedor = get_object_or_404(Proveedor, usuario=usuario)
 
-    # Retrieve all muebles for the propietario
-    muebles = Mueble.objects.filter(propietario=propietario).annotate(
+    muebles = Mueble.objects.filter(proveedor=proveedor).annotate(
         ganancia_neta=ExpressionWrapper(
             F('precio_diario') * (100 - F('comision')) / 100,
             output_field=FloatField()
         )
     ).order_by('id')
 
-    # Obtener parámetros de búsqueda/filtro
     search = request.GET.get('search', '')
     oferta_filter = request.GET.get('oferta', '')
     hoy = timezone.now().date()
 
-    # Apply filters
     if search:
         try:
-            # Intentar buscar por ID
             mueble_id = int(search)
             muebles = muebles.filter(id=mueble_id)
         except ValueError:
-            # Si no es un ID válido, buscar por nombre o descripción
             muebles = muebles.filter(
                 Q(nombre__icontains=search) |
                 Q(descripcion__icontains=search)
             )
 
     if oferta_filter == '1':
-        # Muebles en oferta: tienen descuento > 0 Y (no tienen fecha fin O fecha fin >= hoy)
         muebles = [mueble for mueble in muebles if mueble.en_oferta]
     elif oferta_filter == '0':
-        # Muebles sin oferta: descuento = 0 O fecha fin < hoy
         muebles = [mueble for mueble in muebles if not mueble.en_oferta]
 
-    # Sort by precio_con_descuento in Python
     muebles = sorted(muebles, key=lambda mueble: mueble.precio_con_descuento)
 
-    # Paginación - mantener los parámetros de búsqueda
     paginator = Paginator(muebles, 10)
     page_number = request.GET.get('page')
 
@@ -1721,7 +1669,6 @@ def propietario_muebles(request):
     except EmptyPage:
         page_obj = paginator.page(paginator.num_pages)
 
-    # Construir parámetros para los links de paginación
     query_params = []
     if search:
         query_params.append(f'search={search}')
@@ -1731,22 +1678,20 @@ def propietario_muebles(request):
 
     context = {
         'muebles': page_obj,
-        'propietario': propietario,
+        'proveedor': proveedor,
         'search': search,
         'oferta_filter': oferta_filter,
         'query_string': query_string,
         'is_paginated': paginator.num_pages > 1,
     }
 
-    return render(request, 'muebles/propietario/muebles.html', context)
-
-
+    return render(request, 'muebles/proveedor/muebles.html', context)
 
 @login_requerido(roles_permitidos=[2])
 def propietario_crear_mueble(request):
     logueo = request.session.get("logueo")
     usuario = Usuario.objects.get(id=logueo["id"])
-    propietario = get_object_or_404(Propietario, usuario=usuario)
+    proveedor = get_object_or_404(Proveedor, usuario=usuario)
 
     if request.method == 'POST':
         try:
@@ -1765,7 +1710,7 @@ def propietario_crear_mueble(request):
                 nombre=nombre,
                 descripcion=descripcion,
                 precio_diario=precio_diario,
-                propietario=propietario,
+                proveedor=proveedor,
                 descuento=descuento if descuento else 0,
                 fecha_fin_descuento=fecha_fin_descuento if fecha_fin_descuento else None,
                 imagen=imagen
@@ -1779,8 +1724,8 @@ def propietario_crear_mueble(request):
             messages.error(request, f'Error al crear el mueble: {str(e)}')
             return redirect('propietario_muebles')
 
-    return render(request, 'muebles/propietario/muebles.html', {
-        'propietario': propietario,
+    return render(request, 'muebles/proveedor/muebles.html', {
+        'proveedor': proveedor,
         'hoy': timezone.now().date().isoformat(),
     })
 
@@ -1788,9 +1733,9 @@ def propietario_crear_mueble(request):
 def propietario_editar_mueble(request, id):
     logueo = request.session.get("logueo")
     usuario = Usuario.objects.get(id=logueo["id"])
-    propietario = get_object_or_404(Propietario, usuario=usuario)
+    proveedor = get_object_or_404(Proveedor, usuario=usuario)
 
-    mueble = get_object_or_404(Mueble, id=id, propietario=propietario)
+    mueble = get_object_or_404(Mueble, id=id, proveedor=proveedor)
 
     if request.method == 'POST':
         try:
@@ -1822,9 +1767,9 @@ def propietario_editar_mueble(request, id):
             messages.error(request, f'Error al actualizar el mueble: {str(e)}')
             return redirect('propietario_editar_mueble', id=id)
 
-    return render(request, 'muebles/propietario/muebles.html', {
+    return render(request, 'muebles/proveedor/muebles.html', {
         'mueble': mueble,
-        'propietario': propietario,
+        'proveedor': proveedor,
         'hoy': timezone.now().date().isoformat(),
     })
 
@@ -1832,10 +1777,10 @@ def propietario_editar_mueble(request, id):
 def propietario_eliminar_mueble(request, id):
     logueo = request.session.get("logueo")
     usuario = Usuario.objects.get(id=logueo["id"])
-    propietario = get_object_or_404(Propietario, usuario=usuario)
+    proveedor = get_object_or_404(Proveedor, usuario=usuario)
 
     try:
-        mueble = Mueble.objects.get(id=id, propietario=propietario)
+        mueble = Mueble.objects.get(id=id, proveedor=proveedor)
         nombre = mueble.nombre
         mueble.delete()
         messages.success(request, f'Mueble "{nombre}" eliminado exitosamente!')
@@ -1845,6 +1790,7 @@ def propietario_eliminar_mueble(request, id):
         messages.error(request, f'Error al eliminar el mueble: {str(e)}')
 
     return redirect('propietario_muebles')
+
 
 
 # ============================================ Soporte Tencnico Rol=======================================
@@ -2163,7 +2109,7 @@ from django.http import HttpResponse
 def exportar_excel(request):
     logueo = request.session.get("logueo")
     usuario = Usuario.objects.get(id=logueo["id"])
-    propietario = get_object_or_404(Propietario, usuario=usuario)
+    propietario = get_object_or_404(Proveedor, usuario=usuario)
 
     # Obtener todos los muebles del propietario
     muebles = Mueble.objects.filter(propietario=propietario)
@@ -2191,7 +2137,7 @@ def exportar_excel(request):
 def eliminar_todo(request):
     logueo = request.session.get("logueo")
     usuario = Usuario.objects.get(id=logueo["id"])
-    propietario = get_object_or_404(Propietario, usuario=usuario)
+    propietario = get_object_or_404(Proveedor, usuario=usuario)
 
     if request.method == 'POST':
         # Actualizar todos los muebles del propietario para restablecer ganancias y comisiones

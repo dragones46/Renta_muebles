@@ -23,10 +23,19 @@ class Usuario(AbstractUser):
     email = models.EmailField(unique=True, blank=False, null=False)
     direccion = models.CharField(max_length=200, blank=False, null=False)
     password = models.CharField(max_length=100, blank=False, null=False)
+    telefono = models.CharField(max_length=20, blank=True, null=True)
+    
+    # Tipos de documento
+    TIPO_DOCUMENTO = (
+        ('CC', 'Cédula de Ciudadanía'),
+        ('NIT', 'NIT de Empresa'),
+    )
+    tipo_documento = models.CharField(max_length=3, choices=TIPO_DOCUMENTO, default='CC')
+    numero_documento = models.CharField(max_length=20, blank=True, null=True)
 
     ROLES = (
         (1, "Administrador"),
-        (2, "Propietario"),
+        (2, "Proveedor"),  # Changed from Propietario to Proveedor
         (3, "Cliente"),
         (4, "Soporte Técnico"),
     )
@@ -38,6 +47,11 @@ class Usuario(AbstractUser):
     )
     estado = models.IntegerField(choices=ESTADO, default=1)
 
+    TIPO_PERSONA = (
+        ('natural', 'Persona Natural'),
+        ('juridica', 'Persona Jurídica'),
+    )
+    tipo_persona = models.CharField(max_length=10, choices=TIPO_PERSONA, default='natural')
     foto = models.ImageField(upload_to='usuarios/', null=True, blank=True, default='usuarios/default.png')
     token_recuperar = models.CharField(max_length=254, default="", blank=True, null=True)
 
@@ -61,34 +75,20 @@ class Usuario(AbstractUser):
     def __str__(self):
         return self.nombre
 
-class Propietario(models.Model):
-    SEGMENTOS = [
-        ('A', 'Proveedores (Fábricas, Galerías, Tiendas)'),
-        ('B', 'Personas Naturales'),
-        ('C', 'Personas Naturales (Propietarias de Inmuebles)'),
-    ]
-
-    usuario = models.OneToOneField(Usuario, on_delete=models.CASCADE, related_name='propietario', null=True, blank=True)
-    segmento = models.CharField(max_length=1, choices=SEGMENTOS, default='B')
+class Proveedor(models.Model):
+    usuario = models.OneToOneField(Usuario, on_delete=models.CASCADE, related_name='proveedor', null=True, blank=True)
     nombre_empresa = models.CharField(max_length=100, null=True, blank=True)
     telefono = models.CharField(max_length=20, null=True, blank=True)
     fecha_registro = models.DateTimeField(default=timezone.now)
 
     class Meta:
-        verbose_name = 'Propietario'
-        verbose_name_plural = 'Propietarios'
+        verbose_name = 'Proveedor'
+        verbose_name_plural = 'Proveedores'
         ordering = ['-fecha_registro']
 
     def __str__(self):
-        if self.segmento == 'A':
-            return f"{self.nombre_empresa} (Proveedor)"
-        elif self.segmento == 'C':
-            return f"{self.usuario.nombre} (Propietario de Inmueble)"
-        return f"{self.usuario.nombre} (Persona Natural)"
+        return f"{self.nombre_empresa or self.usuario.nombre} (Proveedor)"
 
-    @property
-    def display_segmento(self):
-        return dict(self.SEGMENTOS).get(self.segmento, 'Desconocido')
 
     
 class Mueble(models.Model):
@@ -96,11 +96,11 @@ class Mueble(models.Model):
     descripcion = models.TextField()
     precio_diario = models.IntegerField(default=0)
     imagen = models.ImageField(upload_to='muebles/')
-    propietario = models.ForeignKey(Propietario, on_delete=models.CASCADE)
+    proveedor = models.ForeignKey(Proveedor, on_delete=models.CASCADE)
     descuento = models.IntegerField(default=0)  # Porcentaje de descuento (0-100)
     fecha_inicio_descuento = models.DateField(null=True, blank=True)
     fecha_fin_descuento = models.DateField(null=True, blank=True)
-    comision = models.IntegerField(default=10,verbose_name="Comisión de propietario  (%)")
+    comision = models.IntegerField(default=10,verbose_name="Comisión de proveedor  (%)")
 
     @property
     def en_oferta(self):

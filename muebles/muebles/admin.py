@@ -7,24 +7,15 @@ from .forms import *
 @admin.register(Usuario)
 class UsuarioAdmin(admin.ModelAdmin):
     form = UsuarioForm
-    list_display = ('id', 'nombre', 'email', 'get_tipo_propietario', 'rol', 'estado', 'ver_foto')
+    list_display = ('id', 'nombre', 'email', 'get_tipo_persona', 'rol', 'estado', 'ver_foto')
     search_fields = ('id', 'nombre', 'email')
     list_filter = ('rol', 'estado')
     list_editable = ('rol', 'estado')
 
-    def get_tipo_propietario(self, obj):
-        try:
-            propietario = obj.propietario
-        # Usa segmento en lugar de tipo
-            if propietario.segmento == 'A':
-                return "Proveedor (Fábrica/Galería)"
-            elif propietario.segmento == 'B':
-                return "Persona Natural"
-            elif propietario.segmento == 'C':
-                return "Propietario de Inmueble"
-            return "-"
-        except Propietario.DoesNotExist:
-            return "-"
+    def get_tipo_persona(self, obj):
+        return dict(Usuario.TIPO_PERSONA).get(obj.tipo_persona, 'Desconocido')
+    get_tipo_persona.short_description = 'Tipo de Persona'
+
 
     def ver_foto(self, obj):
         if obj.foto:
@@ -34,19 +25,18 @@ class UsuarioAdmin(admin.ModelAdmin):
     ver_foto.short_description = 'Foto'
 
 # Registrar el modelo Propietario
-class PropietarioAdmin(admin.ModelAdmin):
-    list_display = ('usuario', 'segmento', 'nombre_empresa', 'telefono', 'fecha_registro')
+class ProveedorAdmin(admin.ModelAdmin):
+    list_display = ('usuario', 'nombre_empresa', 'telefono', 'fecha_registro')
     search_fields = ('usuario__nombre', 'usuario__email', 'nombre_empresa', 'telefono')
-    list_filter = ('segmento',)
 
-admin.site.register(Propietario, PropietarioAdmin)
+admin.site.register(Proveedor, ProveedorAdmin)
 
 # Registrar el modelo Mueble
 @admin.register(Mueble)
 class MuebleAdmin(admin.ModelAdmin):
-    list_display = ('id','nombre', 'descripcion', 'precio_diario', 'propietario', 'ver_foto')
-    search_fields = ('id','nombre', 'propietario__nombre')
-    list_filter = ('propietario',)
+    list_display = ('id','nombre', 'descripcion', 'precio_diario', 'proveedor', 'ver_foto')
+    search_fields = ('id','nombre', 'proveedor__nombre')
+    list_filter = ('proveedor',)
 
     def ver_foto(self, obj):
         if obj.imagen:

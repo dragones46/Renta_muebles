@@ -102,6 +102,19 @@ class DomicilioForm(forms.Form):
 
 #usuario
 class UsuarioForm(forms.ModelForm):
+    TIPO_DOCUMENTO = (
+        ('CC', 'Cédula de Ciudadanía'),
+        ('NIT', 'NIT de Empresa'),
+    )
+
+    TIPO_PERSONA = (
+        ('natural', 'Persona Natural'),
+        ('juridica', 'Persona Jurídica'),
+    )
+
+    tipo_documento = forms.ChoiceField(choices=TIPO_DOCUMENTO, required=True)
+    numero_documento = forms.CharField(max_length=20, required=True)
+    tipo_persona = forms.ChoiceField(choices=TIPO_PERSONA, required=True)
     password = forms.CharField(
         label="Contraseña",
         widget=forms.PasswordInput(attrs={
@@ -110,74 +123,55 @@ class UsuarioForm(forms.ModelForm):
         required=False,
         help_text="Dejar en blanco para mantener la contraseña actual"
     )
-    
-    segmento = forms.ChoiceField(
-        choices=Propietario.SEGMENTOS, 
-        required=False,
-        label="Tipo de Propietario"
-    )
+
     nombre_empresa = forms.CharField(
-        max_length=100, 
+        max_length=100,
         required=False,
         label="Nombre de Empresa"
     )
     telefono = forms.CharField(
-        max_length=20, 
+        max_length=20,
         required=False,
         label="Teléfono"
     )
 
     class Meta:
         model = Usuario
-        fields = ['nombre', 'email', 'direccion', 'password', 'rol', 'estado', 'foto']
+        fields = ['nombre', 'email', 'direccion', 'password', 'rol', 'telefono', 'estado', 'foto', 'tipo_documento', 'numero_documento', 'tipo_persona']
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         if self.instance and self.instance.pk:
             try:
-                propietario = self.instance.propietario
-                self.fields['segmento'].initial = propietario.segmento
-                self.fields['nombre_empresa'].initial = propietario.nombre_empresa
-                self.fields['telefono'].initial = propietario.telefono
-            except Propietario.DoesNotExist:
+                proveedor = self.instance.proveedor
+                self.fields['nombre_empresa'].initial = proveedor.nombre_empresa
+                self.fields['telefono'].initial = proveedor.telefono
+            except Proveedor.DoesNotExist:
                 pass
-
-    def clean(self):
-        cleaned_data = super().clean()
-        segmento = cleaned_data.get('segmento')
-        nombre_empresa = cleaned_data.get('nombre_empresa')
-
-        if segmento == 'A' and not nombre_empresa:
-            raise ValidationError("El nombre de la empresa es obligatorio para proveedores.")
-
-        return cleaned_data
 
     def save(self, commit=True):
         usuario = super().save(commit=False)
         password = self.cleaned_data.get('password')
         if password:  # Solo si se proporcionó una nueva contraseña
             usuario.set_password(password)
-        
+
         if commit:
             usuario.save()
 
-        segmento = self.cleaned_data.get('segmento')
-        if segmento:
-            nombre_empresa = self.cleaned_data.get('nombre_empresa') if segmento == 'A' else None
-            telefono = self.cleaned_data.get('telefono', '')
-            
-            Propietario.objects.update_or_create(
+        # Si es proveedor, crear el registro en Proveedor
+        if usuario.rol == 2:  # Proveedor
+            Proveedor.objects.update_or_create(
                 usuario=usuario,
                 defaults={
-                    'segmento': segmento,
-                    'nombre_empresa': nombre_empresa,
-                    'telefono': telefono
+                    'nombre_empresa': self.cleaned_data.get('nombre_empresa', ''),
+                    'telefono': self.cleaned_data.get('telefono', '')
                 }
             )
-        elif hasattr(usuario, 'propietario'):
-            usuario.propietario.delete()
+        elif hasattr(usuario, 'proveedor'):
+            usuario.proveedor.delete()
 
         return usuario
+
 
 #renta
 class RentaForm(forms.ModelForm):
@@ -200,19 +194,18 @@ class MuebleForm(forms.ModelForm):
             'nombre': forms.TextInput(attrs={'class': 'form-control'}),
             'descripcion': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
             'precio_diario': forms.NumberInput(attrs={'class': 'form-control'}),
-            'propietario': forms.Select(attrs={'class': 'form-control'}),
+            'proveedor': forms.Select(attrs={'class': 'form-control'}),
             'imagen': forms.FileInput(attrs={'class': 'form-control'}),
         }  
 
-class PropietarioForm(forms.ModelForm):
+class ProveedorForm(forms.ModelForm):
     class Meta:
-        model = Propietario
-        fields = ['segmento', 'nombre_empresa', 'telefono']
+        model = Proveedor
+        fields = ['nombre_empresa', 'telefono']
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         if self.instance and self.instance.pk:
-            self.fields['segmento'].initial = self.instance.segmento
             self.fields['nombre_empresa'].initial = self.instance.nombre_empresa
             self.fields['telefono'].initial = self.instance.telefono
 
