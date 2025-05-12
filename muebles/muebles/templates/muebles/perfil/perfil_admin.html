@@ -5,11 +5,12 @@
 
 {% block contenedor %}
 <style>
-    /* Estilos generales (los mismos que en perfil_cliente) */
+    /* Estilos generales */
     body {
         background-color: #3b3b3b;
         color: #ffffff;
     }
+
     .card {
         background-color: #2a2a2a;
         border: 1px solid #444;
@@ -50,71 +51,50 @@
     .btn-primary:active,
     .btn-primary:focus {
         background-color: #cc6600 !important;
-        /* Naranja oscuro al hacer clic */
         box-shadow: none !important;
-        /* Elimina el sombreado azul de Bootstrap */
         border: none !important;
-        /* Elimina el borde azul de Bootstrap */
     }
 
-    /* Estilos para la imagen de perfil */
     .img-fluid.rounded-circle {
         border: 3px solid #11ff00;
-        /* Borde naranja */
     }
 
-    /* Estilos para los modales */
     .modal-content {
         background-color: #2a2a2a;
-        /* Fondo oscuro para los modales */
         color: #ffffff;
-        /* Texto blanco */
     }
 
     .modal-header {
         border-bottom: 1px solid #444;
-        /* Borde sutil */
     }
 
     .modal-title {
         color: #ff8c00;
-        /* Texto naranja */
     }
 
     .btn-close {
         filter: invert(1);
-        /* Icono de cierre en blanco */
     }
 
     .form-control {
         background-color: #444;
-        /* Fondo oscuro para los inputs */
         border: 1px solid #666;
-        /* Borde sutil */
         color: #ffffff;
-        /* Texto blanco */
     }
 
     .form-control:focus {
         background-color: #555;
-        /* Fondo más claro al enfocar */
         border-color: #ff8c00;
-        /* Borde naranja al enfocar */
         color: #ffffff;
-        /* Texto blanco */
     }
 
     .invalid-feedback {
         color: #ff8c00;
-        /* Texto naranja para mensajes de error */
     }
 
     .was-validated .form-control:invalid {
         border-color: #ff8c00;
-        /* Borde naranja para inputs inválidos */
     }
-
-
 </style>
 
 <div class="container mt-5">
@@ -215,8 +195,7 @@
 </div>
 
 <!-- Modal para editar perfil -->
-<div class="modal fade" id="editarPerfilModal" tabindex="-1" aria-labelledby="editarPerfilModalLabel"
-    aria-hidden="true">
+<div class="modal fade" id="editarPerfilModal" tabindex="-1" aria-labelledby="editarPerfilModalLabel" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
@@ -224,32 +203,33 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
-                <form id="editarPerfilForm" method="post" action="#" enctype="multipart/form-data"
-                    class="needs-validation" novalidate>
+                <form id="editarPerfilForm" method="post" action="{% url 'perfil_admin' %}" enctype="multipart/form-data" class="needs-validation" novalidate>
                     {% csrf_token %}
+                    <input type="hidden" name="editar_perfil" value="1">
                     <div class="mb-3">
                         <label for="nombre" class="form-label"><strong>Nombre:</strong></label>
-                        <input type="text" class="form-control" id="nombre" name="nombre" value="{{ user.nombre }}"
-                            required>
+                        <input type="text" class="form-control" id="nombre" name="nombre" value="{{ user.nombre }}" required>
                         <div class="invalid-feedback">
                             Este campo es obligatorio.
                         </div>
                     </div>
                     <div class="mb-3">
                         <label for="email" class="form-label"><strong>Correo:</strong></label>
-                        <input type="email" class="form-control" id="email" name="email" value="{{ user.email }}"
-                            required>
+                        <input type="email" class="form-control" id="email" name="email" value="{{ user.email }}" required>
                         <div class="invalid-feedback">
                             Este campo es obligatorio.
                         </div>
                     </div>
                     <div class="mb-3">
                         <label for="direccion" class="form-label"><strong>Dirección:</strong></label>
-                        <input type="text" class="form-control" id="direccion" name="direccion"
-                            value="{{ user.direccion }}" required>
+                        <input type="text" class="form-control" id="direccion" name="direccion" value="{{ user.direccion }}" required>
                         <div class="invalid-feedback">
                             Este campo es obligatorio.
                         </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="telefono" class="form-label"><strong>Teléfono:</strong></label>
+                        <input type="text" class="form-control" id="telefono" name="telefono" value="{{ user.telefono|default:'' }}">
                     </div>
                     <div class="mb-3">
                         <label for="foto" class="form-label"><strong>Foto de Perfil:</strong></label>
@@ -263,8 +243,7 @@
 </div>
 
 <!-- Modal para cambiar contraseña -->
-<div class="modal fade" id="cambiarContrasenaModal" tabindex="-1" aria-labelledby="cambiarContrasenaModalLabel"
-    aria-hidden="true">
+<div class="modal fade" id="cambiarContrasenaModal" tabindex="-1" aria-labelledby="cambiarContrasenaModalLabel" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
@@ -272,17 +251,20 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
-                <form method="post" action="#">
+                <form method="post" action="{% url 'perfil_admin' %}">
                     {% csrf_token %}
+                    <input type="hidden" name="cambiar_contrasena" value="1">
                     <div class="mb-3">
-                        <label for="contrasena" class="form-label"><strong>Nueva Contraseña:</strong></label>
-                        <input type="password" class="form-control" id="contrasena" name="contrasena" required>
+                        <label for="contrasena_actual" class="form-label"><strong>Contraseña Actual:</strong></label>
+                        <input type="password" class="form-control" id="contrasena_actual" name="contrasena_actual" required>
                     </div>
                     <div class="mb-3">
-                        <label for="confirmar_contrasena" class="form-label"><strong>Confirmar
-                                Contraseña:</strong></label>
-                        <input type="password" class="form-control" id="confirmar_contrasena"
-                            name="confirmar_contrasena" required>
+                        <label for="nueva_contrasena" class="form-label"><strong>Nueva Contraseña:</strong></label>
+                        <input type="password" class="form-control" id="nueva_contrasena" name="nueva_contrasena" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="confirmar_contrasena" class="form-label"><strong>Confirmar Contraseña:</strong></label>
+                        <input type="password" class="form-control" id="confirmar_contrasena" name="confirmar_contrasena" required>
                     </div>
                     <button type="submit" class="btn btn-primary">Cambiar Contraseña</button>
                 </form>
@@ -328,5 +310,4 @@
         background-color: #f8f9fa;
     }
 </style>
-
 {% endblock %}

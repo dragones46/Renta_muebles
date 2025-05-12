@@ -409,7 +409,7 @@
 
 <!-- Modal para Crear Usuario -->
 <div class="modal fade" id="crearUsuarioModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-lg">
+    <div class="modal-dialog">
         <div class="modal-content" style="background-color: #1a1a1a;">
             <div class="modal-header border-orange">
                 <h5 class="modal-title text-orange">
@@ -422,27 +422,25 @@
             <form method="post" enctype="multipart/form-data" action="{% url 'crear_usuario' %}">
                 {% csrf_token %}
                 <div class="modal-body">
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="form-group">
+                            <div class="mb-3">
                                 <label class="form-label">Nombre *</label>
                                 <input type="text" class="form-control" name="nombre" required>
                             </div>
-                            <div class="form-group">
+                            <div class="mb-3">
                                 <label class="form-label">Email *</label>
                                 <input type="email" class="form-control" name="email" required>
                             </div>
-                            <div class="form-group">
+                            <div class="mb-3">
                                 <label class="form-label">Dirección *</label>
                                 <input type="text" class="form-control" name="direccion" required>
                             </div>
-                            <div class="form-group">
+                            <div class="mb-3">
                                 <label class="form-label">Contraseña *</label>
                                 <input type="password" class="form-control" name="password" required>
                             </div>
                         </div>
-                        <div class="col-md-6">
-                            <div class="form-group">
+                        <div class="modal-body">
+                            <div class="mb-3">
                                 <label class="form-label">Tipo de Documento *</label>
                                 <select class="form-select" name="tipo_documento" required>
                                     <option value="">Seleccione...</option>
@@ -450,27 +448,27 @@
                                     <option value="NIT">NIT de Empresa</option>
                                 </select>
                             </div>
-                            <div class="form-group">
+                            <div class="mb-3">
                                 <label class="form-label">Número de Documento *</label>
                                 <input type="text" class="form-control" name="numero_documento" required>
                             </div>
-                            <div class="form-group">
+                            <div class="mb-3">
                                 <label class="form-label">Tipo de Persona *</label>
                                 <select class="form-select" name="tipo_persona" required>
                                     <option value="natural">Persona Natural</option>
                                     <option value="juridica">Persona Jurídica</option>
                                 </select>
                             </div>
-                            <div class="form-group">
+                            <div class="mb-3">
                                 <label class="form-label">Teléfono</label>
                                 <input type="text" class="form-control" name="telefono">
                             </div>
                         </div>
-                    </div>
                     
-                    <div class="row mt-3">
-                        <div class="col-md-6">
-                            <div class="form-group">
+                    
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <div class="mb-3">
                                 <label class="form-label">Rol *</label>
                                 <select class="form-select" name="rol" required>
                                     {% for rol in roles %}
@@ -478,7 +476,7 @@
                                     {% endfor %}
                                 </select>
                             </div>
-                            <div class="form-group">
+                            <div class="mb-3">
                                 <label class="form-label">Estado *</label>
                                 <select class="form-select" name="estado" required>
                                     {% for estado in estados %}
@@ -487,14 +485,13 @@
                                 </select>
                             </div>
                         </div>
-                        <div class="col-md-6">
-                            <div class="form-group">
+                        <div class="mb-3">
+                            <div class="mb-3">
                                 <label class="form-label">Foto de perfil</label>
                                 <input type="file" class="form-control" name="foto">
                             </div>
                         </div>
                     </div>
-                </div>
                 <div class="modal-footer border-orange">
                     <button type="button" class="btn btn-secondary" data-dismiss="modal">
                         <i class="fas fa-times"></i> Cancelar
@@ -511,7 +508,7 @@
 <!-- Modal para Editar Usuario -->
 {% for info in usuarios_info %}
 <div class="modal fade" id="editarUsuarioModal{{ info.usuario.id }}" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-lg">
+    <div class="modal-dialog">
         <div class="modal-content" style="background-color: #1a1a1a;">
             <div class="modal-header border-orange">
                 <h5 class="modal-title text-orange">
@@ -524,54 +521,50 @@
             <form method="post" enctype="multipart/form-data" action="{% url 'editar_usuario' info.usuario.id %}">
                 {% csrf_token %}
                 <div class="modal-body">
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="form-group">
+                        <div class="mb-3">
+                            <div class="mb-3">
                                 <label class="form-label">Nombre *</label>
                                 <input type="text" class="form-control" name="nombre" value="{{ info.usuario.nombre }}" required>
                             </div>
-                            <div class="form-group">
+                            <div class="mb-3">
                                 <label class="form-label">Email *</label>
                                 <input type="email" class="form-control" name="email" value="{{ info.usuario.email }}" required>
                             </div>
-                            <div class="form-group">
+                            <div class="mb-3">
                                 <label class="form-label">Dirección *</label>
                                 <input type="text" class="form-control" name="direccion" value="{{ info.usuario.direccion }}" required>
                             </div>
-                            <div class="form-group">
+                            <div class="mb-3">
                                 <label class="form-label">Nueva Contraseña</label>
                                 <input type="password" class="form-control" name="password" placeholder="Dejar en blanco para no cambiar">
                             </div>
                         </div>
-                        <div class="col-md-6">
-                            <div class="form-group">
+                        <div class="modal-body">
+                            <div class="mb-3">
                                 <label class="form-label">Tipo de Documento *</label>
                                 <select class="form-select" name="tipo_documento" required>
                                     <option value="CC" {% if info.usuario.tipo_documento == 'CC' %}selected{% endif %}>Cédula de Ciudadanía</option>
                                     <option value="NIT" {% if info.usuario.tipo_documento == 'NIT' %}selected{% endif %}>NIT de Empresa</option>
                                 </select>
                             </div>
-                            <div class="form-group">
+                            <div class="mb-3">
                                 <label class="form-label">Número de Documento *</label>
                                 <input type="text" class="form-control" name="numero_documento" value="{{ info.usuario.numero_documento }}" required>
                             </div>
-                            <div class="form-group">
+                            <div class="mb-3">
                                 <label class="form-label">Tipo de Persona *</label>
                                 <select class="form-select" name="tipo_persona" required>
                                     <option value="natural" {% if info.usuario.tipo_persona == 'natural' %}selected{% endif %}>Persona Natural</option>
                                     <option value="juridica" {% if info.usuario.tipo_persona == 'juridica' %}selected{% endif %}>Persona Jurídica</option>
                                 </select>
                             </div>
-                            <div class="form-group">
+                            <div class="mb-3">
                                 <label class="form-label">Teléfono</label>
                                 <input type="text" class="form-control" name="telefono" value="{{ info.usuario.telefono }}">
                             </div>
                         </div>
-                    </div>
-                    
-                    <div class="row mt-3">
-                        <div class="col-md-6">
-                            <div class="form-group">
+                        <div class="modal-body">
+                            <div class="mb-3">
                                 <label class="form-label">Rol *</label>
                                 <select class="form-select" name="rol" required>
                                     {% for rol in roles %}
@@ -579,7 +572,7 @@
                                     {% endfor %}
                                 </select>
                             </div>
-                            <div class="form-group">
+                            <div class="mb-3">
                                 <label class="form-label">Estado *</label>
                                 <select class="form-select" name="estado" required>
                                     {% for estado in estados %}
@@ -588,18 +581,17 @@
                                 </select>
                             </div>
                         </div>
-                        <div class="col-md-6">
-                            <div class="form-group">
+                        <div class="modal-body" style="text-align: center;">
+                            <div class="mb-3">
                                 <label class="form-label">Foto de perfil</label>
                                 {% if info.usuario.foto %}
-                                <div class="mb-2">
+                                <div class="mb-3">
                                     <img src="{{ info.usuario.foto.url }}" width="100" class="img-thumbnail">
                                 </div>
                                 {% endif %}
                                 <input type="file" class="form-control" name="foto">
                             </div>
                         </div>
-                    </div>
                 </div>
                 <div class="modal-footer border-orange">
                     <button type="button" class="btn btn-secondary" data-dismiss="modal">

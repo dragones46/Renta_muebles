@@ -258,3 +258,46 @@ class AsignarProblemaForm(forms.Form):
         queryset=Usuario.objects.filter(Q(rol=1) | Q(rol=4)).order_by('nombre'),
         label="Asignar a"
     )
+
+
+# forms.py
+
+class EditarPerfilForm(forms.ModelForm):
+    class Meta:
+        model = Usuario
+        fields = ['nombre', 'email', 'direccion', 'telefono', 'foto']
+        widgets = {
+            'nombre': forms.TextInput(attrs={'class': 'form-control'}),
+            'email': forms.EmailInput(attrs={'class': 'form-control'}),
+            'direccion': forms.TextInput(attrs={'class': 'form-control'}),
+            'telefono': forms.TextInput(attrs={'class': 'form-control'}),
+            'foto': forms.FileInput(attrs={'class': 'form-control'}),
+        }
+
+    def clean_email(self):
+        email = self.cleaned_data.get('email')
+        if Usuario.objects.filter(email=email).exclude(pk=self.instance.pk).exists():
+            raise forms.ValidationError("Este correo electrónico ya está en uso.")
+        return email
+
+class CambiarContrasenaForm(forms.Form):
+    nueva_contrasena = forms.CharField(
+        label="Nueva contraseña",
+        widget=forms.PasswordInput(attrs={'class': 'form-control'}),
+        required=True,
+        min_length=8
+    )
+    confirmar_contrasena = forms.CharField(
+        label="Confirmar nueva contraseña",
+        widget=forms.PasswordInput(attrs={'class': 'form-control'}),
+        required=True
+    )
+
+    def clean(self):
+        cleaned_data = super().clean()
+        nueva = cleaned_data.get('nueva_contrasena')
+        confirmar = cleaned_data.get('confirmar_contrasena')
+
+        if nueva and confirmar and nueva != confirmar:
+            raise forms.ValidationError("Las contraseñas no coinciden.")
+        return cleaned_data
