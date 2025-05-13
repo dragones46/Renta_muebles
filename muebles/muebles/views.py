@@ -363,392 +363,248 @@ def perfil(request):
 def perfil_admin(request):
     logueo = request.session.get("logueo")
     user = Usuario.objects.get(id=logueo["id"])
-    
+
+    form_contrasena = CambiarContrasenaForm()
+    form_perfil = EditarPerfilForm(instance=user)
+
     if request.method == 'POST':
+        # 1. Editar perfil
         if 'editar_perfil' in request.POST:
             form_perfil = EditarPerfilForm(request.POST, request.FILES, instance=user)
             if form_perfil.is_valid():
                 form_perfil.save()
-                # Actualizar la sesión
-                request.session['logueo']['nombre'] = user.nombre
-                request.session['logueo']['email'] = user.email
-                if user.foto:
-                    request.session['logueo']['foto'] = user.foto.url
-                request.session.modified = True
-                messages.success(request, 'Perfil actualizado exitosamente!')
+                request.session['logueo'] = {
+                    "id": user.id,
+                    "nombre": user.nombre,
+                    "email": user.email,
+                    "rol": user.rol,
+                    "nombre_rol": user.get_rol_display(),
+                    "foto": user.foto.url if user.foto else None
+                }
+                messages.success(request, '¡Perfil actualizado exitosamente!')
                 return redirect('perfil_admin')
-            
+            else:
+                messages.warning(request, 'Por favor corrige los errores en el formulario de perfil: ' + str(form_perfil.errors))
+
+        # 2. Cambiar contraseña
         elif 'cambiar_contrasena' in request.POST:
             form_contrasena = CambiarContrasenaForm(request.POST)
             if form_contrasena.is_valid():
-                nueva_password = form_contrasena.cleaned_data['nueva_contrasena']
-                user.set_password(nueva_password)
-                user.save()
-                # Actualizar la sesión para evitar deslogueo
-                update_session_auth_hash(request, user)
-                messages.success(request, 'Contraseña cambiada exitosamente!')
-                return redirect('perfil_admin')
-    else:
-        form_perfil = EditarPerfilForm(instance=user)
-        form_contrasena = CambiarContrasenaForm()
+                try:
+                    nueva_password = form_contrasena.cleaned_data['nueva_contrasena']
+                    user.set_password(nueva_password)
+                    user.save()
+                    update_session_auth_hash(request, user)  # mantener la sesión activa
+                    messages.success(request, '¡Contraseña cambiada exitosamente!')
+                    return redirect('perfil_admin')
+                except Exception as e:
+                    messages.error(request, f'Error al cambiar la contraseña: {str(e)}')
+            else:
+                messages.warning(request, 'Por favor corrige los errores en el formulario de contraseña: ' + str(form_contrasena.errors))
 
     # Obtener datos adicionales según el rol
+    total_usuarios = Usuario.objects.count()
+    total_muebles = Mueble.objects.count()
+    total_pedidos = Pedido.objects.count()
+
     context = {
         'user': user,
-        'form_perfil': form_perfil,
         'form_contrasena': form_contrasena,
+        'form_perfil': form_perfil,
+        'total_usuarios': total_usuarios,
+        'total_muebles': total_muebles,
+        'total_pedidos': total_pedidos,
     }
-    
-    # Añadir datos específicos según el rol
-    if user.rol == 1:  # Admin
-        total_usuarios = Usuario.objects.count()
-        total_muebles = Mueble.objects.count()
-        total_pedidos = Pedido.objects.count()
-        context.update({
-            'total_usuarios': total_usuarios,
-            'total_muebles': total_muebles,
-            'total_pedidos': total_pedidos,
-        })
-        return render(request, 'muebles/perfil/perfil_admin.html', context)
-    
-    elif user.rol == 2:  # Propietario/Proveedor
-        proveedor = get_object_or_404(Proveedor, usuario=user)
-        total_muebles = Mueble.objects.filter(proveedor=proveedor).count()
-        muebles_activos = Mueble.objects.filter(proveedor=proveedor).count()
-        
-        ganancias_totales = DetallePedido.objects.filter(
-            mueble__proveedor=proveedor
-        ).aggregate(total=Sum('ganancia_propietario'))['total'] or 0
-        
-        pedidos_recientes = Pedido.objects.filter(
-            detalles__mueble__proveedor=proveedor
-        ).distinct().order_by('-fecha')[:5]
-        
-        context.update({
-            'proveedor': proveedor,
-            'total_muebles': total_muebles,
-            'muebles_activos': muebles_activos,
-            'ganancias_totales': ganancias_totales,
-            'pedidos_recientes': pedidos_recientes,
-        })
-        return render(request, 'muebles/perfil/perfil_propietario.html', context)
-    
-    elif user.rol == 3:  # Cliente
-        rentas = Renta.objects.filter(usuario=user).order_by('-fecha_inicio')
-        context['rentas'] = rentas
-        return render(request, 'muebles/perfil/perfil.html', context)
-    
-    elif user.rol == 4:  # Soporte
-        problemas = ReporteProblema.objects.filter(usuario_asignado=user)
-        total_problemas = ReporteProblema.objects.count()
-        problemas_abiertos = ReporteProblema.objects.filter(estado='abierto').count()
-        problemas_en_progreso = ReporteProblema.objects.filter(estado='en_progreso').count()
-        problemas_resueltos = ReporteProblema.objects.filter(estado='resuelto').count()
-        
-        context.update({
-            'problemas': problemas,
-            'total_problemas': total_problemas,
-            'problemas_abiertos': problemas_abiertos,
-            'problemas_en_progreso': problemas_en_progreso,
-            'problemas_resueltos': problemas_resueltos,
-        })
-        return render(request, 'muebles/perfil/perfil_soporte.html', context)
-    
-    # Por defecto, vista de cliente
-    return render(request, 'muebles/perfil/perfil_cliente.html', context)
+
+    return render(request, 'muebles/perfil/perfil_admin.html', context)
+
+
 
 @login_requerido(roles_permitidos=[2])
-def perfil_propietario(request):
+def perfil_proveedor(request):
     logueo = request.session.get("logueo")
     user = Usuario.objects.get(id=logueo["id"])
-    
+
+    form_contrasena = CambiarContrasenaForm()
+    form_perfil = EditarPerfilForm(instance=user)
+
     if request.method == 'POST':
+        # 1. Editar perfil
         if 'editar_perfil' in request.POST:
             form_perfil = EditarPerfilForm(request.POST, request.FILES, instance=user)
             if form_perfil.is_valid():
                 form_perfil.save()
-                # Actualizar la sesión
-                request.session['logueo']['nombre'] = user.nombre
-                request.session['logueo']['email'] = user.email
-                if user.foto:
-                    request.session['logueo']['foto'] = user.foto.url
-                request.session.modified = True
-                messages.success(request, 'Perfil actualizado exitosamente!')
-                return redirect('perfil_propietario')
-            
+                # Actualizar el nombre de la empresa si se proporciona
+                nombre_empresa = request.POST.get('nombre_empresa')
+                if nombre_empresa:
+                    proveedor = get_object_or_404(Proveedor, usuario=user)
+                    proveedor.nombre_empresa = nombre_empresa
+                    proveedor.save()
+
+                request.session['logueo'] = {
+                    "id": user.id,
+                    "nombre": user.nombre,
+                    "email": user.email,
+                    "rol": user.rol,
+                    "nombre_rol": user.get_rol_display(),
+                    "foto": user.foto.url if user.foto else None
+                }
+                messages.success(request, '¡Perfil actualizado exitosamente!')
+                return redirect('perfil_proveedor')
+            else:
+                messages.warning(request, 'Por favor corrige los errores en el formulario de perfil: ' + str(form_perfil.errors))
+
+        # 2. Cambiar contraseña
         elif 'cambiar_contrasena' in request.POST:
             form_contrasena = CambiarContrasenaForm(request.POST)
             if form_contrasena.is_valid():
-                nueva_password = form_contrasena.cleaned_data['nueva_contrasena']
-                user.set_password(nueva_password)
-                user.save()
-                # Actualizar la sesión para evitar deslogueo
-                update_session_auth_hash(request, user)
-                messages.success(request, 'Contraseña cambiada exitosamente!')
-                return redirect('perfil_propietario')
-    else:
-        form_perfil = EditarPerfilForm(instance=user)
-        form_contrasena = CambiarContrasenaForm()
+                try:
+                    nueva_password = form_contrasena.cleaned_data['nueva_contrasena']
+                    user.set_password(nueva_password)
+                    user.save()
+                    update_session_auth_hash(request, user)  # mantener la sesión activa
+                    messages.success(request, '¡Contraseña cambiada exitosamente!')
+                    return redirect('perfil_proveedor')
+                except Exception as e:
+                    messages.error(request, f'Error al cambiar la contraseña: {str(e)}')
+            else:
+                messages.warning(request, 'Por favor corrige los errores en el formulario de contraseña: ' + str(form_contrasena.errors))
 
     # Obtener datos adicionales según el rol
+    proveedor = get_object_or_404(Proveedor, usuario=user)
+    total_muebles = Mueble.objects.filter(proveedor=proveedor).count()
+    muebles_activos = Mueble.objects.filter(proveedor=proveedor).count()
+
+    ganancias_totales = DetallePedido.objects.filter(
+        mueble__proveedor=proveedor
+    ).aggregate(total=Sum('ganancia_propietario'))['total'] or 0
+
+    pedidos_recientes = Pedido.objects.filter(
+        detalles__mueble__proveedor=proveedor
+    ).distinct().order_by('-fecha')[:5]
+
     context = {
         'user': user,
-        'form_perfil': form_perfil,
         'form_contrasena': form_contrasena,
+        'form_perfil': form_perfil,
+        'proveedor': proveedor,
+        'total_muebles': total_muebles,
+        'muebles_activos': muebles_activos,
+        'ganancias_totales': ganancias_totales,
+        'pedidos_recientes': pedidos_recientes,
     }
-    
-    # Añadir datos específicos según el rol
-    if user.rol == 1:  # Admin
-        total_usuarios = Usuario.objects.count()
-        total_muebles = Mueble.objects.count()
-        total_pedidos = Pedido.objects.count()
-        context.update({
-            'total_usuarios': total_usuarios,
-            'total_muebles': total_muebles,
-            'total_pedidos': total_pedidos,
-        })
-        return render(request, 'muebles/perfil/perfil_admin.html', context)
-    
-    elif user.rol == 2:  # Propietario/Proveedor
-        proveedor = get_object_or_404(Proveedor, usuario=user)
-        total_muebles = Mueble.objects.filter(proveedor=proveedor).count()
-        muebles_activos = Mueble.objects.filter(proveedor=proveedor).count()
-        
-        ganancias_totales = DetallePedido.objects.filter(
-            mueble__proveedor=proveedor
-        ).aggregate(total=Sum('ganancia_propietario'))['total'] or 0
-        
-        pedidos_recientes = Pedido.objects.filter(
-            detalles__mueble__proveedor=proveedor
-        ).distinct().order_by('-fecha')[:5]
-        
-        context.update({
-            'proveedor': proveedor,
-            'total_muebles': total_muebles,
-            'muebles_activos': muebles_activos,
-            'ganancias_totales': ganancias_totales,
-            'pedidos_recientes': pedidos_recientes,
-        })
-        return render(request, 'muebles/perfil/perfil_proveedor.html', context)
-    
-    elif user.rol == 3:  # Cliente
-        rentas = Renta.objects.filter(usuario=user).order_by('-fecha_inicio')
-        context['rentas'] = rentas
-        return render(request, 'muebles/perfil/perfil.html', context)
-    
-    elif user.rol == 4:  # Soporte
-        problemas = ReporteProblema.objects.filter(usuario_asignado=user)
-        total_problemas = ReporteProblema.objects.count()
-        problemas_abiertos = ReporteProblema.objects.filter(estado='abierto').count()
-        problemas_en_progreso = ReporteProblema.objects.filter(estado='en_progreso').count()
-        problemas_resueltos = ReporteProblema.objects.filter(estado='resuelto').count()
-        
-        context.update({
-            'problemas': problemas,
-            'total_problemas': total_problemas,
-            'problemas_abiertos': problemas_abiertos,
-            'problemas_en_progreso': problemas_en_progreso,
-            'problemas_resueltos': problemas_resueltos,
-        })
-        return render(request, 'muebles/perfil/perfil_soporte.html', context)
-    
-    # Por defecto, vista de cliente
-    return render(request, 'muebles/perfil/perfil.html', context)
+
+    return render(request, 'muebles/perfil/perfil_proveedor.html', context)
+
+
 
 @login_requerido(roles_permitidos=[3])
 def perfil_cliente(request):
     logueo = request.session.get("logueo")
     user = Usuario.objects.get(id=logueo["id"])
-    
+
+    form_contrasena = CambiarContrasenaForm()
+    form_perfil = EditarPerfilForm(instance=user)
+
     if request.method == 'POST':
+        # 1. Editar perfil
         if 'editar_perfil' in request.POST:
             form_perfil = EditarPerfilForm(request.POST, request.FILES, instance=user)
             if form_perfil.is_valid():
                 form_perfil.save()
-                # Actualizar la sesión
-                request.session['logueo']['nombre'] = user.nombre
-                request.session['logueo']['email'] = user.email
-                if user.foto:
-                    request.session['logueo']['foto'] = user.foto.url
-                request.session.modified = True
-                messages.success(request, 'Perfil actualizado exitosamente!')
+                request.session['logueo'] = {
+                    "id": user.id,
+                    "nombre": user.nombre,
+                    "email": user.email,
+                    "rol": user.rol,
+                    "nombre_rol": user.get_rol_display(),
+                    "foto": user.foto.url if user.foto else None
+                }
+                messages.success(request, '¡Perfil actualizado exitosamente!')
                 return redirect('perfil_cliente')
-            
+            else:
+                messages.warning(request, 'Por favor corrige los errores en el formulario de perfil: ' + str(form_perfil.errors))
+
+        # 2. Cambiar contraseña
         elif 'cambiar_contrasena' in request.POST:
             form_contrasena = CambiarContrasenaForm(request.POST)
             if form_contrasena.is_valid():
-                nueva_password = form_contrasena.cleaned_data['nueva_contrasena']
-                user.set_password(nueva_password)
-                user.save()
-                # Actualizar la sesión para evitar deslogueo
-                update_session_auth_hash(request, user)
-                messages.success(request, 'Contraseña cambiada exitosamente!')
-                return redirect('perfil_cliente')
-    else:
-        form_perfil = EditarPerfilForm(instance=user)
-        form_contrasena = CambiarContrasenaForm()
+                try:
+                    nueva_password = form_contrasena.cleaned_data['nueva_contrasena']
+                    user.set_password(nueva_password)
+                    user.save()
+                    update_session_auth_hash(request, user)  # mantener la sesión activa
+                    messages.success(request, '¡Contraseña cambiada exitosamente!')
+                    return redirect('perfil_cliente')
+                except Exception as e:
+                    messages.error(request, f'Error al cambiar la contraseña: {str(e)}')
+            else:
+                messages.warning(request, 'Por favor corrige los errores en el formulario de contraseña: ' + str(form_contrasena.errors))
 
-    # Obtener datos adicionales según el rol
     context = {
         'user': user,
-        'form_perfil': form_perfil,
         'form_contrasena': form_contrasena,
+        'form_perfil': form_perfil,
     }
-    
-    # Añadir datos específicos según el rol
-    if user.rol == 1:  # Admin
-        total_usuarios = Usuario.objects.count()
-        total_muebles = Mueble.objects.count()
-        total_pedidos = Pedido.objects.count()
-        context.update({
-            'total_usuarios': total_usuarios,
-            'total_muebles': total_muebles,
-            'total_pedidos': total_pedidos,
-        })
-        return render(request, 'muebles/perfil/perfil.html', context)
-    
-    elif user.rol == 2:  # Propietario/Proveedor
-        proveedor = get_object_or_404(Proveedor, usuario=user)
-        total_muebles = Mueble.objects.filter(proveedor=proveedor).count()
-        muebles_activos = Mueble.objects.filter(proveedor=proveedor).count()
-        
-        ganancias_totales = DetallePedido.objects.filter(
-            mueble__proveedor=proveedor
-        ).aggregate(total=Sum('ganancia_propietario'))['total'] or 0
-        
-        pedidos_recientes = Pedido.objects.filter(
-            detalles__mueble__proveedor=proveedor
-        ).distinct().order_by('-fecha')[:5]
-        
-        context.update({
-            'proveedor': proveedor,
-            'total_muebles': total_muebles,
-            'muebles_activos': muebles_activos,
-            'ganancias_totales': ganancias_totales,
-            'pedidos_recientes': pedidos_recientes,
-        })
-        return render(request, 'muebles/perfil/perfil_proveedor.html', context)
-    
-    elif user.rol == 3:  # Cliente
-        rentas = Renta.objects.filter(usuario=user).order_by('-fecha_inicio')
-        context['rentas'] = rentas
-        return render(request, 'muebles/perfil/perfil.html', context)
-    
-    elif user.rol == 4:  # Soporte
-        problemas = ReporteProblema.objects.filter(usuario_asignado=user)
-        total_problemas = ReporteProblema.objects.count()
-        problemas_abiertos = ReporteProblema.objects.filter(estado='abierto').count()
-        problemas_en_progreso = ReporteProblema.objects.filter(estado='en_progreso').count()
-        problemas_resueltos = ReporteProblema.objects.filter(estado='resuelto').count()
-        
-        context.update({
-            'problemas': problemas,
-            'total_problemas': total_problemas,
-            'problemas_abiertos': problemas_abiertos,
-            'problemas_en_progreso': problemas_en_progreso,
-            'problemas_resueltos': problemas_resueltos,
-        })
-        return render(request, 'muebles/perfil/perfil_soporte.html', context)
-    
-    # Por defecto, vista de cliente
+
     return render(request, 'muebles/perfil/perfil.html', context)
+
 
 @login_requerido(roles_permitidos=[4])
 def perfil_soporte(request):
     logueo = request.session.get("logueo")
     user = Usuario.objects.get(id=logueo["id"])
-    
+
+    form_contrasena = CambiarContrasenaForm()
+    form_perfil = EditarPerfilForm(instance=user)
+
     if request.method == 'POST':
+        # 1. Editar perfil
         if 'editar_perfil' in request.POST:
             form_perfil = EditarPerfilForm(request.POST, request.FILES, instance=user)
             if form_perfil.is_valid():
                 form_perfil.save()
-                # Actualizar la sesión
-                request.session['logueo']['nombre'] = user.nombre
-                request.session['logueo']['email'] = user.email
-                if user.foto:
-                    request.session['logueo']['foto'] = user.foto.url
-                request.session.modified = True
-                messages.success(request, 'Perfil actualizado exitosamente!')
-                return redirect('perfil_cliente')
-            
+                request.session['logueo'] = {
+                    "id": user.id,
+                    "nombre": user.nombre,
+                    "email": user.email,
+                    "rol": user.rol,
+                    "nombre_rol": user.get_rol_display(),
+                    "foto": user.foto.url if user.foto else None
+                }
+                messages.success(request, '¡Perfil actualizado exitosamente!')
+                return redirect('perfil_soporte')
+            else:
+                messages.warning(request, 'Por favor corrige los errores en el formulario de perfil: ' + str(form_perfil.errors))
+
+        # 2. Cambiar contraseña
         elif 'cambiar_contrasena' in request.POST:
             form_contrasena = CambiarContrasenaForm(request.POST)
             if form_contrasena.is_valid():
-                nueva_password = form_contrasena.cleaned_data['nueva_contrasena']
-                user.set_password(nueva_password)
-                user.save()
-                # Actualizar la sesión para evitar deslogueo
-                update_session_auth_hash(request, user)
-                messages.success(request, 'Contraseña cambiada exitosamente!')
-                return redirect('perfil_cliente')
-    else:
-        form_contrasena = CambiarContrasenaForm()
+                try:
+                    nueva_password = form_contrasena.cleaned_data['nueva_contrasena']
+                    user.set_password(nueva_password)
+                    user.save()
+                    update_session_auth_hash(request, user)  # mantener la sesión activa
+                    messages.success(request, '¡Contraseña cambiada exitosamente!')
+                    return redirect('perfil_soporte')
+                except Exception as e:
+                    messages.error(request, f'Error al cambiar la contraseña: {str(e)}')
+            else:
+                messages.warning(request, 'Por favor corrige los errores en el formulario de contraseña: ' + str(form_contrasena.errors))
 
-    # Obtener datos adicionales según el rol
     context = {
         'user': user,
         'form_contrasena': form_contrasena,
+        'form_perfil': form_perfil,
+        'problemas': ReporteProblema.objects.filter(usuario_asignado=user),
+        'total_problemas': ReporteProblema.objects.count(),
+        'problemas_abiertos': ReporteProblema.objects.filter(estado='abierto').count(),
+        'problemas_en_progreso': ReporteProblema.objects.filter(estado='en_progreso').count(),
+        'problemas_resueltos': ReporteProblema.objects.filter(estado='resuelto').count(),
     }
-    
-    # Añadir datos específicos según el rol
-    if user.rol == 1:  # Admin
-        total_usuarios = Usuario.objects.count()
-        total_muebles = Mueble.objects.count()
-        total_pedidos = Pedido.objects.count()
-        context.update({
-            'total_usuarios': total_usuarios,
-            'total_muebles': total_muebles,
-            'total_pedidos': total_pedidos,
-        })
-        return render(request, 'muebles/perfil/perfil.html', context)
-    
-    elif user.rol == 2:  # Propietario/Proveedor
-        proveedor = get_object_or_404(Proveedor, usuario=user)
-        total_muebles = Mueble.objects.filter(proveedor=proveedor).count()
-        muebles_activos = Mueble.objects.filter(proveedor=proveedor).count()
-        
-        ganancias_totales = DetallePedido.objects.filter(
-            mueble__proveedor=proveedor
-        ).aggregate(total=Sum('ganancia_propietario'))['total'] or 0
-        
-        pedidos_recientes = Pedido.objects.filter(
-            detalles__mueble__proveedor=proveedor
-        ).distinct().order_by('-fecha')[:5]
-        
-        context.update({
-            'proveedor': proveedor,
-            'total_muebles': total_muebles,
-            'muebles_activos': muebles_activos,
-            'ganancias_totales': ganancias_totales,
-            'pedidos_recientes': pedidos_recientes,
-        })
-        return render(request, 'muebles/perfil/perfil_proveedor.html', context)
-    
-    elif user.rol == 3:  # Cliente
-        rentas = Renta.objects.filter(usuario=user).order_by('-fecha_inicio')
-        context['rentas'] = rentas
-        return render(request, 'muebles/perfil/perfil.html', context)
-    
-    elif user.rol == 4:  # Soporte
-        problemas = ReporteProblema.objects.filter(usuario_asignado=user)
-        total_problemas = ReporteProblema.objects.count()
-        problemas_abiertos = ReporteProblema.objects.filter(estado='abierto').count()
-        problemas_en_progreso = ReporteProblema.objects.filter(estado='en_progreso').count()
-        problemas_resueltos = ReporteProblema.objects.filter(estado='resuelto').count()
-        
-        context.update({
-            'problemas': problemas,
-            'total_problemas': total_problemas,
-            'problemas_abiertos': problemas_abiertos,
-            'problemas_en_progreso': problemas_en_progreso,
-            'problemas_resueltos': problemas_resueltos,
-        })
-        return render(request, 'muebles/perfil/perfil_soporte.html', context)
-    
-    # Por defecto, vista de cliente
-    return render(request, 'muebles/perfil/perfil.html', context)
 
+    return render(request, 'muebles/perfil/perfil_soporte.html', context)
 
 
 

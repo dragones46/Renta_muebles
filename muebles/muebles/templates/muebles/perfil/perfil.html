@@ -232,16 +232,13 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
-                <form method="post" action="{% url 'perfil' %}">
+                <form method="post" action="{% url 'perfil_cliente' %}">
                     {% csrf_token %}
                     <input type="hidden" name="cambiar_contrasena" value="1">
                     <div class="mb-3">
-                        <label for="contrasena_actual" class="form-label"><strong>Contraseña Actual:</strong></label>
-                        <input type="password" class="form-control" id="contrasena_actual" name="contrasena_actual" required>
-                    </div>
-                    <div class="mb-3">
                         <label for="nueva_contrasena" class="form-label"><strong>Nueva Contraseña:</strong></label>
-                        <input type="password" class="form-control" id="nueva_contrasena" name="nueva_contrasena" required>
+                        <input type="password" class="form-control" id="nueva_contrasena" name="nueva_contrasena" minlength="8" required>
+                        <div class="form-text text-white">La contraseña debe tener al menos 8 caracteres.</div>
                     </div>
                     <div class="mb-3">
                         <label for="confirmar_contrasena" class="form-label"><strong>Confirmar Contraseña:</strong></label>

@@ -122,7 +122,7 @@
         <div class="col-md-10">
             <div class="card shadow">
                 <div class="card-header bg-primary text-white">
-                    <h3 class="mb-0">Panel de Propietario</h3>
+                    <h3 class="mb-0">Panel de Proveedor</h3>
                 </div>
                 <div class="card-body">
                     <div class="row">
@@ -150,11 +150,9 @@
                                 <hr>
                                 <p><strong>Nombre:</strong> {{ user.nombre }}</p>
                                 <p><strong>Correo:</strong> {{ user.email }}</p>
-                                <p><strong>Segmento:</strong> {{ propietario.get_segmento_display }}</p>
-                                {% if propietario.segmento == 'A' %}
-                                    <p><strong>Empresa:</strong> {{ propietario.nombre_empresa }}</p>
-                                {% endif %}
-                                <p><strong>Teléfono:</strong> {{ propietario.telefono }}</p>
+                                <p><strong>Empresa:</strong> {{ proveedor.nombre_empresa|default:"No tiene" }}</p>
+                                <p><strong>Dirección:</strong> {{ user.direccion|default:"No tiene" }}</p>
+                                <p><strong>Teléfono:</strong> {{ user.telefono|default:"No tiene" }}</p>
                             </div>
                             
                             <div class="mb-3">
@@ -245,7 +243,7 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
-                <form id="editarPerfilForm" method="post" action="{% url 'perfil_propietario' %}" enctype="multipart/form-data" class="needs-validation" novalidate>
+                <form id="editarPerfilForm" method="post" action="{% url 'perfil_proveedor' %}" enctype="multipart/form-data" class="needs-validation" novalidate>
                     {% csrf_token %}
                     <input type="hidden" name="editar_perfil" value="1">
                     <div class="mb-3">
@@ -274,6 +272,10 @@
                         <input type="text" class="form-control" id="telefono" name="telefono" value="{{ user.telefono|default:'' }}">
                     </div>
                     <div class="mb-3">
+                        <label for="nombre_empresa" class="form-label"><strong>Nombre de la Empresa:</strong></label>
+                        <input type="text" class="form-control" id="nombre_empresa" name="nombre_empresa" value="{{ proveedor.nombre_empresa|default:'' }}">
+                    </div>
+                    <div class="mb-3">
                         <label for="foto" class="form-label"><strong>Foto de Perfil:</strong></label>
                         <input type="file" class="form-control" id="foto" name="foto">
                     </div>
@@ -284,6 +286,7 @@
     </div>
 </div>
 
+
 <!-- Modal para cambiar contraseña -->
 <div class="modal fade" id="cambiarContrasenaModal" tabindex="-1" aria-labelledby="cambiarContrasenaModalLabel" aria-hidden="true">
     <div class="modal-dialog">
@@ -293,16 +296,13 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
-                <form method="post" action="{% url 'perfil_propietario' %}">
+                <form method="post" action="{% url 'perfil_proveedor' %}">
                     {% csrf_token %}
                     <input type="hidden" name="cambiar_contrasena" value="1">
                     <div class="mb-3">
-                        <label for="contrasena_actual" class="form-label"><strong>Contraseña Actual:</strong></label>
-                        <input type="password" class="form-control" id="contrasena_actual" name="contrasena_actual" required>
-                    </div>
-                    <div class="mb-3">
                         <label for="nueva_contrasena" class="form-label"><strong>Nueva Contraseña:</strong></label>
-                        <input type="password" class="form-control" id="nueva_contrasena" name="nueva_contrasena" required>
+                        <input type="password" class="form-control" id="nueva_contrasena" name="nueva_contrasena" minlength="8" required>
+                        <div class="form-text text-white">La contraseña debe tener al menos 8 caracteres.</div>
                     </div>
                     <div class="mb-3">
                         <label for="confirmar_contrasena" class="form-label"><strong>Confirmar Contraseña:</strong></label>

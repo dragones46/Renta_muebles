@@ -285,7 +285,10 @@ class CambiarContrasenaForm(forms.Form):
         label="Nueva contraseña",
         widget=forms.PasswordInput(attrs={'class': 'form-control'}),
         required=True,
-        min_length=8
+        min_length=8,
+        error_messages={
+            'min_length': 'La contraseña debe tener al menos 8 caracteres.'
+        }
     )
     confirmar_contrasena = forms.CharField(
         label="Confirmar nueva contraseña",
