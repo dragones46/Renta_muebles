@@ -194,13 +194,34 @@ class Carrito(models.Model):
 
     @classmethod
     def obtener_carrito(cls, request):
-        if request.user.is_authenticated:
-            carrito, creado = cls.objects.get_or_create(usuario=request.user)
+        # Si el usuario está logueado (tiene sesión "logueo")
+        if request.session.get("logueo"):
+            try:
+                user_id = request.session["logueo"]["id"]
+                user = Usuario.objects.get(id=user_id)
+                carrito, creado = cls.objects.get_or_create(usuario=user)
+                
+                # Actualizar el conteo en la sesión si es necesario
+                if creado or "carrito" not in request.session["logueo"]:
+                    request.session["logueo"]["carrito"] = {
+                        "id": carrito.id,
+                        "items_count": carrito.items.count()
+                    }
+                    request.session.modified = True
+                    
+            except (Usuario.DoesNotExist, KeyError):
+                # Si hay algún error, crear carrito de sesión
+                if not request.session.session_key:
+                    request.session.create()
+                session_key = request.session.session_key
+                carrito, creado = cls.objects.get_or_create(session_key=session_key, usuario__isnull=True)
         else:
+            # Usuario no logueado - usar carrito de sesión
             if not request.session.session_key:
                 request.session.create()
             session_key = request.session.session_key
-            carrito, creado = cls.objects.get_or_create(session_key=session_key)
+            carrito, creado = cls.objects.get_or_create(session_key=session_key, usuario__isnull=True)
+        
         return carrito
 
     def migrar_a_usuario(self, usuario):
@@ -208,32 +229,32 @@ class Carrito(models.Model):
         if self.usuario:
             return  # Ya tiene usuario
         
-        # Verificar si el usuario ya tiene un carrito
+        # Obtener o crear carrito del usuario
         usuario_carrito, creado = Carrito.objects.get_or_create(usuario=usuario)
         
-        if not creado:  # Si ya tenía carrito, mover los items
-            for item in self.items.all():
-                item_existente = usuario_carrito.items.filter(
-                    mueble=item.mueble,
-                    fecha_inicio=item.fecha_inicio,
-                    fecha_fin=item.fecha_fin
-                ).first()
-                
-                if item_existente:
-                    item_existente.cantidad += item.cantidad
-                    item_existente.save()
-                    item.delete()
-                else:
-                    item.carrito = usuario_carrito
-                    item.save()
+        # Migrar items
+        for item in self.items.all():
+            item_existente = usuario_carrito.items.filter(
+                mueble=item.mueble,
+                fecha_inicio=item.fecha_inicio,
+                fecha_fin=item.fecha_fin
+            ).first()
             
-            # Actualizar domicilio e instalación si no estaban definidos
-            if not usuario_carrito.domicilio and self.domicilio:
-                usuario_carrito.domicilio = self.domicilio
-            if not usuario_carrito.servicio_instalacion and self.servicio_instalacion:
-                usuario_carrito.servicio_instalacion = self.servicio_instalacion
-            usuario_carrito.save()
+            if item_existente:
+                item_existente.cantidad += item.cantidad
+                item_existente.save()
+                item.delete()
+            else:
+                item.carrito = usuario_carrito
+                item.save()
         
+        # Migrar servicios adicionales
+        if not usuario_carrito.domicilio and self.domicilio:
+            usuario_carrito.domicilio = self.domicilio
+        if not usuario_carrito.servicio_instalacion and self.servicio_instalacion:
+            usuario_carrito.servicio_instalacion = self.servicio_instalacion
+        
+        usuario_carrito.save()
         self.delete()  # Eliminar el carrito de sesión
 
 class ItemCarrito(models.Model):

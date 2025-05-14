@@ -118,7 +118,8 @@ class UsuarioForm(forms.ModelForm):
     password = forms.CharField(
         label="Contraseña",
         widget=forms.PasswordInput(attrs={
-            'placeholder': 'Dejar en blanco para mantener la contraseña actual'
+            'placeholder': 'Dejar en blanco para mantener la contraseña actual',
+            'required': False
         }),
         required=False,
         help_text="Dejar en blanco para mantener la contraseña actual"
@@ -152,24 +153,28 @@ class UsuarioForm(forms.ModelForm):
     def save(self, commit=True):
         usuario = super().save(commit=False)
         password = self.cleaned_data.get('password')
-        if password:  # Solo si se proporcionó una nueva contraseña
+        
+        # Solo actualizar la contraseña si se proporcionó una nueva
+        if password:
             usuario.set_password(password)
-
+        elif not usuario.pk:  # Nuevo usuario sin contraseña
+            raise ValueError("Se requiere una contraseña para nuevos usuarios")
+        
         if commit:
             usuario.save()
-
-        # Si es proveedor, crear el registro en Proveedor
-        if usuario.rol == 2:  # Proveedor
-            Proveedor.objects.update_or_create(
-                usuario=usuario,
-                defaults={
-                    'nombre_empresa': self.cleaned_data.get('nombre_empresa', ''),
-                    'telefono': self.cleaned_data.get('telefono', '')
-                }
-            )
-        elif hasattr(usuario, 'proveedor'):
-            usuario.proveedor.delete()
-
+            
+            # Manejar proveedor
+            if usuario.rol == 2:  # Proveedor
+                Proveedor.objects.update_or_create(
+                    usuario=usuario,
+                    defaults={
+                        'nombre_empresa': self.cleaned_data.get('nombre_empresa', ''),
+                        'telefono': self.cleaned_data.get('telefono', '')
+                    }
+                )
+            elif hasattr(usuario, 'proveedor'):
+                usuario.proveedor.delete()
+                
         return usuario
 
 

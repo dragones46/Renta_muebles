@@ -316,6 +316,7 @@
                     <th>Tipo Documento</th>
                     <th>Número Documento</th>
                     <th>Tipo Persona</th>
+                    <th>Telefono de contacto</th>
                     <th>Rol</th>
                     <th>Estado</th>
                     <th>Imagen</th>
@@ -331,6 +332,7 @@
                     <td>{{ info.usuario.get_tipo_documento_display }}</td>
                     <td>{{ info.usuario.numero_documento }}</td>
                     <td>{{ info.usuario.get_tipo_persona_display }}</td>
+                    <td>{{ info.usuario.telefono }}</td>
                     <td>{{ info.usuario.get_rol_display }}</td>
                     <td>
                         <span class="badge bg-{% if info.usuario.estado == 1 %}success{% else %}danger{% endif %}">

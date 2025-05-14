@@ -67,8 +67,15 @@ def muebles_list(request):
 def rentar_mueble(request, mueble_id):
     mueble = get_object_or_404(Mueble, id=mueble_id)
     
-    if request.user.is_authenticated:
-        usuario = request.user
+    # Verificar si el usuario está logueado usando la sesión
+    logueo = request.session.get("logueo")
+    usuario_logueado = logueo is not None
+    
+    if usuario_logueado:
+        try:
+            usuario = Usuario.objects.get(id=logueo["id"])
+        except Usuario.DoesNotExist:
+            usuario = None
     else:
         usuario = None
 
@@ -112,11 +119,20 @@ def rentar_mueble(request, mueble_id):
                     )
                     messages.success(request, f"{mueble.nombre} ha sido agregado al carrito.")
 
-                if request.user.is_authenticated and "logueo" in request.session:
-                    request.session["logueo"]["carrito"]["items_count"] = carrito.items.count()
-                    request.session.modified = True
+                # Actualizar conteo en sesión de manera consistente
+                items_count = carrito.items.count()
+                
+                if usuario_logueado:
+                    if "logueo" not in request.session:
+                        request.session["logueo"] = {}
+                    if "carrito" not in request.session["logueo"]:
+                        request.session["logueo"]["carrito"] = {}
+                    
+                    request.session["logueo"]["carrito"]["items_count"] = items_count
                 else:
-                    request.session['carrito_items_count'] = carrito.items.count()
+                    request.session['carrito_items_count'] = items_count
+                
+                request.session.modified = True
 
                 return redirect('ver_carrito')
 
@@ -129,7 +145,7 @@ def rentar_mueble(request, mueble_id):
     return render(request, 'muebles/mueble/rentar_mueble.html', {
         'form': form,
         'mueble': mueble,
-        'usuario_no_logueado': not request.user.is_authenticated
+        'usuario_no_logueado': not usuario_logueado
     })
 
 def contacto(request):
@@ -137,7 +153,6 @@ def contacto(request):
 
 # ==================== AUTENTICACIÓN ====================
 
-# views.py
 def login(request):
     if request.method == 'POST':
         email = request.POST.get('email')
@@ -147,21 +162,7 @@ def login(request):
             user = Usuario.objects.get(email=email)
 
             if verify_password(password, user.password):
-                # Obtener el carrito del usuario
-                carrito_usuario, _ = Carrito.objects.get_or_create(usuario=user)
-                
-                # Verificar si hay un carrito de invitado en la sesión actual
-                if not request.user.is_authenticated and request.session.session_key:
-                    carrito_invitado = Carrito.objects.filter(
-                        session_key=request.session.session_key,
-                        usuario__isnull=True
-                    ).first()
-                    
-                    if carrito_invitado and carrito_invitado.items.exists():
-                        # Migrar items del carrito de invitado al carrito del usuario
-                        carrito_invitado.migrar_a_usuario(user)
-
-                # Configurar la sesión
+                # Crear o actualizar la sesión
                 request.session["logueo"] = {
                     "id": user.id,
                     "nombre": user.nombre,
@@ -170,13 +171,53 @@ def login(request):
                     "nombre_rol": user.get_rol_display(),
                     "foto": user.foto.url if user.foto else None,
                     "carrito": {
-                        "id": carrito_usuario.id,
-                        "items_count": carrito_usuario.items.count()
+                        "id": user.carrito.id if hasattr(user, 'carrito') else None,
+                        "items_count": user.carrito.items.count() if hasattr(user, 'carrito') else 0
                     }
                 }
-                request.session.modified = True
                 
-                messages.success(request, "Bienvenido " + user.nombre)
+                # Migrar carrito de sesión a usuario si existe
+                if not request.user.is_authenticated and request.session.session_key:
+                    carrito_invitado = Carrito.objects.filter(
+                        session_key=request.session.session_key,
+                        usuario__isnull=True
+                    ).first()
+
+                    if carrito_invitado and carrito_invitado.items.exists():
+                        carrito_usuario, _ = Carrito.objects.get_or_create(usuario=user)
+                        
+                        for item in carrito_invitado.items.all():
+                            item_existente = carrito_usuario.items.filter(
+                                mueble=item.mueble,
+                                fecha_inicio=item.fecha_inicio,
+                                fecha_fin=item.fecha_fin
+                            ).first()
+
+                            if item_existente:
+                                item_existente.cantidad += item.cantidad
+                                item_existente.save()
+                                item.delete()
+                            else:
+                                item.carrito = carrito_usuario
+                                item.save()
+
+                        # Migrar servicios adicionales
+                        if carrito_invitado.domicilio and not carrito_usuario.domicilio:
+                            carrito_usuario.domicilio = carrito_invitado.domicilio
+                        if carrito_invitado.servicio_instalacion and not carrito_usuario.servicio_instalacion:
+                            carrito_usuario.servicio_instalacion = carrito_invitado.servicio_instalacion
+
+                        carrito_usuario.save()
+                        carrito_invitado.delete()
+                        
+                        # Actualizar conteo en sesión del usuario
+                        request.session["logueo"]["carrito"]["items_count"] = carrito_usuario.items.count()
+                        
+                        # Limpiar el contador de invitado
+                        if 'carrito_items_count' in request.session:
+                            del request.session['carrito_items_count']
+                
+                messages.success(request, f"Bienvenido {user.nombre}")
                 return redirect('index')
             else:
                 messages.warning(request, "Contraseña incorrecta.")
@@ -188,38 +229,73 @@ def login(request):
 
 def registro(request):
     if request.method == 'POST':
-        nombre = request.POST.get('nombre')
-        email = request.POST.get('email')
-        direccion = request.POST.get('direccion')
-        password = request.POST.get('password')
-        tipo_usuario = int(request.POST.get('tipo_usuario', 3))  # Default to cliente
-        tipo_documento = request.POST.get('tipo_documento')
-        numero_documento = request.POST.get('numero_documento')
-        nombre_empresa = request.POST.get('nombre_empresa', '')
-        telefono = request.POST.get('telefono')
-        tipo_persona = request.POST.get('tipo_persona', 'natural')
+        data = request.POST
+        errors = {}
 
-        # Validaciones
-        if not re.match("^[A-Za-z\\s]+$", nombre):
-            messages.warning(request, "El nombre solo puede contener letras y espacios.")
-            return redirect("registro")
+        # Obtener datos
+        nombre = data.get('nombre', '').strip()
+        email = data.get('email', '').strip()
+        direccion = data.get('direccion', '').strip()
+        password = data.get('password', '').strip()
+        tipo_usuario = int(data.get('tipo_usuario', 3))
+        tipo_documento = data.get('tipo_documento', 'CC')
+        numero_documento = data.get('numero_documento', '').strip()
+        nombre_empresa = data.get('nombre_empresa', '').strip()
+        telefono = data.get('telefono', '').strip()
+        tipo_persona = data.get('tipo_persona', 'natural')
+        telefono_empresa = data.get('telefono_empresa', '').strip()
+
+        # Validaciones campo por campo
+        if not re.match(r"^[A-Za-z\s]+$", nombre):
+            errors['nombre'] = "El nombre solo puede contener letras y espacios."
 
         if not re.match(r"[^@]+@[^@]+\.[^@]+", email):
-            messages.warning(request, "Por favor, ingrese un correo electrónico válido.")
-            return redirect("registro")
+            errors['email'] = "Por favor, ingrese un correo electrónico válido."
+        elif Usuario.objects.filter(email=email).exists():
+            errors['email'] = "El correo electrónico ya está registrado."
 
-        if Usuario.objects.filter(email=email).exists():
-            messages.warning(request, "El correo electrónico ya está registrado.")
-            return redirect("registro")
+        if not direccion:
+            errors['direccion'] = "La dirección es obligatoria."
 
-        if not telefono.isdigit():
-            messages.warning(request, "El teléfono solo puede contener números.")
-            return redirect("registro")
+        if not telefono or not telefono.isdigit() or len(telefono) != 10:
+            errors['telefono'] = "Debe ingresar un número de celular válido de 10 dígitos."
+
+        if not password or len(password) < 8:
+            errors['password'] = "La contraseña debe tener al menos 8 caracteres."
+
+        if not numero_documento or not numero_documento.isdigit():
+            errors['numero_documento'] = "El número de documento debe contener solo números."
+
+        if tipo_usuario == 2:  # Proveedor
+            if not nombre_empresa:
+                errors['nombre_empresa'] = "El nombre de la empresa es obligatorio."
+            if not telefono_empresa or not telefono_empresa.isdigit() or len(telefono_empresa) < 7:
+                errors['telefono_empresa'] = "El teléfono de empresa debe contener al menos 7 dígitos."
+
+        # Si hay errores, volver al formulario con valores y errores
+        if errors:
+            form = {
+                'nombre': nombre,
+                'email': email,
+                'direccion': direccion,
+                'telefono': telefono,
+                'tipo_usuario': tipo_usuario,
+                'tipo_documento': tipo_documento,
+                'numero_documento': numero_documento,
+                'tipo_persona': tipo_persona,
+                'nombre_empresa': nombre_empresa,
+                'telefono_empresa': telefono_empresa,
+            }
+            return render(request, 'muebles/perfil/registrarse.html', {
+                'errors': errors, 
+                'form': form,
+                'field_errors': errors  # Pasamos los errores nuevamente para asegurar
+            })
 
         try:
             with transaction.atomic():
-                # Crear y guardar el usuario primero
-                usuario = Usuario(
+                # Crear usuario
+                usuario = Usuario.objects.create(
                     nombre=nombre,
                     email=email,
                     username=email,
@@ -231,22 +307,23 @@ def registro(request):
                     tipo_persona=tipo_persona,
                     telefono=telefono
                 )
-                usuario.save()
+
+                # Crear carrito
                 Carrito.objects.create(usuario=usuario)
 
-                # Si es proveedor, crear el registro en Propietario
-                if tipo_usuario == 2:  # Proveedor
+                # Si es proveedor, crear proveedor
+                if tipo_usuario == 2:
                     Proveedor.objects.create(
                         usuario=usuario,
                         nombre_empresa=nombre_empresa,
-                        telefono=telefono,
+                        telefono=telefono_empresa or telefono
                     )
 
-                messages.success(request, "Usuario creado exitosamente. Por favor, inicia sesión.")
+                messages.success(request, "Usuario registrado exitosamente. Por favor, inicia sesión.")
                 return redirect("login")
 
         except Exception as e:
-            messages.error(request, f"Error al registrar usuario: {str(e)}")
+            messages.error(request, f"Ocurrió un error al registrar el usuario: {str(e)}")
             return redirect("registro")
 
     return render(request, 'muebles/perfil/registrarse.html')
@@ -254,7 +331,9 @@ def registro(request):
 def logout(request):
     if "logueo" in request.session:
         del request.session["logueo"]
-        messages.success(request, "Sesión cerrada correctamente.")
+    if 'carrito_items_count' in request.session:
+        del request.session['carrito_items_count']
+    messages.success(request, "Sesión cerrada correctamente.")
     return redirect("index")
 
 # ==================== PERFIL DE USUARIO ====================
@@ -662,6 +741,7 @@ def agregar_al_carrito(request, mueble_id):
     })
 
 
+
 def eliminar_del_carrito(request, item_id):
     carrito = Carrito.obtener_carrito(request)
     item = get_object_or_404(ItemCarrito, id=item_id, carrito=carrito)
@@ -674,11 +754,15 @@ def eliminar_del_carrito(request, item_id):
         carrito.servicio_instalacion = False
         carrito.save()
 
-    # Actualizar la sesión
-    if request.user.is_authenticated and "logueo" in request.session:
-        request.session["logueo"]["carrito"]["items_count"] = carrito.items.count()
+    # Actualizar la sesión correctamente
+    items_count = carrito.items.count()
+    
+    if request.session.get("logueo"):
+        if "carrito" not in request.session["logueo"]:
+            request.session["logueo"]["carrito"] = {}
+        request.session["logueo"]["carrito"]["items_count"] = items_count
     else:
-        request.session['carrito_items_count'] = carrito.items.count()
+        request.session['carrito_items_count'] = items_count
     
     request.session.modified = True
 
@@ -734,8 +818,8 @@ def ver_carrito(request):
         costo_instalacion = carrito.COSTO_INSTALACION_COMPLETO if carrito.servicio_instalacion else 0
         total = subtotal + costo_domicilio + costo_instalacion
 
-    # Actualizar conteo en sesión
-    request.session['carrito_items_count'] = carrito.items.count()
+    # Verificar si el usuario está logueado
+    usuario_no_logueado = not request.session.get("logueo")
     
     context = {
         'items': items,
@@ -745,14 +829,13 @@ def ver_carrito(request):
         'costo_domicilio': costo_domicilio,
         'costo_instalacion': costo_instalacion,
         'ahorro_total': ahorro_total,
-        'usuario_no_logueado': not request.user.is_authenticated,
-        'domicilio': carrito.domicilio if items.exists() else None,  # Solo mostrar si hay items
-        'servicio_instalacion': carrito.servicio_instalacion if items.exists() else None,  # Solo mostrar si hay items
-        'carrito_vacio': not items.exists(),  # Nueva variable para saber si el carrito está vacío
+        'usuario_no_logueado': usuario_no_logueado,  # Usar esta variable para mostrar/ocultar mensaje
+        'domicilio': carrito.domicilio if items.exists() else None,
+        'servicio_instalacion': carrito.servicio_instalacion if items.exists() else None,
+        'carrito_vacio': not items.exists(),
     }
     
     return render(request, 'muebles/carrito/ver_carrito.html', context)
-
 
 
 def agregar_direccion(request):
@@ -1251,19 +1334,31 @@ def editar_usuario(request, id):
                     
                     usuario.save()
                     
+                    # Actualizar la sesión si es el usuario actual
+                    if 'logueo' in request.session and request.session['logueo']['id'] == usuario.id:
+                        request.session['logueo'] = {
+                            "id": usuario.id,
+                            "nombre": usuario.nombre,
+                            "email": usuario.email,
+                            "rol": usuario.rol,
+                            "nombre_rol": usuario.get_rol_display(),
+                            "foto": usuario.foto.url if usuario.foto else None
+                        }
+                        request.session.modified = True
+                    
                     messages.success(request, 'Usuario actualizado exitosamente!')
                     return redirect('admin_usuarios')
                 except Exception as e:
                     messages.error(request, f'Error al actualizar el usuario: {str(e)}')
+                    return redirect('admin_usuarios')
         else:
             form = UsuarioForm(instance=usuario)
 
-        return render(request, 'muebles/admin/usuarios.html', {
+        return render(request, 'muebles/admin/usuarios/editar.html', {
             'form': form,
             'usuario': usuario,
             'roles': Usuario.ROLES,
-            'estados': Usuario.ESTADO,
-            'segmentos': Proveedor.SEGMENTOS
+            'estados': Usuario.ESTADO
         })
 
     except Usuario.DoesNotExist:

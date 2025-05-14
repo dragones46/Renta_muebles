@@ -10,6 +10,7 @@
         border: 1px solid #444;
         border-radius: 10px;
         box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+        padding: 20px;
     }
 
     .card-title,
@@ -35,80 +36,249 @@
     .btn-primary {
         background-color: #ff8c00;
         border: none;
+        border-radius: 5px;
+        padding: 10px 20px;
         transition: background-color 0.3s ease;
     }
 
     .btn-primary:hover {
         background-color: #e67600;
     }
+
+    .form-section {
+        margin-bottom: 20px;
+        padding: 15px;
+        border-radius: 5px;
+        background-color: #333;
+    }
+
+    .form-section h3 {
+        border-bottom: 1px solid #ff8c00;
+        padding-bottom: 10px;
+    }
+
+    .error-message {
+        color: red;
+        font-size: 0.875em;
+        margin-top: 5px;
+    }
 </style>
 
 <div class="container mt-5">
     <div class="row justify-content-center">
-        <div class="col-md-6">
+        <div class="col-md-8">
             <div class="card shadow">
                 <div class="card-body">
                     <h1 class="card-title text-center">Registro de Usuario</h1>
                     <p class="text-center">Únete a nuestra comunidad para rentar los mejores muebles.</p>
-                    <form method="post" enctype="multipart/form-data" style="color: white;">
+                    
+                    <!-- Mostrar mensajes de error generales -->
+                    {% if messages %}
+                    <div class="alert alert-danger">
+                        {% for message in messages %}
+                        <p>{{ message }}</p>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                    
+                    <form id="registroForm" method="post" enctype="multipart/form-data" style="color: white;">
                         {% csrf_token %}
-                        <div class="form-group">
-                            <label for="nombre">Nombre</label>
-                            <input type="text" class="form-control" id="nombre" name="nombre" required>
+
+                        <!-- Sección de Información Personal -->
+                        <div class="form-section">
+                            <h3>Información Personal</h3>
+                            
+                            <!-- Campo Nombre -->
+                            <div class="form-group">
+                                <label for="nombre">Nombre</label>
+                                <input type="text" class="form-control {% if errors.nombre %}is-invalid{% endif %}" 
+                                       id="nombre" name="nombre" 
+                                       value="{{ form.nombre }}" 
+                                       required
+                                       pattern="[A-Za-z\s]+"
+                                       title="Solo letras y espacios">
+                                {% if errors.nombre %}
+                                <div class="invalid-feedback">
+                                    {{ errors.nombre }}
+                                </div>
+                                {% else %}
+                                <small class="form-text text-muted">Solo letras y espacios</small>
+                                {% endif %}
+                            </div>
+                            
+                            <!-- Campo Email -->
+                            <div class="form-group">
+                                <label for="email">Email</label>
+                                <input type="email" class="form-control {% if errors.email %}is-invalid{% endif %}" 
+                                       id="email" name="email" 
+                                       value="{{ form.email }}" 
+                                       required>
+                                {% if errors.email %}
+                                <div class="invalid-feedback">
+                                    {{ errors.email }}
+                                </div>
+                                {% else %}
+                                <small class="form-text text-muted">Ejemplo: usuario@dominio.com</small>
+                                {% endif %}
+                            </div>
+                            
+                            <!-- Campo Dirección -->
+                            <div class="form-group">
+                                <label for="direccion">Dirección</label>
+                                <input type="text" class="form-control {% if errors.direccion %}is-invalid{% endif %}" 
+                                       id="direccion" name="direccion" 
+                                       value="{{ form.direccion }}" 
+                                       required>
+                                {% if errors.direccion %}
+                                <div class="invalid-feedback">
+                                    {{ errors.direccion }}
+                                </div>
+                                {% else %}
+                                <small class="form-text text-muted">Ejemplo: Calle 123, Ciudad(No dejar el campo vacío)</small>
+                                {% endif %}
+                            </div>
+                            
+                            <!-- Campo Celular -->
+                            <div class="form-group">
+                                <label for="telefono">Celular</label>
+                                <input type="text" class="form-control {% if errors.telefono %}is-invalid{% endif %}" 
+                                       id="telefono" name="telefono" 
+                                       value="{{ form.telefono }}" 
+                                       pattern="\d{10}" 
+                                       title="Número de 10 dígitos"
+                                       required>
+                                {% if errors.telefono %}
+                                <div class="invalid-feedback">
+                                    {{ errors.telefono }}
+                                </div>
+                                {% else %}
+                                <small class="form-text text-muted">10 dígitos (ej: 3101234567)</small>
+                                {% endif %}
+                            </div>
+                            
+                            <!-- Campo Contraseña -->
+                            <div class="form-group">
+                                <label for="password">Contraseña</label>
+                                <input type="password" class="form-control {% if errors.password %}is-invalid{% endif %}" 
+                                       id="password" name="password" 
+                                       required>
+                                {% if errors.password %}
+                                <div class="invalid-feedback">
+                                    {{ errors.password }}
+                                </div>
+                                {% else %}
+                                <small class="form-text text-muted">Mínimo 8 caracteres</small>
+                                {% endif %}
+                            </div>
                         </div>
-                        <div class="form-group">
-                            <label for="email">Email</label>
-                            <input type="email" class="form-control" id="email" name="email" required>
+
+                        <!-- Sección de Tipo de Usuario -->
+                        <div class="form-section">
+                            <h3>Tipo de Usuario</h3>
+                            
+                            <!-- Campo Tipo de Usuario -->
+                            <div class="form-group">
+                                <label for="tipo_usuario">Tipo de Usuario</label>
+                                <select class="form-control {% if errors.tipo_usuario %}is-invalid{% endif %}" 
+                                        id="tipo_usuario" name="tipo_usuario" 
+                                        required>
+                                    <option value="3" {% if form.tipo_usuario == 3 %}selected{% endif %}>Cliente</option>
+                                    <option value="2" {% if form.tipo_usuario == 2 %}selected{% endif %}>Proveedor</option>
+                                </select>
+                                {% if errors.tipo_usuario %}
+                                <div class="invalid-feedback">
+                                    {{ errors.tipo_usuario }}
+                                </div>
+                                {% endif %}
+                            </div>
+                            
+                            <!-- Campo Tipo de Documento -->
+                            <div class="form-group">
+                                <label for="tipo_documento">Tipo de Documento</label>
+                                <select class="form-control {% if errors.tipo_documento %}is-invalid{% endif %}" 
+                                        id="tipo_documento" name="tipo_documento" 
+                                        required>
+                                    <option value="CC" {% if form.tipo_documento == 'CC' %}selected{% endif %}>Cédula de Ciudadanía</option>
+                                    <option value="NIT" {% if form.tipo_documento == 'NIT' %}selected{% endif %}>NIT de Empresa</option>
+                                </select>
+                                {% if errors.tipo_documento %}
+                                <div class="invalid-feedback">
+                                    {{ errors.tipo_documento }}
+                                </div>
+                                {% endif %}
+                            </div>
+                            
+                            <!-- Campo Número de Documento -->
+                            <div class="form-group">
+                                <label for="numero_documento">Número de Documento</label>
+                                <input type="text" class="form-control {% if errors.numero_documento %}is-invalid{% endif %}" 
+                                       id="numero_documento" name="numero_documento" 
+                                       value="{{ form.numero_documento }}" 
+                                       pattern="\d+" 
+                                       title="Solo números"
+                                       required>
+                                {% if errors.numero_documento %}
+                                <div class="invalid-feedback">
+                                    {{ errors.numero_documento }}
+                                </div>
+                                {% else %}
+                                <small class="form-text text-muted">Solo números, sin puntos ni comas</small>
+                                {% endif %}
+                            </div>
+                            
+                            <!-- Campo Tipo de Persona -->
+                            <div class="form-group">
+                                <label for="tipo_persona">Tipo de Persona</label>
+                                <select class="form-control {% if errors.tipo_persona %}is-invalid{% endif %}" 
+                                        id="tipo_persona" name="tipo_persona" 
+                                        required>
+                                    <option value="natural" {% if form.tipo_persona == 'natural' %}selected{% endif %}>Persona Natural</option>
+                                    <option value="juridica" {% if form.tipo_persona == 'juridica' %}selected{% endif %}>Persona Jurídica</option>
+                                </select>
+                                {% if errors.tipo_persona %}
+                                <div class="invalid-feedback">
+                                    {{ errors.tipo_persona }}
+                                </div>
+                                {% endif %}
+                            </div>
                         </div>
-                        <div class="form-group">
-                            <label for="direccion">Dirección</label>
-                            <input type="text" class="form-control" id="direccion" name="direccion" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="telefono">Tel&eacute;fono</label>
-                            <input type="text" class="form-control" id="telefono" name="telefono" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="password">Contraseña</label>
-                            <input type="password" class="form-control" id="password" name="password" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="tipo_usuario">Tipo de Usuario</label>
-                            <select class="form-control" id="tipo_usuario" name="tipo_usuario" required>
-                                <option value="3">Cliente</option>
-                                <option value="2">Proveedor</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label for="tipo_documento">Tipo de Documento</label>
-                            <select class="form-control" id="tipo_documento" name="tipo_documento" required>
-                                <option value="CC">Cédula de Ciudadanía</option>
-                                <option value="NIT">NIT de Empresa</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label for="numero_documento">Número de Documento</label>
-                            <input type="text" class="form-control" id="numero_documento" name="numero_documento"
-                                required>
-                        </div>
-                        <div class="form-group">
-                            <label for="tipo_persona">Tipo de Persona</label>
-                            <select class="form-control" id="tipo_persona" name="tipo_persona" required>
-                                <option value="natural">Persona Natural</option>
-                                <option value="juridica">Persona Jurídica</option>
-                            </select>
-                        </div>
-                        <div class="form-group" id="empresa_fields" style="display: none;">
+
+                        <!-- Sección de Información de Empresa (solo para Proveedores) -->
+                        <div class="form-section" id="empresa_fields" style="display: {% if form.tipo_usuario == 2 %}block{% else %}none{% endif %};">
+                            <h3>Información de la Empresa</h3>
+                            
+                            <!-- Campo Nombre Empresa -->
                             <div class="form-group">
                                 <label for="nombre_empresa">Nombre de la Empresa</label>
-                                <input type="text" class="form-control" id="nombre_empresa" name="nombre_empresa">
+                                <input type="text" class="form-control {% if errors.nombre_empresa %}is-invalid{% endif %}" 
+                                       id="nombre_empresa" name="nombre_empresa" 
+                                       value="{{ form.nombre_empresa }}">
+                                {% if errors.nombre_empresa %}
+                                <div class="invalid-feedback">
+                                    {{ errors.nombre_empresa }}
+                                </div>
+                                {% endif %}
                             </div>
+                            
+                            <!-- Campo Teléfono Empresa -->
                             <div class="form-group">
-                                <label for="telefono">Teléfono de la empresa</label>
-                                <input type="text" class="form-control" id="telefono" name="telefono_empresa">
+                                <label for="telefono_empresa">Teléfono de la empresa</label>
+                                <input type="text" class="form-control {% if errors.telefono_empresa %}is-invalid{% endif %}" 
+                                       id="telefono_empresa" name="telefono_empresa" 
+                                       value="{{ form.telefono_empresa }}" 
+                                       pattern="\d{7,}" 
+                                       title="Mínimo 7 dígitos">
+                                {% if errors.telefono_empresa %}
+                                <div class="invalid-feedback">
+                                    {{ errors.telefono_empresa }}
+                                </div>
+                                {% else %}
+                                <small class="form-text text-muted">Mínimo 7 dígitos</small>
+                                {% endif %}
                             </div>
                         </div>
-                        <button type="submit" class="btn btn-primary">Registrarse</button>
+
+                        <button type="submit" class="btn btn-primary btn-block">Registrarse</button>
                     </form>
                 </div>
             </div>
@@ -117,15 +287,33 @@
 </div>
 
 <script>
-    document.getElementById('tipo_usuario').addEventListener('change', function () {
-        const nombreEmpresaField = document.getElementById('nombre_empresa_field');
-        nombreEmpresaField.style.display = this.value === '2' ? 'block' : 'none';
-    });
-</script>
-<script>
+    // Manejar el cambio de tipo de usuario
     document.getElementById('tipo_usuario').addEventListener('change', function() {
         const empresaFields = document.getElementById('empresa_fields');
-        empresaFields.style.display = this.value === '2' ? 'block' : 'none';
+        const tipoDocumento = document.getElementById('tipo_documento');
+        const tipoPersona = document.getElementById('tipo_persona');
+
+        if (this.value === '2') {
+            empresaFields.style.display = 'block';
+            tipoDocumento.value = 'NIT';
+            tipoPersona.value = 'juridica';
+        } else {
+            empresaFields.style.display = 'none';
+            tipoDocumento.value = 'CC';
+            tipoPersona.value = 'natural';
+        }
+    });
+
+    // Validación en tiempo real
+    document.querySelectorAll('input[pattern]').forEach(input => {
+        input.addEventListener('input', function() {
+            const pattern = new RegExp(this.pattern);
+            if (this.value && !pattern.test(this.value)) {
+                this.classList.add('is-invalid');
+            } else {
+                this.classList.remove('is-invalid');
+            }
+        });
     });
 </script>
 {% endblock %}
