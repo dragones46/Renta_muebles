@@ -143,6 +143,7 @@ class UsuarioForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         if self.instance and self.instance.pk:
+            self.fields['password'].required = False
             try:
                 proveedor = self.instance.proveedor
                 self.fields['nombre_empresa'].initial = proveedor.nombre_empresa
@@ -153,18 +154,19 @@ class UsuarioForm(forms.ModelForm):
     def save(self, commit=True):
         usuario = super().save(commit=False)
         password = self.cleaned_data.get('password')
-        
-        # Solo actualizar la contraseña si se proporcionó una nueva
+
+        # Only update the password if provided
         if password:
             usuario.set_password(password)
-        elif not usuario.pk:  # Nuevo usuario sin contraseña
+        elif not usuario.pk:  # If new user, raise an error
             raise ValueError("Se requiere una contraseña para nuevos usuarios")
-        
+
         if commit:
-            usuario.save()
-            
-            # Manejar proveedor
-            if usuario.rol == 2:  # Proveedor
+            usuario.save()  # Save user to the database, irrespective of password changes
+            self.save_m2m()
+
+            # Handle the provider separately
+            if usuario.rol == 2:  # For provider
                 Proveedor.objects.update_or_create(
                     usuario=usuario,
                     defaults={
@@ -174,8 +176,10 @@ class UsuarioForm(forms.ModelForm):
                 )
             elif hasattr(usuario, 'proveedor'):
                 usuario.proveedor.delete()
-                
+
         return usuario
+
+
 
 
 #renta

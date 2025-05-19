@@ -1,6 +1,6 @@
 {% extends 'muebles/barNav.html' %}
 {% load static %}
-
+{% load humanize %}
 {% block titulo %}Perfil de Propietario - Renta de Muebles{% endblock %}
 
 {% block contenedor %}
@@ -178,7 +178,7 @@
                                     <div class="col-md-4">
                                         <div class="card bg-dark mb-3">
                                             <div class="card-body text-center">
-                                                <h2 class="text-warning">${{ ganancias_totales|floatformat:2 }}</h2>
+                                                <h2 class="text-warning">${{ ganancias_totales|intcomma }}</h2>
                                                 <p class="mb-0">Ganancias Totales</p>
                                             </div>
                                         </div>
@@ -213,9 +213,9 @@
                                                             {% endif %}
                                                         {% endfor %}
                                                     </td>
-                                                    <td>${{ pedido.total|floatformat:2 }}</td>
+                                                    <td>${{ pedido.total|intcomma }}</td>
                                                     <td class="text-success">
-                                                        ${{ pedido.ganancia_propietario|floatformat:2 }}
+                                                        ${{ pedido.ganancia_propietario|intcomma }}
                                                     </td>
                                                 </tr>
                                                 {% endfor %}

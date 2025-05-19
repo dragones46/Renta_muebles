@@ -1,5 +1,6 @@
 from django.contrib import admin
 from django.utils.html import mark_safe
+from django.contrib.auth.hashers import make_password
 from .models import *
 from .forms import *
 
@@ -7,7 +8,7 @@ from .forms import *
 @admin.register(Usuario)
 class UsuarioAdmin(admin.ModelAdmin):
     form = UsuarioForm
-    list_display = ('id', 'nombre', 'email', 'get_tipo_persona', 'rol', 'estado', 'ver_foto')
+    list_display = ('id', 'nombre', 'email','ver_password', 'get_tipo_persona', 'rol', 'estado', 'ver_foto')
     search_fields = ('id', 'nombre', 'email')
     list_filter = ('rol', 'estado')
     list_editable = ('rol', 'estado')
@@ -16,6 +17,10 @@ class UsuarioAdmin(admin.ModelAdmin):
         return dict(Usuario.TIPO_PERSONA).get(obj.tipo_persona, 'Desconocido')
     get_tipo_persona.short_description = 'Tipo de Persona'
 
+    def ver_password(self, obj):
+        # Aquí puedes mostrar un hash de la contraseña
+        return make_password(obj.password)  # Esto mostrará el hash de la contraseña
+    ver_password.short_description = 'Contraseña (hash)'
 
     def ver_foto(self, obj):
         if obj.foto:

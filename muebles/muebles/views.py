@@ -558,9 +558,15 @@ def perfil_proveedor(request):
         mueble__proveedor=proveedor
     ).aggregate(total=Sum('ganancia_propietario'))['total'] or 0
 
+    # Agregar las ganancias por pedido
     pedidos_recientes = Pedido.objects.filter(
         detalles__mueble__proveedor=proveedor
     ).distinct().order_by('-fecha')[:5]
+
+    for pedido in pedidos_recientes:
+        # Filtramos solo los detalles de ese proveedor
+        detalles = pedido.detalles.filter(mueble__proveedor=proveedor)
+        pedido.ganancia_propietario = sum(d.ganancia_propietario for d in detalles)
 
     context = {
         'user': user,
@@ -952,7 +958,18 @@ def eliminar_instalacion(request):
 # ==================== PROCESO DE PAGO ====================
 @login_requerido
 def procesar_pago(request):
-    carrito = get_object_or_404(Carrito, usuario=request.user)
+    logueo = request.session.get("logueo")
+    if not logueo:
+        messages.error(request, 'Debes iniciar sesión para procesar el pago.')
+        return redirect('login')
+
+    try:
+        usuario = Usuario.objects.get(id=logueo["id"])
+    except Usuario.DoesNotExist:
+        messages.error(request, 'Usuario no encontrado.')
+        return redirect('login')
+
+    carrito = get_object_or_404(Carrito, usuario=usuario)
 
     if not carrito.items.exists():
         messages.error(request, "Tu carrito está vacío")
@@ -962,9 +979,9 @@ def procesar_pago(request):
         with transaction.atomic():
             # Crear el pedido
             pedido = Pedido.objects.create(
-                usuario=request.user,
+                usuario=usuario,
                 total=carrito.calcular_total(),
-                direccion_entrega=carrito.domicilio or request.user.direccion,
+                direccion_entrega=carrito.domicilio or usuario.direccion,
                 estado='pendiente',
                 costo_domicilio=carrito.COSTO_DOMICILIO if carrito.domicilio else 0,
                 servicio_instalacion=carrito.servicio_instalacion
@@ -1009,6 +1026,7 @@ def procesar_pago(request):
     except Exception as e:
         messages.error(request, f"Error al procesar el pago: {str(e)}")
         return redirect('ver_carrito')
+
 
 
 # ==================== VISTAS DE ADMINISTRACIÓN ====================
@@ -1307,7 +1325,7 @@ def crear_usuario(request):
     else:
         form = UsuarioForm()
 
-    return render(request, 'muebles/admin/usuarios/crear.html', {
+    return render(request, 'muebles/admin/usuarios.html', {
         'form': form,
         'roles': Usuario.ROLES,
         'estados': Usuario.ESTADO,
@@ -1319,21 +1337,22 @@ def crear_usuario(request):
 def editar_usuario(request, id):
     try:
         usuario = Usuario.objects.get(id=id)
-        
+
         if request.method == 'POST':
             form = UsuarioForm(request.POST, request.FILES, instance=usuario)
             if form.is_valid():
                 try:
-                    # Guardar el usuario sin la contraseña primero
+                    # Guardar el usuario sin commit primero
                     usuario = form.save(commit=False)
-                    
+
                     # Solo actualizar la contraseña si se proporcionó una nueva
-                    nueva_password = form.cleaned_data.get('password')
-                    if nueva_password:
+                    nueva_password = request.POST.get('password')
+                    if nueva_password:  # Solo si hay contenido
                         usuario.set_password(nueva_password)
-                    
+
+                    # Guardar el usuario (con o sin nueva contraseña)
                     usuario.save()
-                    
+
                     # Actualizar la sesión si es el usuario actual
                     if 'logueo' in request.session and request.session['logueo']['id'] == usuario.id:
                         request.session['logueo'] = {
@@ -1345,7 +1364,6 @@ def editar_usuario(request, id):
                             "foto": usuario.foto.url if usuario.foto else None
                         }
                         request.session.modified = True
-                    
                     messages.success(request, 'Usuario actualizado exitosamente!')
                     return redirect('admin_usuarios')
                 except Exception as e:
@@ -1354,7 +1372,7 @@ def editar_usuario(request, id):
         else:
             form = UsuarioForm(instance=usuario)
 
-        return render(request, 'muebles/admin/usuarios/editar.html', {
+        return render(request, 'muebles/admin/usuarios.html', {
             'form': form,
             'usuario': usuario,
             'roles': Usuario.ROLES,
@@ -1979,7 +1997,12 @@ from django.core.paginator import Paginator
 def propietario_inicio(request):
     logueo = request.session.get("logueo")
     usuario = Usuario.objects.get(id=logueo["id"])
-    proveedor = get_object_or_404(Proveedor, usuario=usuario)
+
+    try:
+        proveedor = get_object_or_404(Proveedor, usuario=usuario)
+    except Proveedor.DoesNotExist:
+        messages.error(request, 'No tienes un perfil de proveedor asociado.')
+        return redirect('index')  # Redirigir a una página adecuada
 
     total_muebles = Mueble.objects.filter(proveedor=proveedor).count()
     muebles_activos = Mueble.objects.filter(proveedor=proveedor).count()
@@ -2004,6 +2027,7 @@ def propietario_inicio(request):
         'comision_total': ganancias_totales['comision'] or 0,
     }
     return render(request, 'muebles/proveedor/inicio.html', context)
+
 
 @login_requerido(roles_permitidos=[2])
 def propietario_muebles(request):

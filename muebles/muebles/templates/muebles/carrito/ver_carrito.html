@@ -529,7 +529,7 @@
             <img src="{% static 'muebles/img/instalacion.png' %}" alt="Instalación">
 
             <div class="item-info">
-                <h3>Servicio de Instalación Completo</h3>
+                <h3>Servicio de Instalación</h3>
                 <p>Costo fijo por instalación</p>
             </div>
 
@@ -582,10 +582,9 @@
             <strong>¡Estás viendo el carrito como invitado!</strong>
             Para proceder al pago, por favor <a href="{% url 'login' %}?next={% url 'procesar_pago' %}" class="alert-link">inicia sesión</a> o <a href="{% url 'registro' %}" class="alert-link">regístrate</a>.
         </div>
-
-        <button class="btn-pagar" disabled>
+        <a href="{% url 'login' %}?next={% url 'procesar_pago' %}" class="btn-pagar">
             <i class="bi bi-credit-card-fill"></i> Inicia sesión para pagar
-        </button>
+        </a>
         <div class="text-center mt-3">
             <a href="{% url 'login' %}?next={% url 'procesar_pago' %}" class="btn btn-primary">
                 <i class="bi bi-box-arrow-in-right"></i> Iniciar sesión
@@ -632,7 +631,7 @@
         <div class="form-group">
             <label for="id_servicio_instalacion" class="form-check-label">
                 <input type="checkbox" name="servicio_instalacion" id="id_servicio_instalacion" {% if carrito.servicio_instalacion %}checked{% endif %}>
-                Agregar Servicio de Instalación Completo
+                Agregar Servicio de Instalación 
             </label>
         </div>
         <button type="submit" class="btn-direccion">

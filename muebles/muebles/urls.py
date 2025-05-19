@@ -97,11 +97,11 @@ urlpatterns = [
     path('administradores/faqs/eliminar/<int:faq_id>/', views.admin_eliminar_faq, name='admin_eliminar_faq'),
 
 #ZONA DE PROPIETARIOS
-    path('propietarios/', views.propietario_inicio, name='propietario_inicio'),
-    path('propietarios/muebles/', views.propietario_muebles, name='propietario_muebles'),
-    path('propietarios/muebles/crear/', views.propietario_crear_mueble, name='propietario_crear_mueble'),
-    path('propietarios/muebles/editar/<int:id>/', views.propietario_editar_mueble, name='propietario_editar_mueble'),
-    path('propietarios/muebles/eliminar/<int:id>/', views.propietario_eliminar_mueble, name='propietario_eliminar_mueble'),
+    path('Proveedores/', views.propietario_inicio, name='propietario_inicio'),
+    path('Proveedores/muebles/', views.propietario_muebles, name='propietario_muebles'),
+    path('Proveedores/muebles/crear/', views.propietario_crear_mueble, name='propietario_crear_mueble'),
+    path('Proveedores/muebles/editar/<int:id>/', views.propietario_editar_mueble, name='propietario_editar_mueble'),
+    path('Proveedores/muebles/eliminar/<int:id>/', views.propietario_eliminar_mueble, name='propietario_eliminar_mueble'),
 
  # Zona de Soporte Técnico
     path('soporte-tecnico/', views.soporte_tecnico_inicio, name='soporte_tecnico_inicio'),
@@ -116,7 +116,7 @@ urlpatterns = [
  # Perfiles específicos
     path('perfil/', views.perfil, name='perfil'),
     path('perfil/admin/', views.perfil_admin, name='perfil_admin'),
-    path('perfil/propietario/', views.perfil_proveedor, name='perfil_proveedor'),
+    path('perfil/proveedor/', views.perfil_proveedor, name='perfil_proveedor'),
     path('perfil/cliente/', views.perfil_cliente, name='perfil_cliente'),
     path('perfil/soporte/', views.perfil_soporte, name='perfil_soporte'),
 
