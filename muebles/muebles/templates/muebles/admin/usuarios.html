@@ -536,10 +536,9 @@
                                 <label class="form-label">Dirección *</label>
                                 <input type="text" class="form-control" name="direccion" value="{{ info.usuario.direccion }}" required>
                             </div>
-                            <div class="mb-3">
-                                <label class="form-label">Nueva Contraseña</label>
-                                <input type="password" class="form-control" name="password" placeholder="Dejar en blanco para mantener la contraseña actual" autocomplete="new-password">
-                                <small class="text-muted">Solo llena este campo si deseas cambiar la contraseña</small>
+                            <div class="form-group">
+                                <label for="id_password">Contraseña (Poner contraseña para editar lo demas)</label>
+                                <input type="password" name="password" class="form-control" id="id_password" placeholder="Dejar vacío si no deseas cambiarla">
                             </div>
                         </div>
                         <div class="modal-body">
@@ -669,6 +668,17 @@
         {% if faq_editando %}
         $(window).scrollTop(0);
         {% endif %}
+    });
+</script>
+
+<script>
+    // Script para evitar que el campo de la contraseña sea vacío cuando no se proporciona una nueva contraseña
+    document.querySelector('form').addEventListener('submit', function (event) {
+        var passwordField = document.querySelector('input[name="password"]');
+        if (passwordField && passwordField.value === "") {
+            // Si el campo de la contraseña está vacío, lo eliminamos de los datos del formulario
+            passwordField.remove();
+        }
     });
 </script>
 {% endblock %}

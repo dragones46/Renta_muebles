@@ -3,6 +3,7 @@ from django.core.validators import MaxLengthValidator
 from django.core.exceptions import ValidationError
 from django.db.models import Q
 from .models import *
+import re
 
 #preguntas y respuestas
 class PreguntaForm(forms.ModelForm):
@@ -155,18 +156,18 @@ class UsuarioForm(forms.ModelForm):
         usuario = super().save(commit=False)
         password = self.cleaned_data.get('password')
 
-        # Only update the password if provided
+        # Solo actualizar la contraseña si se proporcionó una
         if password:
             usuario.set_password(password)
-        elif not usuario.pk:  # If new user, raise an error
+        elif not usuario.pk:  # Si es un usuario nuevo, lanza error si no hay contraseña
             raise ValueError("Se requiere una contraseña para nuevos usuarios")
 
         if commit:
-            usuario.save()  # Save user to the database, irrespective of password changes
+            usuario.save()  # Guardamos el usuario, con o sin nueva contraseña
             self.save_m2m()
 
-            # Handle the provider separately
-            if usuario.rol == 2:  # For provider
+            # Manejo del proveedor
+            if usuario.rol == 2:  # Si es proveedor
                 Proveedor.objects.update_or_create(
                     usuario=usuario,
                     defaults={
@@ -178,8 +179,6 @@ class UsuarioForm(forms.ModelForm):
                 usuario.proveedor.delete()
 
         return usuario
-
-
 
 
 #renta
@@ -313,3 +312,106 @@ class CambiarContrasenaForm(forms.Form):
         if nueva and confirmar and nueva != confirmar:
             raise forms.ValidationError("Las contraseñas no coinciden.")
         return cleaned_data
+
+# ============================================Metodo de pago===================================================
+
+class MetodoPagoForm(forms.Form):
+    METODOS_PAGO = (
+        ('tarjeta', 'Tarjeta de Crédito/Débito'),
+        ('pse', 'PSE (Pagos Seguros en Línea)'),
+        ('efectivo', 'Efectivo en Punto de Pago'),
+    )
+    
+    TIPOS_TARJETA = (
+        ('visa', 'Visa'),
+        ('mastercard', 'MasterCard'),
+        ('amex', 'American Express'),
+        ('diners', 'Diners Club'),
+    )
+    
+    metodo_pago = forms.ChoiceField(
+        choices=METODOS_PAGO,
+        widget=forms.RadioSelect,
+        initial='tarjeta'
+    )
+    
+    # Información del titular
+    nombre_tarjeta = forms.CharField(
+        max_length=100,
+        label="Nombre en la Tarjeta",
+        widget=forms.TextInput(attrs={'placeholder': 'Como aparece en la tarjeta'})
+    )
+    email = forms.EmailField(
+        widget=forms.EmailInput(attrs={'placeholder': 'Para enviar el comprobante'})
+    )
+    direccion = forms.CharField(
+        max_length=200,
+        widget=forms.TextInput(attrs={'placeholder': 'Dirección de facturación'})
+    )
+    
+    # Información de la tarjeta (solo si método es tarjeta)
+    tipo_tarjeta = forms.ChoiceField(
+        choices=TIPOS_TARJETA,
+        required=False,
+        label="Tipo de Tarjeta"
+    )
+    numero_tarjeta = forms.CharField(
+        max_length=19,
+        required=False,
+        label="Número de Tarjeta",
+        widget=forms.TextInput(attrs={
+            'placeholder': '1234 5678 9012 3456',
+            'data-mask': '0000 0000 0000 0000'
+        })
+    )
+    fecha_expiracion = forms.CharField(
+        max_length=7,
+        required=False,
+        label="Fecha de Expiración (MM/AAAA)",
+        widget=forms.TextInput(attrs={
+            'placeholder': 'MM/AAAA',
+            'data-mask': '00/0000'
+        })
+    )
+    codigo_seguridad = forms.CharField(
+        max_length=4,
+        required=False,
+        label="CVV/CVC",
+        widget=forms.TextInput(attrs={
+            'placeholder': '123',
+            'data-mask': '0000'
+        })
+    )
+    
+    # Términos y condiciones
+    aceptar_terminos = forms.BooleanField(
+        required=True,
+        label="Acepto los términos y condiciones de compra"
+    )
+    
+    def clean(self):
+        cleaned_data = super().clean()
+        metodo_pago = cleaned_data.get('metodo_pago')
+        
+        if metodo_pago == 'tarjeta':
+            # Validar campos de tarjeta
+            numero_tarjeta = cleaned_data.get('numero_tarjeta', '').replace(' ', '')
+            fecha_expiracion = cleaned_data.get('fecha_expiracion', '')
+            codigo_seguridad = cleaned_data.get('codigo_seguridad', '')
+            
+            if not numero_tarjeta or len(numero_tarjeta) < 15:
+                self.add_error('numero_tarjeta', 'Número de tarjeta inválido')
+            
+            if not re.match(r'^\d{2}/\d{4}$', fecha_expiracion):
+                self.add_error('fecha_expiracion', 'Formato debe ser MM/AAAA')
+            
+            if not codigo_seguridad or len(codigo_seguridad) < 3:
+                self.add_error('codigo_seguridad', 'Código de seguridad inválido')
+        
+        return cleaned_data
+    
+    def clean_numero_tarjeta(self):
+        numero = self.cleaned_data.get('numero_tarjeta', '').replace(' ', '')
+        if not numero.isdigit():
+            raise forms.ValidationError("El número de tarjeta solo debe contener dígitos")
+        return numero

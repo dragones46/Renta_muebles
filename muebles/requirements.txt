@@ -36,6 +36,7 @@ pyhanko-certvalidator==0.26.7
 pypdf==5.3.1
 python-bidi==0.6.6
 python-dateutil==2.9.0.post0
+python-decouple==3.8
 pytz==2025.2
 PyYAML==6.0.2
 qrcode==8.0

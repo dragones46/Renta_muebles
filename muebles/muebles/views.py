@@ -957,77 +957,122 @@ def eliminar_instalacion(request):
 
 # ==================== PROCESO DE PAGO ====================
 @login_requerido
-def procesar_pago(request):
+def formulario_pago(request):
     logueo = request.session.get("logueo")
-    if not logueo:
-        messages.error(request, 'Debes iniciar sesión para procesar el pago.')
-        return redirect('login')
-
-    try:
-        usuario = Usuario.objects.get(id=logueo["id"])
-    except Usuario.DoesNotExist:
-        messages.error(request, 'Usuario no encontrado.')
-        return redirect('login')
-
-    carrito = get_object_or_404(Carrito, usuario=usuario)
-
+    usuario = Usuario.objects.get(id=logueo["id"])
+    carrito = Carrito.obtener_carrito(request)
+    
     if not carrito.items.exists():
         messages.error(request, "Tu carrito está vacío")
         return redirect('ver_carrito')
 
+    # Calcular totales
+    subtotal = sum(item.subtotal() for item in carrito.items.all())
+    costo_domicilio = carrito.COSTO_DOMICILIO if carrito.domicilio else 0
+    costo_instalacion = carrito.COSTO_INSTALACION_COMPLETO if carrito.servicio_instalacion else 0
+    total = subtotal + costo_domicilio + costo_instalacion
+
+    if request.method == 'POST':
+        form = MetodoPagoForm(request.POST)
+        if form.is_valid():
+            try:
+                with transaction.atomic():
+                    # Crear el pedido
+                    pedido = Pedido.objects.create(
+                        usuario=usuario,
+                        total=total,
+                        direccion_entrega=carrito.domicilio or usuario.direccion,
+                        estado='pendiente',
+                        costo_domicilio=costo_domicilio,
+                        servicio_instalacion=carrito.servicio_instalacion
+                    )
+
+                    comision_total = 0
+
+                    # Crear los detalles del pedido
+                    for item in carrito.items.all():
+                        dias = (item.fecha_fin - item.fecha_inicio).days + 1
+                        comision = (item.mueble.precio_diario * item.mueble.comision / 100) * item.cantidad * dias
+                        ganancia_propietario = (item.mueble.precio_diario - (item.mueble.precio_diario * item.mueble.comision / 100)) * item.cantidad * dias
+
+                        DetallePedido.objects.create(
+                            pedido=pedido,
+                            mueble=item.mueble,
+                            cantidad=item.cantidad,
+                            precio_unitario=item.mueble.precio_diario,
+                            subtotal=item.subtotal(),
+                            comision=comision,
+                            ganancia_propietario=ganancia_propietario
+                        )
+                        comision_total += comision
+
+                    # Actualizar comisión total
+                    pedido.comision_total = comision_total
+                    pedido.save()
+
+                    # Limpiar el carrito
+                    carrito.items.all().delete()
+                    carrito.domicilio = None
+                    carrito.servicio_instalacion = False
+                    carrito.save()
+
+                    # Actualizar la sesión
+                    request.session["logueo"]["carrito"]["items_count"] = 0
+                    request.session.modified = True
+
+                    messages.success(request, "¡Pago exitoso! Tu pedido ha sido procesado.")
+                    return redirect('detalle_pedido', id=pedido.id)
+
+            except Exception as e:
+                messages.error(request, f"Error al procesar el pago: {str(e)}")
+                return redirect('formulario_pago')
+    else:
+        # Datos iniciales del formulario
+        initial_data = {
+            'nombre_tarjeta': usuario.nombre,
+            'email': usuario.email,
+            'direccion': carrito.domicilio or usuario.direccion,
+        }
+        form = MetodoPagoForm(initial=initial_data)
+
+    context = {
+        'form': form,
+        'usuario': usuario,
+        'carrito': carrito,
+        'subtotal': subtotal,
+        'total': total,
+        'costo_domicilio': costo_domicilio,
+        'costo_instalacion': costo_instalacion,
+    }
+    
+    return render(request, 'muebles/carrito/formulario_pago.html', context)
+
+
+@login_requerido
+def detalle_pedido_usuario(request, id):
+    logueo = request.session.get("logueo")
+    usuario = Usuario.objects.get(id=logueo["id"])
+    
     try:
-        with transaction.atomic():
-            # Crear el pedido
-            pedido = Pedido.objects.create(
-                usuario=usuario,
-                total=carrito.calcular_total(),
-                direccion_entrega=carrito.domicilio or usuario.direccion,
-                estado='pendiente',
-                costo_domicilio=carrito.COSTO_DOMICILIO if carrito.domicilio else 0,
-                servicio_instalacion=carrito.servicio_instalacion
-            )
-
-            comision_total = 0
-
-            # Crear los detalles del pedido
-            for item in carrito.items.all():
-                dias = (item.fecha_fin - item.fecha_inicio).days + 1
-                comision = (item.mueble.precio_diario * item.mueble.comision / 100) * item.cantidad * dias
-                ganancia_propietario = (item.mueble.precio_diario - (item.mueble.precio_diario * item.mueble.comision / 100)) * item.cantidad * dias
-
-                DetallePedido.objects.create(
-                    pedido=pedido,
-                    mueble=item.mueble,
-                    cantidad=item.cantidad,
-                    precio_unitario=item.mueble.precio_diario,
-                    subtotal=item.subtotal(),
-                    comision=comision,
-                    ganancia_propietario=ganancia_propietario
-                )
-                comision_total += comision
-
-            # Actualizar comisión total
-            pedido.comision_total = comision_total
-            pedido.save()
-
-            # Limpiar el carrito
-            carrito.items.all().delete()
-            carrito.domicilio = None
-            carrito.servicio_instalacion = False
-            carrito.save()
-
-            # Actualizar la sesión
-            request.session["logueo"]["carrito"]["items_count"] = 0
-            request.session.modified = True
-
-            messages.success(request, "¡Pago exitoso! Tu pedido ha sido procesado.")
-            return redirect('index')
-
-    except Exception as e:
-        messages.error(request, f"Error al procesar el pago: {str(e)}")
-        return redirect('ver_carrito')
-
-
+        # Solo permite ver el pedido si pertenece al usuario actual
+        pedido = Pedido.objects.get(id=id, usuario=usuario)
+        detalles = DetallePedido.objects.filter(pedido=pedido)
+        
+        # Calcular días de renta para cada item
+        for detalle in detalles:
+            detalle.dias = (detalle.pedido.fecha_fin - detalle.pedido.fecha_inicio).days + 1
+        
+        context = {
+            'pedido': pedido,
+            'detalles': detalles,
+            'usuario': usuario,
+        }
+        
+        return render(request, 'muebles/carrito/detalle_pedido_usuario.html', context)
+        
+    except Pedido.DoesNotExist:
+        messages.error(request, "El pedido no existe o no tienes permiso para verlo")
+        return redirect('perfil')
 
 # ==================== VISTAS DE ADMINISTRACIÓN ====================
 
@@ -1329,7 +1374,6 @@ def crear_usuario(request):
         'form': form,
         'roles': Usuario.ROLES,
         'estados': Usuario.ESTADO,
-        'segmentos': Proveedor.SEGMENTOS,
         'modo': 'crear'
     })
 
@@ -1340,20 +1384,32 @@ def editar_usuario(request, id):
 
         if request.method == 'POST':
             form = UsuarioForm(request.POST, request.FILES, instance=usuario)
+
             if form.is_valid():
+                # Mostrar los datos del formulario para debug
+                print("Formulario válido")
+                print("Datos del formulario:", form.cleaned_data)  # Imprime todos los datos limpiados del formulario
+
                 try:
-                    # Guardar el usuario sin commit primero
+                    # Usamos form.save(commit=False) para no guardar inmediatamente
                     usuario = form.save(commit=False)
 
-                    # Solo actualizar la contraseña si se proporcionó una nueva
-                    nueva_password = request.POST.get('password')
-                    if nueva_password:  # Solo si hay contenido
-                        usuario.set_password(nueva_password)
+                    # Verificamos si se ha proporcionado una nueva contraseña
+                    nueva_password = form.cleaned_data.get('password')
+                    print(f"Nueva contraseña proporcionada: {nueva_password}")  # Imprime la nueva contraseña (si se proporciona)
 
-                    # Guardar el usuario (con o sin nueva contraseña)
+                    if nueva_password:  # Solo si se proporciona una nueva contraseña
+                        usuario.set_password(nueva_password)
+                        print("La contraseña se ha actualizado.")
+                    else:
+                        # Si no hay nueva contraseña, no tocamos la contraseña
+                        # Se mantiene la contraseña actual (sin modificación)
+                        print("La contraseña no se proporcionó, se mantiene la misma.")
+
+                    # Guardar el usuario sin cambiar la contraseña si no se proporciona una nueva
                     usuario.save()
 
-                    # Actualizar la sesión si es el usuario actual
+                    # Si es el mismo usuario logueado, actualizar la sesión
                     if 'logueo' in request.session and request.session['logueo']['id'] == usuario.id:
                         request.session['logueo'] = {
                             "id": usuario.id,
@@ -1364,9 +1420,11 @@ def editar_usuario(request, id):
                             "foto": usuario.foto.url if usuario.foto else None
                         }
                         request.session.modified = True
+
                     messages.success(request, 'Usuario actualizado exitosamente!')
                     return redirect('admin_usuarios')
                 except Exception as e:
+                    print(f"Error al guardar el usuario: {str(e)}")  # Imprime el error
                     messages.error(request, f'Error al actualizar el usuario: {str(e)}')
                     return redirect('admin_usuarios')
         else:
@@ -1382,6 +1440,8 @@ def editar_usuario(request, id):
     except Usuario.DoesNotExist:
         messages.error(request, 'El usuario que intentas editar no existe.')
         return redirect('admin_usuarios')
+
+
 
 @login_requerido(roles_permitidos=[1])
 def eliminar_usuario(request, id):
@@ -1472,7 +1532,6 @@ def detalle_pedido(request, id):
     })
 
 # ==================== AYUDA Y SOPORTE ====================
-
 def ayuda_principal(request):
     return render(request, 'muebles/ayuda/ayuda_principal.html')
 

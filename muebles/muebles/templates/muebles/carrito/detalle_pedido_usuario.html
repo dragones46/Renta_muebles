@@ -1,0 +1,390 @@
+{% extends 'muebles/barNav.html' %}
+{% load static %}
+{% load humanize %}
+{% block titulo %}Detalle de Pedido #{{ pedido.id }}{% endblock %}
+
+{% block contenedor %}
+<style>
+    :root {
+        --primary-color: #ff8c00;
+        --secondary-color: #0059b1;
+        --dark-bg: #2a2a2a;
+        --darker-bg: #1f1f1f;
+        --light-text: #ffffff;
+        --lighter-text: #f5f5f5;
+        --muted-text: #cccccc;
+        --border-color: #444;
+    }
+
+    .pedido-container {
+        background-color: var(--dark-bg);
+        border-radius: 15px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+        padding: 40px;
+        max-width: 1000px;
+        margin: 50px auto;
+        border: 1px solid var(--border-color);
+    }
+
+    .pedido-header {
+        text-align: center;
+        margin-bottom: 40px;
+        padding-bottom: 20px;
+        border-bottom: 1px solid var(--border-color);
+    }
+
+    .pedido-header h1 {
+        font-size: 2.5rem;
+        color: var(--light-text);
+        margin-bottom: 10px;
+        font-weight: 700;
+        letter-spacing: 1px;
+    }
+
+    .pedido-header .numero-pedido {
+        color: var(--primary-color);
+        font-weight: bold;
+    }
+
+    .pedido-header .estado-pedido {
+        display: inline-block;
+        padding: 6px 15px;
+        border-radius: 20px;
+        font-weight: bold;
+        margin-top: 10px;
+    }
+
+    .pedido-header .estado-pendiente {
+        background-color: rgba(255, 193, 7, 0.2);
+        color: #ffc107;
+        border: 1px solid #ffc107;
+    }
+
+    .pedido-header .estado-completado {
+        background-color: rgba(0, 200, 81, 0.2);
+        color: #00c851;
+        border: 1px solid #00c851;
+    }
+
+    .pedido-header .estado-cancelado {
+        background-color: rgba(255, 68, 68, 0.2);
+        color: #ff4444;
+        border: 1px solid #ff4444;
+    }
+
+    .pedido-info {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 30px;
+        margin-bottom: 40px;
+    }
+
+    @media (max-width: 768px) {
+        .pedido-info {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    .info-card {
+        background-color: #333;
+        padding: 25px;
+        border-radius: 12px;
+        border: 1px solid var(--border-color);
+    }
+
+    .info-card h3 {
+        color: var(--light-text);
+        margin-top: 0;
+        margin-bottom: 20px;
+        font-size: 1.3rem;
+        border-bottom: 1px solid var(--border-color);
+        padding-bottom: 10px;
+    }
+
+    .info-line {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 12px;
+    }
+
+    .info-line .label {
+        color: var(--muted-text);
+    }
+
+    .info-line .value {
+        color: var(--light-text);
+        font-weight: bold;
+    }
+
+    .pedido-items {
+        margin-bottom: 40px;
+    }
+
+    .pedido-items h2 {
+        color: var(--light-text);
+        margin-bottom: 20px;
+        font-size: 1.5rem;
+        border-bottom: 1px solid var(--border-color);
+        padding-bottom: 10px;
+    }
+
+    .item {
+        display: grid;
+        grid-template-columns: 100px 1fr auto;
+        gap: 20px;
+        padding: 20px;
+        margin-bottom: 15px;
+        background-color: #333;
+        border-radius: 10px;
+        border: 1px solid var(--border-color);
+    }
+
+    @media (max-width: 576px) {
+        .item {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    .item img {
+        width: 100px;
+        height: 100px;
+        border-radius: 8px;
+        object-fit: cover;
+        border: 1px solid var(--border-color);
+    }
+
+    .item-info {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+    }
+
+    .item-info h4 {
+        color: var(--light-text);
+        margin: 0 0 10px;
+        font-size: 1.2rem;
+    }
+
+    .item-info p {
+        color: var(--muted-text);
+        margin: 3px 0;
+        font-size: 0.95rem;
+    }
+
+    .item-precio {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+        justify-content: center;
+        min-width: 150px;
+    }
+
+    .item-precio .precio-unitario {
+        color: var(--muted-text);
+        font-size: 0.95rem;
+    }
+
+    .item-precio .precio-total {
+        font-size: 1.3rem;
+        font-weight: bold;
+        color: var(--light-text);
+        margin-top: 5px;
+    }
+
+    .pedido-resumen {
+        background-color: #333;
+        padding: 30px;
+        border-radius: 12px;
+        border: 1px solid var(--border-color);
+        margin-top: 30px;
+    }
+
+    .resumen-line {
+        display: flex;
+        justify-content: space-between;
+        margin: 15px 0;
+        padding: 8px 0;
+    }
+
+    .resumen-line.total {
+        font-size: 1.6rem;
+        font-weight: bold;
+        color: var(--primary-color);
+        border-top: 2px solid var(--border-color);
+        padding-top: 15px;
+        margin-top: 20px;
+    }
+
+    .btn-volver {
+        display: inline-block;
+        padding: 12px 25px;
+        background-color: var(--secondary-color);
+        color: white;
+        border-radius: 8px;
+        text-decoration: none;
+        font-weight: bold;
+        margin-top: 30px;
+        transition: all 0.3s;
+    }
+
+    .btn-volver:hover {
+        background-color: #004a9a;
+        transform: translateY(-2px);
+        color: white;
+    }
+
+    .qr-code {
+        text-align: center;
+        margin-top: 30px;
+        padding: 20px;
+        background-color: #333;
+        border-radius: 12px;
+        border: 1px solid var(--border-color);
+    }
+
+    .qr-code img {
+        max-width: 200px;
+        margin-bottom: 15px;
+    }
+
+    .qr-code p {
+        color: var(--muted-text);
+        margin-top: 10px;
+    }
+
+    /* Animaciones */
+    @keyframes fadeIn {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .pedido-container {
+        animation: fadeIn 0.5s ease forwards;
+    }
+</style>
+
+<div class="pedido-container">
+    <div class="pedido-header">
+        <h1>Detalle de tu Pedido <span class="numero-pedido">#{{ pedido.id }}</span></h1>
+        <div class="estado-pedido estado-{{ pedido.estado }}">
+            {{ pedido.get_estado_display }}
+        </div>
+    </div>
+
+    <div class="pedido-info">
+        <div class="info-card">
+            <h3>Información del Pedido</h3>
+            <div class="info-line">
+                <span class="label">Fecha:</span>
+                <span class="value">{{ pedido.fecha|date:"d/m/Y H:i" }}</span>
+            </div>
+            <div class="info-line">
+                <span class="label">Número de Pedido:</span>
+                <span class="value">#{{ pedido.id }}</span>
+            </div>
+            <div class="info-line">
+                <span class="label">Método de Pago:</span>
+                <span class="value">Tarjeta de Crédito</span>
+            </div>
+            <div class="info-line">
+                <span class="label">Estado:</span>
+                <span class="value">{{ pedido.get_estado_display }}</span>
+            </div>
+        </div>
+
+        <div class="info-card">
+            <h3>Información de Entrega</h3>
+            <div class="info-line">
+                <span class="label">Nombre:</span>
+                <span class="value">{{ usuario.nombre }}</span>
+            </div>
+            <div class="info-line">
+                <span class="label">Dirección:</span>
+                <span class="value">{{ pedido.direccion_entrega }}</span>
+            </div>
+            <div class="info-line">
+                <span class="label">Teléfono:</span>
+                <span class="value">{{ usuario.telefono|default:"No proporcionado" }}</span>
+            </div>
+            <div class="info-line">
+                <span class="label">Email:</span>
+                <span class="value">{{ usuario.email }}</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="pedido-items">
+        <h2>Artículos Rentados</h2>
+        
+        {% for detalle in detalles %}
+        <div class="item">
+            <img src="{{ detalle.mueble.imagen.url }}" alt="{{ detalle.mueble.nombre }}">
+            
+            <div class="item-info">
+                <h4>{{ detalle.mueble.nombre }}</h4>
+                <p><strong>Cantidad:</strong> {{ detalle.cantidad }}</p>
+                <p><strong>Días de renta:</strong> {{ detalle.dias }}</p>
+                <p><strong>Precio por día:</strong> ${{ detalle.precio_unitario|intcomma }}</p>
+            </div>
+            
+            <div class="item-precio">
+                <span class="precio-unitario">${{ detalle.precio_unitario|intcomma }} x {{ detalle.cantidad }} x {{ detalle.dias }} días</span>
+                <span class="precio-total">${{ detalle.subtotal|intcomma }}</span>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <div class="pedido-resumen">
+        <div class="resumen-line">
+            <span>Subtotal:</span>
+            <span>${{ pedido.total|intcomma }}</span>
+        </div>
+        
+        {% if pedido.costo_domicilio > 0 %}
+        <div class="resumen-line">
+            <span>Domicilio:</span>
+            <span>${{ pedido.costo_domicilio|intcomma }}</span>
+        </div>
+        {% endif %}
+        
+        {% if pedido.servicio_instalacion %}
+        <div class="resumen-line">
+            <span>Instalación:</span>
+            <span>$5,000</span>
+        </div>
+        {% endif %}
+        
+        <div class="resumen-line total">
+            <span>Total Pagado:</span>
+            <span>${{ pedido.total|intcomma }}</span>
+        </div>
+    </div>
+
+    <div class="qr-code">
+        <img src="{% static 'muebles/img/qr-code.png' %}" alt="Código QR del Pedido">
+        <p>Muestra este código QR al momento de recibir tus muebles</p>
+    </div>
+
+    <a href="{% url 'perfil' %}" class="btn-volver">
+        <i class="bi bi-arrow-left"></i> Volver a Mis Pedidos
+    </a>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Agregar clase de estado al pedido
+    const estadoPedido = document.querySelector('.estado-pedido');
+    if (estadoPedido) {
+        const estado = "{{ pedido.estado }}";
+        estadoPedido.classList.add(`estado-${estado}`);
+    }
+});
+</script>
+{% endblock %}
