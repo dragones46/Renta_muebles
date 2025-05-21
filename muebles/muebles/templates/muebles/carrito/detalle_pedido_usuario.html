@@ -1,3 +1,5 @@
+<!-- detalle_pedido_usuario.html -->
+
 {% extends 'muebles/barNav.html' %}
 {% load static %}
 {% load humanize %}
@@ -321,18 +323,18 @@
 
     <div class="pedido-items">
         <h2>Artículos Rentados</h2>
-        
+
         {% for detalle in detalles %}
         <div class="item">
             <img src="{{ detalle.mueble.imagen.url }}" alt="{{ detalle.mueble.nombre }}">
-            
+
             <div class="item-info">
                 <h4>{{ detalle.mueble.nombre }}</h4>
                 <p><strong>Cantidad:</strong> {{ detalle.cantidad }}</p>
                 <p><strong>Días de renta:</strong> {{ detalle.dias }}</p>
                 <p><strong>Precio por día:</strong> ${{ detalle.precio_unitario|intcomma }}</p>
             </div>
-            
+
             <div class="item-precio">
                 <span class="precio-unitario">${{ detalle.precio_unitario|intcomma }} x {{ detalle.cantidad }} x {{ detalle.dias }} días</span>
                 <span class="precio-total">${{ detalle.subtotal|intcomma }}</span>
@@ -346,21 +348,21 @@
             <span>Subtotal:</span>
             <span>${{ pedido.total|intcomma }}</span>
         </div>
-        
+
         {% if pedido.costo_domicilio > 0 %}
         <div class="resumen-line">
             <span>Domicilio:</span>
             <span>${{ pedido.costo_domicilio|intcomma }}</span>
         </div>
         {% endif %}
-        
+
         {% if pedido.servicio_instalacion %}
         <div class="resumen-line">
             <span>Instalación:</span>
             <span>$5,000</span>
         </div>
         {% endif %}
-        
+
         <div class="resumen-line total">
             <span>Total Pagado:</span>
             <span>${{ pedido.total|intcomma }}</span>
@@ -368,11 +370,15 @@
     </div>
 
     <div class="qr-code">
-        <img src="{% static 'muebles/img/qr-code.png' %}" alt="Código QR del Pedido">
+        <img src="{% static 'muebles/img/qr-code.png' %}" alt="Código QR del Pedido" style="background-color: white;">
         <p>Muestra este código QR al momento de recibir tus muebles</p>
     </div>
 
-    <a href="{% url 'perfil' %}" class="btn-volver">
+    <a href="{% url 'perfil' %}" class="btn-volver" style="margin-right: 10px;"> 
+        <i class="bi bi-arrow-left"></i> Volver a Perfil
+    </a>
+
+    <a href="{% url 'mis_pedidos' %}" class="btn-volver">
         <i class="bi bi-arrow-left"></i> Volver a Mis Pedidos
     </a>
 </div>

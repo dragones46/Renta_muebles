@@ -517,7 +517,7 @@
     <div class="pago-content">
         <div class="formulario-pago">
             <h3>Información de Pago</h3>
-            
+
             {% if messages %}
                 {% for message in messages %}
                 <div class="alert alert-{{ message.tags }}">
@@ -528,22 +528,22 @@
 
             <form method="post" id="pagoForm">
                 {% csrf_token %}
-                
+
                 <div class="form-group">
                     <label for="id_nombre_tarjeta">Nombre del Titular</label>
                     {{ form.nombre_tarjeta }}
                 </div>
-                
+
                 <div class="form-group">
                     <label for="id_email">Correo Electrónico</label>
                     {{ form.email }}
                 </div>
-                
+
                 <div class="form-group">
                     <label for="id_direccion">Dirección de Facturación</label>
                     {{ form.direccion }}
                 </div>
-                
+
                 <div class="form-group">
                     <label>Método de Pago</label>
                     <div class="radio-group">
@@ -573,25 +573,25 @@
                         {% endfor %}
                     </div>
                 </div>
-                
+
                 <div id="tarjetaInfo" class="tarjeta-info">
                     <div class="tarjeta-imagen">
                         <img src="{% static 'muebles/img/visa.png' %}" alt="Visa" id="visaImg">
-                        <img src="{% static 'muebles/img/mastercard.png' %}" alt="MasterCard" id="mastercardImg" >
+                        <img src="{% static 'muebles/img/mastercard.png' %}" alt="MasterCard" id="mastercardImg">
                         <img src="{% static 'muebles/img/amex.png' %}" alt="American Express" id="amexImg">
                         <img src="{% static 'muebles/img/pse.png' %}" alt="PSE" id="pseImg">
                     </div>
-                    
+
                     <div class="form-group">
                         <label for="id_tipo_tarjeta">Tipo de Tarjeta</label>
                         {{ form.tipo_tarjeta }}
                     </div>
-                    
+
                     <div class="form-group">
                         <label for="id_numero_tarjeta">Número de Tarjeta</label>
                         {{ form.numero_tarjeta }}
                     </div>
-                    
+
                     <div class="row">
                         <div class="form-group">
                             <label for="id_fecha_expiracion">Fecha de Expiración</label>
@@ -603,50 +603,52 @@
                         </div>
                     </div>
                 </div>
-                
+
                 <div class="terminos">
                     {{ form.aceptar_terminos }}
                     <label for="id_aceptar_terminos">
-                        He leído y acepto los <a href="#" data-bs-toggle="modal" data-bs-target="#terminosModal">términos y condiciones</a> de compra
+                        He leído y acepto los 
+                        <a href="#" data-bs-toggle="modal" data-bs-target="#terminosModal">términos y condiciones</a> 
+                        de compra
                     </label>
                     {% if form.aceptar_terminos.errors %}
                         <div class="text-danger">{{ form.aceptar_terminos.errors }}</div>
                     {% endif %}
                 </div>
-                
+
                 <button type="submit" class="btn-pagar" id="submitBtn">
                     <i class="bi bi-credit-card-fill"></i> Confirmar Pago
                 </button>
             </form>
         </div>
-        
+
         <div class="resumen-pago">
             <h3>Resumen del Pedido</h3>
-            
+
             <div class="resumen-item">
                 <span class="nombre">Subtotal:</span>
                 <span class="valor">${{ subtotal|intcomma }}</span>
             </div>
-            
+
             {% if costo_domicilio > 0 %}
             <div class="resumen-item">
                 <span class="nombre">Domicilio:</span>
                 <span class="valor">${{ costo_domicilio|intcomma }}</span>
             </div>
             {% endif %}
-            
+
             {% if costo_instalacion > 0 %}
             <div class="resumen-item">
                 <span class="nombre">Instalación:</span>
                 <span class="valor">${{ costo_instalacion|intcomma }}</span>
             </div>
             {% endif %}
-            
+
             <div class="resumen-item resumen-total">
                 <span class="nombre">Total a Pagar:</span>
                 <span class="valor">${{ total|intcomma }}</span>
             </div>
-            
+
             <div id="metodoPagoSeleccionado" class="metodo-pago-seleccionado">
                 <i class="bi bi-credit-card icon"></i>
                 <span id="metodoPagoText">Tarjeta de Crédito</span>
@@ -666,16 +668,16 @@
             <div class="modal-body">
                 <h4 class="text-orange">1. Política de Reserva</h4>
                 <p>Al realizar un pedido en nuestro sitio web, usted está realizando una reserva de los muebles seleccionados para las fechas indicadas. La disponibilidad está sujeta a confirmación.</p>
-                
+
                 <h4 class="text-orange">2. Precios y Pagos</h4>
                 <p>Todos los precios mostrados están en pesos colombianos (COP) e incluyen IVA. Los precios pueden variar según la temporada y disponibilidad. El pago se realiza en su totalidad al momento de la reserva.</p>
-                
+
                 <h4 class="text-orange">3. Cancelaciones y Reembolsos</h4>
                 <p>Las cancelaciones realizadas con más de 7 días de anticipación recibirán un reembolso del 100%. Cancelaciones entre 7 y 3 días antes recibirán un reembolso del 50%. No se realizan reembolsos por cancelaciones con menos de 3 días de anticipación.</p>
-                
+
                 <h4 class="text-orange">4. Daños y Responsabilidades</h4>
                 <p>El cliente es responsable del cuidado de los muebles durante el período de alquiler. Se cobrará por daños o pérdidas según el valor de reposición del artículo.</p>
-                
+
                 <h4 class="text-orange">5. Privacidad y Seguridad</h4>
                 <p>Toda la información proporcionada durante el proceso de compra está protegida bajo nuestra política de privacidad. No almacenamos los datos de su tarjeta de crédito.</p>
             </div>
@@ -694,24 +696,24 @@ document.addEventListener('DOMContentLoaded', function() {
     const metodoPagoSeleccionado = document.getElementById('metodoPagoSeleccionado');
     const metodoPagoText = document.getElementById('metodoPagoText');
     const submitBtn = document.getElementById('submitBtn');
-    
+
     function updatePaymentMethod() {
         const selectedMethod = document.querySelector('input[name="metodo_pago"]:checked').value;
-        
+
         // Mostrar/ocultar info de tarjeta
         if (selectedMethod === 'tarjeta') {
             tarjetaInfo.classList.add('active');
             submitBtn.innerHTML = '<i class="bi bi-credit-card-fill"></i> Pagar con Tarjeta';
         } else {
             tarjetaInfo.classList.remove('active');
-            
+
             if (selectedMethod === 'pse') {
                 submitBtn.innerHTML = '<i class="bi bi-bank"></i> Pagar con PSE';
             } else {
                 submitBtn.innerHTML = '<i class="bi bi-cash"></i> Generar Recibo de Pago';
             }
         }
-        
+
         // Actualizar resumen
         metodoPagoSeleccionado.classList.add('active');
         if (selectedMethod === 'tarjeta') {
@@ -722,74 +724,30 @@ document.addEventListener('DOMContentLoaded', function() {
             metodoPagoText.textContent = 'Efectivo en Punto de Pago';
         }
     }
-    
+
     metodoPagoRadios.forEach(radio => {
         radio.addEventListener('change', updatePaymentMethod);
     });
-    
+
     // Inicializar
     updatePaymentMethod();
-    
-    // Actualizar imágenes de tarjetas según tipo seleccionado
-    const tipoTarjetaSelect = document.getElementById('id_tipo_tarjeta');
-    const tarjetaImgs = {
-        'visa': document.getElementById('visaImg'),
-        'mastercard': document.getElementById('mastercardImg'),
-        'amex': document.getElementById('amexImg'),
-        'diners': document.getElementById('dinersImg')
-    };
-    
-    tipoTarjetaSelect.addEventListener('change', function() {
-        // Reset all images
-        Object.values(tarjetaImgs).forEach(img => {
-            img.classList.remove('active');
-        });
-        
-        // Activate selected
-        if (this.value && tarjetaImgs[this.value]) {
-            tarjetaImgs[this.value].classList.add('active');
-        }
-    });
-    
+
     // Validar formulario antes de enviar
     const pagoForm = document.getElementById('pagoForm');
     pagoForm.addEventListener('submit', function(e) {
         const aceptarTerminos = document.getElementById('id_aceptar_terminos').checked;
-        
+
         if (!aceptarTerminos) {
             e.preventDefault();
             alert('Debes aceptar los términos y condiciones para continuar');
             return false;
         }
-        
+
         // Mostrar loading
         submitBtn.disabled = true;
         submitBtn.innerHTML = '<i class="bi bi-arrow-repeat spin"></i> Procesando Pago...';
     });
-    
-    // Máscaras para campos de tarjeta
-    const numeroTarjeta = document.getElementById('id_numero_tarjeta');
-    if (numeroTarjeta) {
-        numeroTarjeta.addEventListener('input', function(e) {
-            let value = this.value.replace(/\s+/g, '');
-            if (value.length > 0) {
-                value = value.match(new RegExp('.{1,4}', 'g')).join(' ');
-            }
-            this.value = value;
-        });
-    }
-    
-    const fechaExpiracion = document.getElementById('id_fecha_expiracion');
-    if (fechaExpiracion) {
-        fechaExpiracion.addEventListener('input', function(e) {
-            let value = this.value.replace(/\D/g, '');
-            if (value.length > 2) {
-                value = value.substring(0, 2) + '/' + value.substring(2, 6);
-            }
-            this.value = value;
-        });
-    }
-    
+
     // Spin icon
     const style = document.createElement('style');
     style.innerHTML = `

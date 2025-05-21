@@ -321,20 +321,20 @@ class MetodoPagoForm(forms.Form):
         ('pse', 'PSE (Pagos Seguros en Línea)'),
         ('efectivo', 'Efectivo en Punto de Pago'),
     )
-    
+
     TIPOS_TARJETA = (
         ('visa', 'Visa'),
         ('mastercard', 'MasterCard'),
         ('amex', 'American Express'),
         ('diners', 'Diners Club'),
     )
-    
+
     metodo_pago = forms.ChoiceField(
         choices=METODOS_PAGO,
         widget=forms.RadioSelect,
         initial='tarjeta'
     )
-    
+
     # Información del titular
     nombre_tarjeta = forms.CharField(
         max_length=100,
@@ -348,7 +348,7 @@ class MetodoPagoForm(forms.Form):
         max_length=200,
         widget=forms.TextInput(attrs={'placeholder': 'Dirección de facturación'})
     )
-    
+
     # Información de la tarjeta (solo si método es tarjeta)
     tipo_tarjeta = forms.ChoiceField(
         choices=TIPOS_TARJETA,
@@ -382,36 +382,30 @@ class MetodoPagoForm(forms.Form):
             'data-mask': '0000'
         })
     )
-    
+
     # Términos y condiciones
     aceptar_terminos = forms.BooleanField(
         required=True,
         label="Acepto los términos y condiciones de compra"
     )
-    
+
     def clean(self):
         cleaned_data = super().clean()
         metodo_pago = cleaned_data.get('metodo_pago')
-        
+
         if metodo_pago == 'tarjeta':
             # Validar campos de tarjeta
             numero_tarjeta = cleaned_data.get('numero_tarjeta', '').replace(' ', '')
             fecha_expiracion = cleaned_data.get('fecha_expiracion', '')
             codigo_seguridad = cleaned_data.get('codigo_seguridad', '')
-            
+
             if not numero_tarjeta or len(numero_tarjeta) < 15:
                 self.add_error('numero_tarjeta', 'Número de tarjeta inválido')
-            
+
             if not re.match(r'^\d{2}/\d{4}$', fecha_expiracion):
                 self.add_error('fecha_expiracion', 'Formato debe ser MM/AAAA')
-            
+
             if not codigo_seguridad or len(codigo_seguridad) < 3:
                 self.add_error('codigo_seguridad', 'Código de seguridad inválido')
-        
+
         return cleaned_data
-    
-    def clean_numero_tarjeta(self):
-        numero = self.cleaned_data.get('numero_tarjeta', '').replace(' ', '')
-        if not numero.isdigit():
-            raise forms.ValidationError("El número de tarjeta solo debe contener dígitos")
-        return numero

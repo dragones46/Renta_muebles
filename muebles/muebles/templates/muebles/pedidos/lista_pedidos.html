@@ -1,0 +1,190 @@
+{% extends 'muebles/barNav.html' %}
+{% load static %}
+{% load humanize %}
+{% block titulo %}Mis Pedidos{% endblock %}
+
+{% block contenedor %}
+<style>
+ .pedidos-container {
+        background-color: #2a2a2a;
+        border-radius: 15px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+        padding: 40px;
+        max-width: 1000px;
+        margin: 50px auto;
+        border: 1px solid #444;
+    }
+
+    .pedidos-header {
+        text-align: center;
+        margin-bottom: 40px;
+        padding-bottom: 20px;
+        border-bottom: 1px solid #444;
+    }
+
+    .pedidos-header h1 {
+        font-size: 2.5rem;
+        color: #ffffff;
+        margin-bottom: 10px;
+        font-weight: 700;
+        letter-spacing: 1px;
+    }
+
+    .pedido-item {
+        background-color: #333;
+        padding: 20px;
+        margin-bottom: 15px;
+        border-radius: 10px;
+        border: 1px solid #444;
+    }
+
+    .pedido-item h2 {
+        color: #ffffff;
+        margin-bottom: 10px;
+        font-size: 1.5rem;
+    }
+
+    .pedido-item p {
+        color: #cccccc;
+        margin: 5px 0;
+    }
+
+    .pedido-item .estado-pedido {
+        display: inline-block;
+        padding: 6px 15px;
+        border-radius: 20px;
+        font-weight: bold;
+        margin-top: 10px;
+    }
+
+    .pedido-item .estado-pendiente {
+        background-color: rgba(255, 193, 7, 0.2);
+        color: #ffc107;
+        border: 1px solid #ffc107;
+    }
+
+    .pedido-item .estado-completado {
+        background-color: rgba(0, 200, 81, 0.2);
+        color: #00c851;
+        border: 1px solid #00c851;
+    }
+
+    .pedido-item .estado-cancelado {
+        background-color: rgba(255, 68, 68, 0.2);
+        color: #ff4444;
+        border: 1px solid #ff4444;
+    }
+
+    .btn-detalle {
+        display: inline-block;
+        padding: 8px 15px;
+        background-color: #ff8c00;
+        color: white;
+        border-radius: 8px;
+        text-decoration: none;
+        font-weight: bold;
+        margin-top: 10px;
+        transition: all 0.3s;
+    }
+
+    .btn-detalle:hover {
+        background-color: #e67600;
+        transform: translateY(-2px);
+        color: white;
+    }
+    .search-container {
+        margin-bottom: 20px;
+    }
+
+    .search-container input {
+        padding: 8px;
+        border-radius: 5px;
+        border: 1px solid #444;
+        background-color: #333;
+        color: #ffffff;
+    }
+
+    .search-container button {
+        padding: 8px 15px;
+        background-color: #ff8c00;
+        color: white;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+    }
+
+    .search-container button:hover {
+        background-color: #e67600;
+    }
+
+    .pagination {
+        display: flex;
+        justify-content: center;
+        margin-top: 20px;
+    }
+
+    .pagination a {
+        color: #ffffff;
+        padding: 8px 16px;
+        text-decoration: none;
+        border: 1px solid #444;
+        margin: 0 4px;
+        border-radius: 5px;
+    }
+
+    .pagination a.active {
+        background-color: #ff8c00;
+        border: 1px solid #ff8c00;
+    }
+
+    .pagination a:hover:not(.active) {
+        background-color: #444;
+    }
+</style>
+
+<div class="pedidos-container">
+    <div class="pedidos-header">
+        <h1>Mis Pedidos</h1>
+    </div>
+
+    <div class="search-container">
+        <form method="get">
+            <input type="text" name="search" placeholder="Buscar por número de pedido..." value="{{ search_term }}">
+            <button type="submit">Buscar</button>
+        </form>
+    </div>
+
+    {% for pedido in pedidos %}
+    <div class="pedido-item">
+        <h2>Pedido #{{ pedido.id }}</h2>
+        <p><strong>Fecha:</strong> {{ pedido.fecha|date:"d/m/Y H:i" }}</p>
+        <p><strong>Total:</strong> ${{ pedido.total|intcomma }}</p>
+        <p><strong>Estado:</strong> <span class="estado-pedido estado-{{ pedido.estado }}">{{ pedido.get_estado_display }}</span></p>
+        <a href="{% url 'detalle_pedido_usuario' pedido.id %}" class="btn-detalle">Ver Detalle</a>
+    </div>
+    {% empty %}
+    <p>No tienes pedidos aún.</p>
+    {% endfor %}
+
+    <div class="pagination">
+        <span class="step-links">
+            {% if pedidos.has_previous %}
+                <a href="?page=1{% if search_term %}&search={{ search_term }}{% endif %}">&laquo; Primera</a>
+                <a href="?page={{ pedidos.previous_page_number }}{% if search_term %}&search={{ search_term }}{% endif %}">Anterior</a>
+            {% endif %}
+
+            <span class="current">
+                Página {{ pedidos.number }} de {{ pedidos.paginator.num_pages }}.
+            </span>
+
+            {% if pedidos.has_next %}
+                <a href="?page={{ pedidos.next_page_number }}{% if search_term %}&search={{ search_term }}{% endif %}">Siguiente</a>
+                <a href="?page={{ pedidos.paginator.num_pages }}{% if search_term %}&search={{ search_term }}{% endif %}">Última &raquo;</a>
+            {% endif %}
+        </span>
+    </div>
+    <a href="{% url 'perfil' %}" class="btn-volver">
+        <i class="bi bi-arrow-left"></i> Volver a Perfil
+    </a>
+</div>
+{% endblock %}

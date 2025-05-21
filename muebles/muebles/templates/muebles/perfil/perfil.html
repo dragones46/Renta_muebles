@@ -129,43 +129,7 @@
                                 <p><strong>Correo:</strong> {{ user.email }}</p>
                                 <p><strong>Dirección:</strong> {{ user.direccion|default:"No especificada" }}</p>
                                 <p><strong>Teléfono:</strong> {{ user.telefono|default:"No especificado" }}</p>
-                            </div>
-                            
-                            <div class="mb-3">
-                                <h5>Historial de Alquileres</h5>
-                                <hr>
-                                {% if rentas %}
-                                    <div class="table-responsive">
-                                        <table class="table table-hover">
-                                            <thead>
-                                                <tr>
-                                                    <th>Mueble</th>
-                                                    <th>Fecha Inicio</th>
-                                                    <th>Fecha Fin</th>
-                                                    <th>Estado</th>
-                                                    <th>Total</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                {% for renta in rentas %}
-                                                <tr>
-                                                    <td>{{ renta.mueble.nombre }}</td>
-                                                    <td>{{ renta.fecha_inicio|date:"d/m/Y" }}</td>
-                                                    <td>{{ renta.fecha_fin|date:"d/m/Y" }}</td>
-                                                    <td>
-                                                        <span class="badge bg-{% if renta.estado == 'completado' %}success{% elif renta.estado == 'activo' %}primary{% else %}warning{% endif %}">
-                                                            {{ renta.get_estado_display }}
-                                                        </span>
-                                                    </td>
-                                                    <td>${{ renta.total|floatformat:2 }}</td>
-                                                </tr>
-                                                {% endfor %}
-                                            </tbody>
-                                        </table>
-                                    </div>
-                                {% else %}
-                                    <div class="alert alert-info">No tienes alquileres registrados.</div>
-                                {% endif %}
+                                <a href="{% url 'mis_pedidos' %}" class="btn btn-sm btn-outline-info"><i class="bi bi-list"></i> Ver Todos Mis Pedidos</a>
                             </div>
                         </div>
                     </div>

@@ -1,7 +1,7 @@
 {% extends 'muebles/barNav.html' %}
 {% load static %}
 {% load humanize %}
-{% block titulo %}Perfil de Propietario - Renta de Muebles{% endblock %}
+{% block titulo %}Perfil de Proveedor - Renta de Muebles{% endblock %}
 
 {% block contenedor %}
 <style>
@@ -114,7 +114,6 @@
         /* Borde naranja para inputs inválidos */
     }
 
-
 </style>
 
 <div class="container mt-5">
@@ -154,7 +153,7 @@
                                 <p><strong>Dirección:</strong> {{ user.direccion|default:"No tiene" }}</p>
                                 <p><strong>Teléfono:</strong> {{ user.telefono|default:"No tiene" }}</p>
                             </div>
-                            
+
                             <div class="mb-3">
                                 <h5>Estadísticas de Muebles</h5>
                                 <hr>
@@ -185,7 +184,7 @@
                                     </div>
                                 </div>
                             </div>
-                            
+
                             <div class="mb-3">
                                 <h5>Últimos Alquileres</h5>
                                 <hr>
@@ -199,6 +198,7 @@
                                                     <th>Mueble</th>
                                                     <th>Total</th>
                                                     <th>Ganancia</th>
+                                                    <th>Acciones</th>
                                                 </tr>
                                             </thead>
                                             <tbody>
@@ -208,7 +208,7 @@
                                                     <td>{{ pedido.usuario.nombre }}</td>
                                                     <td>
                                                         {% for detalle in pedido.detalles.all %}
-                                                            {% if detalle.mueble.propietario == propietario %}
+                                                            {% if detalle.mueble.proveedor == proveedor %}
                                                                 {{ detalle.mueble.nombre }} (x{{ detalle.cantidad }})<br>
                                                             {% endif %}
                                                         {% endfor %}
@@ -216,6 +216,11 @@
                                                     <td>${{ pedido.total|intcomma }}</td>
                                                     <td class="text-success">
                                                         ${{ pedido.ganancia_propietario|intcomma }}
+                                                    </td>
+                                                    <td>
+                                                        <a href="{% url 'detalle_pedido_usuario' pedido.id %}" class="btn btn-sm btn-outline-info">
+                                                            <i class="bi bi-eye"></i> Ver Detalle
+                                                        </a>
                                                     </td>
                                                 </tr>
                                                 {% endfor %}
@@ -285,7 +290,6 @@
         </div>
     </div>
 </div>
-
 
 <!-- Modal para cambiar contraseña -->
 <div class="modal fade" id="cambiarContrasenaModal" tabindex="-1" aria-labelledby="cambiarContrasenaModalLabel" aria-hidden="true">

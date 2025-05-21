@@ -27,7 +27,6 @@ from datetime import timedelta
 from django.conf import settings
 from django.core.mail import EmailMessage, send_mail
 import threading
-import traceback
 from django.db import IntegrityError, transaction
 from django.http import JsonResponse
 import json
@@ -42,7 +41,6 @@ from django.core.files import File
 from django.urls import reverse
 from rest_framework import viewsets
 from .serializers import *
-from rest_framework import viewsets
 from .crypt import *
 from .models import *
 from .forms import *
@@ -51,6 +49,7 @@ import uuid
 from io import BytesIO
 from .decorators import *
 from django.db.models import Count, Avg, ExpressionWrapper, FloatField, DurationField
+
 
 # ==================== VISTAS PÚBLICAS ====================
 
@@ -608,7 +607,7 @@ def perfil_cliente(request):
                 messages.success(request, '¡Perfil actualizado exitosamente!')
                 return redirect('perfil_cliente')
             else:
-                messages.warning(request, 'Por favor corrige los errores en el formulario de perfil: ' + str(form_perfil.errors))
+                messages.warning(request, 'Corrige los errores en el formulario: ' + str(form_perfil.errors))
 
         # 2. Cambiar contraseña
         elif 'cambiar_contrasena' in request.POST:
@@ -618,18 +617,26 @@ def perfil_cliente(request):
                     nueva_password = form_contrasena.cleaned_data['nueva_contrasena']
                     user.set_password(nueva_password)
                     user.save()
-                    update_session_auth_hash(request, user)  # mantener la sesión activa
+                    update_session_auth_hash(request, user)
                     messages.success(request, '¡Contraseña cambiada exitosamente!')
                     return redirect('perfil_cliente')
                 except Exception as e:
                     messages.error(request, f'Error al cambiar la contraseña: {str(e)}')
             else:
-                messages.warning(request, 'Por favor corrige los errores en el formulario de contraseña: ' + str(form_contrasena.errors))
+                messages.warning(request, 'Corrige los errores en el formulario: ' + str(form_contrasena.errors))
+
+    # ✅ Obtener rentas del usuario
+    rentas = Renta.objects.filter(usuario=user).order_by('-fecha_inicio')
+
+    # ✅ Obtener el último pedido del usuario (o ajusta como necesites)
+    pedido = Pedido.objects.filter(usuario=user).order_by('-fecha').first()
 
     context = {
         'user': user,
         'form_contrasena': form_contrasena,
         'form_perfil': form_perfil,
+        'rentas': rentas,
+        'pedido': pedido,
     }
 
     return render(request, 'muebles/perfil/perfil.html', context)
@@ -961,7 +968,7 @@ def formulario_pago(request):
     logueo = request.session.get("logueo")
     usuario = Usuario.objects.get(id=logueo["id"])
     carrito = Carrito.obtener_carrito(request)
-    
+
     if not carrito.items.exists():
         messages.error(request, "Tu carrito está vacío")
         return redirect('ver_carrito')
@@ -1006,6 +1013,20 @@ def formulario_pago(request):
                         )
                         comision_total += comision
 
+                    # Relacionar el pedido con la renta
+                    renta = Renta.objects.create(
+                        mueble=item.mueble,
+                        usuario=usuario,
+                        fecha_inicio=item.fecha_inicio,
+                        fecha_fin=item.fecha_fin,
+                        duracion_meses=item.duracion_meses,
+                        duracion_dias=item.duracion_dias,
+                        estado='activo',
+                        total=item.subtotal()
+                    )
+                    pedido.renta = renta
+                    pedido.save()
+
                     # Actualizar comisión total
                     pedido.comision_total = comision_total
                     pedido.save()
@@ -1021,11 +1042,11 @@ def formulario_pago(request):
                     request.session.modified = True
 
                     messages.success(request, "¡Pago exitoso! Tu pedido ha sido procesado.")
-                    return redirect('detalle_pedido', id=pedido.id)
+                    return redirect('index')
 
             except Exception as e:
                 messages.error(request, f"Error al procesar el pago: {str(e)}")
-                return redirect('formulario_pago')
+                return redirect('procesar_pago')
     else:
         # Datos iniciales del formulario
         initial_data = {
@@ -1044,35 +1065,89 @@ def formulario_pago(request):
         'costo_domicilio': costo_domicilio,
         'costo_instalacion': costo_instalacion,
     }
-    
+
     return render(request, 'muebles/carrito/formulario_pago.html', context)
 
 
-@login_requerido
+
+@login_requerido(roles_permitidos=[3])
 def detalle_pedido_usuario(request, id):
     logueo = request.session.get("logueo")
-    usuario = Usuario.objects.get(id=logueo["id"])
-    
+    print("ID en sesión:", logueo["id"])
+
     try:
-        # Solo permite ver el pedido si pertenece al usuario actual
-        pedido = Pedido.objects.get(id=id, usuario=usuario)
+        usuario = Usuario.objects.get(id=logueo["id"])
+        print("Usuario autenticado:", usuario)
+
+        # Obtener el pedido de forma ordenada por fecha
+        pedido = Pedido.objects.filter(id=id, usuario=usuario).order_by('-fecha').first()
+        print("Pedido encontrado:", pedido)
+
         detalles = DetallePedido.objects.filter(pedido=pedido)
-        
-        # Calcular días de renta para cada item
+
         for detalle in detalles:
-            detalle.dias = (detalle.pedido.fecha_fin - detalle.pedido.fecha_inicio).days + 1
-        
+            # Calcular los días de renta a través de la relación con Renta
+            if pedido.renta:
+                detalle.dias = (pedido.renta.fecha_fin - pedido.renta.fecha_inicio).days + 1
+            else:
+                detalle.dias = 0  # O algún valor por defecto si no hay renta asociada
+
         context = {
             'pedido': pedido,
             'detalles': detalles,
             'usuario': usuario,
         }
-        
         return render(request, 'muebles/carrito/detalle_pedido_usuario.html', context)
-        
+
     except Pedido.DoesNotExist:
+        print("Pedido no encontrado o no pertenece al usuario")
         messages.error(request, "El pedido no existe o no tienes permiso para verlo")
         return redirect('perfil')
+
+
+@login_required
+def lista_pedidos(request):
+    logueo = request.session.get("logueo")
+    if not logueo:
+        return redirect('login')
+
+    user_id = logueo.get("id")
+    if not user_id:
+        return redirect('login')
+
+    try:
+        usuario = Usuario.objects.get(id=user_id)
+
+        # Obtener el término de búsqueda
+        search_term = request.GET.get('search', '')
+
+        # Filtrar pedidos por término de búsqueda
+        if search_term:
+            pedidos_list = Pedido.objects.filter(
+                usuario=usuario,
+                id__icontains=search_term
+            ).order_by('-fecha')
+        else:
+            pedidos_list = Pedido.objects.filter(usuario=usuario).order_by('-fecha')
+
+        # Paginación
+        paginator = Paginator(pedidos_list, 10)  # Mostrar 10 pedidos por página
+        page = request.GET.get('page')
+
+        try:
+            pedidos = paginator.page(page)
+        except PageNotAnInteger:
+            # Si la página no es un número entero, mostrar la primera página
+            pedidos = paginator.page(1)
+        except EmptyPage:
+            # Si la página está fuera de rango, mostrar la última página
+            pedidos = paginator.page(paginator.num_pages)
+
+        return render(request, 'muebles/pedidos/lista_pedidos.html', {'pedidos': pedidos, 'search_term': search_term})
+
+    except Usuario.DoesNotExist:
+        return redirect('login')
+
 
 # ==================== VISTAS DE ADMINISTRACIÓN ====================
 

@@ -38,6 +38,7 @@ urlpatterns = [
     path('eliminar-domicilio/', views.eliminar_domicilio, name='eliminar_domicilio'),
     path('eliminar-instalacion/', views.eliminar_instalacion, name='eliminar_instalacion'),
     path('procesar-pago/', views.formulario_pago, name='procesar_pago'),
+    path('mis-pedidos/', views.lista_pedidos, name='mis_pedidos'),
     path('mis-pedidos/<int:id>/', views.detalle_pedido_usuario, name='detalle_pedido_usuario'),
 
 #ayuda

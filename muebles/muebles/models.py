@@ -16,6 +16,7 @@ import json
 import qrcode
 from django.core.files.base import ContentFile
 from django.conf import settings
+from datetime import date
 
 
 class Usuario(AbstractUser):
@@ -144,22 +145,41 @@ class Mueble(models.Model):
 
 
 class Renta(models.Model):
-    mueble = models.ForeignKey(Mueble, on_delete=models.CASCADE)
+    ESTADOS = (
+        ('activo', 'Activo'),
+        ('completado', 'Completado'),
+        ('cancelado', 'Cancelado'),
+    )
+
+    mueble = models.ForeignKey('Mueble', on_delete=models.CASCADE)
+    usuario = models.ForeignKey('Usuario', on_delete=models.CASCADE)
     fecha_inicio = models.DateField()
-    fecha_fin = models.DateField()  # Campo obligatorio
-    usuario = models.ForeignKey(Usuario, on_delete=models.CASCADE)
-    duracion_meses = models.IntegerField(default=0)  # Duración en meses
-    duracion_dias = models.IntegerField(default=0)  # Duración en días
+    fecha_fin = models.DateField(null=True, blank=True)
+    duracion_meses = models.IntegerField(default=0)
+    duracion_dias = models.IntegerField(default=0)
+    estado = models.CharField(max_length=20, choices=ESTADOS, default='activo')
+    total = models.FloatField(default=0)
+
+    def save(self, *args, **kwargs):
+        # Calcular fecha de fin si hay duración
+        if self.fecha_inicio and (self.duracion_meses or self.duracion_dias):
+            self.fecha_fin = self.fecha_inicio + timedelta(
+                days=(self.duracion_meses * 30) + self.duracion_dias
+            )
+
+        # Calcular total con oferta o sin ella
+        dias = (self.fecha_fin - self.fecha_inicio).days + 1 if self.fecha_inicio and self.fecha_fin else 0
+        precio_diario = self.mueble.precio_con_descuento if self.mueble.en_oferta else self.mueble.precio_diario
+        self.total = dias * precio_diario
+
+        # Actualizar estado automáticamente
+        if self.fecha_fin and self.fecha_fin < date.today():
+            self.estado = 'completado'
+
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return f"Renta de {self.mueble.nombre} por {self.usuario.nombre}"
-
-    def save(self, *args, **kwargs):
-        # Calcular la fecha_fin en función de la duración
-        if self.fecha_inicio and (self.duracion_meses or self.duracion_dias):
-            self.fecha_fin = self.fecha_inicio + timedelta(
-                days=(self.duracion_meses * 30) + self.duracion_dias)
-        super().save(*args, **kwargs)
 
 
 
@@ -264,7 +284,8 @@ class ItemCarrito(models.Model):
     dias = models.PositiveIntegerField(default=1)
     fecha_inicio = models.DateField()
     fecha_fin = models.DateField()
-    
+    duracion_meses = models.IntegerField(default=0)
+    duracion_dias = models.IntegerField(default=0)
     def save(self, *args, **kwargs):
         # Calcular días automáticamente al guardar
         if self.fecha_inicio and self.fecha_fin:
@@ -285,7 +306,6 @@ class Pedido(models.Model):
         ('completado', 'Completado'),
         ('cancelado', 'Cancelado'),
     )
-    
     usuario = models.ForeignKey(Usuario, on_delete=models.CASCADE)
     fecha = models.DateTimeField(auto_now_add=True)
     estado = models.CharField(max_length=20, choices=ESTADOS, default='pendiente')
@@ -294,7 +314,8 @@ class Pedido(models.Model):
     costo_domicilio = models.IntegerField(default=0)
     comision_total = models.IntegerField(default=0)
     servicio_instalacion = models.BooleanField(default=False)
-   
+    renta = models.ForeignKey(Renta, on_delete=models.CASCADE, null=True, blank=True)  # Relación con Renta
+
     
     def __str__(self):
         return f"Pedido #{self.id} - {self.usuario.nombre}"
