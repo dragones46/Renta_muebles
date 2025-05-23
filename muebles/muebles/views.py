@@ -1070,7 +1070,7 @@ def formulario_pago(request):
 
 
 
-@login_requerido(roles_permitidos=[3])
+@login_requerido
 def detalle_pedido_usuario(request, id):
     logueo = request.session.get("logueo")
     print("ID en sesión:", logueo["id"])
@@ -1192,6 +1192,21 @@ def admin_muebles(request):
     if proveedor_filter:
         muebles = muebles.filter(proveedor__id=proveedor_filter)
 
+    # Calcular el total de las comisiones
+    total_comisiones = sum(mueble.comision for mueble in muebles)
+
+    # Calcular la comisión promedio
+    comision_promedio = total_comisiones / len(muebles) if muebles else 0
+
+    # Calcular ganancias totales de la plataforma
+    ganancia_total_plataforma = sum(mueble.comision_servicio for mueble in muebles)
+
+    # Calcular ganancias totales de los proveedores
+    ganancia_total_proveedores = sum(mueble.ganancia_propietario for mueble in muebles)
+
+    # Calcular el valor total en muebles
+    valor_total_muebles = sum(mueble.precio_diario for mueble in muebles)
+
     # Paginación
     paginator = Paginator(muebles, 10)
     page_number = request.GET.get('page')
@@ -1213,9 +1228,15 @@ def admin_muebles(request):
         'oferta_filter': oferta_filter,
         'proveedor_filter': proveedor_filter,
         'is_paginated': page_obj.has_other_pages(),
+        'total_comisiones': total_comisiones,
+        'comision_promedio': comision_promedio,
+        'ganancia_total_plataforma': ganancia_total_plataforma,
+        'ganancia_total_proveedores': ganancia_total_proveedores,
+        'valor_total_muebles': valor_total_muebles,
     }
 
     return render(request, 'muebles/admin/muebles.html', context)
+
 
 # views.py
 @login_requerido(roles_permitidos=[1, 2])
@@ -2649,10 +2670,10 @@ from django.http import HttpResponse
 def exportar_excel(request):
     logueo = request.session.get("logueo")
     usuario = Usuario.objects.get(id=logueo["id"])
-    propietario = get_object_or_404(Proveedor, usuario=usuario)
+    proveedor = get_object_or_404(Proveedor, usuario=usuario)
 
-    # Obtener todos los muebles del propietario
-    muebles = Mueble.objects.filter(propietario=propietario)
+    # Obtener todos los muebles del proveedor
+    muebles = Mueble.objects.filter(proveedor=proveedor)
 
     # Crear un DataFrame de pandas
     data = {
@@ -2660,7 +2681,7 @@ def exportar_excel(request):
         'Nombre': [mueble.nombre for mueble in muebles],
         'Precio Diario': [mueble.precio_diario for mueble in muebles],
         'Descuento': [mueble.descuento for mueble in muebles],
-        'Comisión': [mueble.comision for mueble in muebles],  # Changed from comision_propietario to comision
+        'Comisión': [mueble.comision for mueble in muebles],
         'Ganancia Propietario': [mueble.precio_final_propietario for mueble in muebles],
     }
 
@@ -2672,6 +2693,7 @@ def exportar_excel(request):
 
     df.to_excel(response, index=False)
     return response
+
 
 @login_requerido(roles_permitidos=[2])
 def eliminar_todo(request):

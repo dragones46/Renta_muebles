@@ -5,7 +5,6 @@
 
 {% block admin_contenido %}
 <style>
-    
     /* Estilos personalizados para mantener consistencia */
     .card {
         background-color: #1a1a1a;
@@ -246,6 +245,43 @@
         font-weight: bold;
     }
 
+    /* Estilos para las comisiones */
+    .comision-info {
+        background-color: #2a2a2a;
+        border-radius: 8px;
+        padding: 15px;
+        margin-bottom: 20px;
+    }
+    
+    .comision-item {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 8px;
+    }
+    
+    .comision-total {
+        border-top: 1px solid #444;
+        padding-top: 10px;
+        margin-top: 10px;
+        font-weight: bold;
+    }
+    
+    .comision-valor {
+        color: #ff6b00;
+    }
+    
+    .comision-porcentaje {
+        color: #17a2b8;
+    }
+    
+    .ganancia-proveedor {
+        color: #28a745;
+    }
+    
+    .ganancia-plataforma {
+        color: #dc3545;
+    }
+
     /* Estilos adicionales */
     .propietario-individual {
         color: #4dabf7;
@@ -263,8 +299,6 @@
         background-color: #ff6b00;
         color: white;
     }
-
-
 </style>
 
 <div class="container mt-4">
@@ -326,6 +360,39 @@
         </div>
     </div>
 
+    <!-- Resumen de comisiones -->
+    <div class="comision-info">
+        <h4 class="text-center mb-4">Resumen de Comisiones</h4>
+        
+        <div class="row">
+            <div class="col-md-6">
+                <div class="comision-item">
+                    <span>Total de muebles registrados:</span>
+                    <span class="comision-valor">{{ muebles|length }}</span>
+                </div>
+                <div class="comision-item">
+                    <span>Comisión promedio:</span>
+                    <span class="comision-porcentaje">{{ comision_promedio | floatformat:0 }}%</span>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="comision-item">
+                    <span>Ganancias totales plataforma:</span>
+                    <span class="ganancia-plataforma">${{ ganancia_total_plataforma | floatformat:0 }}</span>
+                </div>
+                <div class="comision-item">
+                    <span>Ganancias totales proveedores:</span>
+                    <span class="ganancia-proveedor">${{ ganancia_total_proveedores|floatformat:0 }}</span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="comision-total text-center">
+            <span>Valor total en muebles:</span>
+            <span class="comision-valor">${{ valor_total_muebles|floatformat:0 }}</span>
+        </div>
+    </div>
+
     <!-- Tabla de resultados -->
     {% if muebles %}
     <div class="table-responsive">
@@ -335,7 +402,8 @@
                     <th>ID</th>
                     <th>Nombre</th>
                     <th>Precio</th>
-                    <th>Descuento</th>
+                    <th>Comisión</th>
+                    <th>Ganancias</th>
                     <th>Proveedor</th>
                     <th>Imagen</th>
                     <th>Acciones</th>
@@ -355,14 +423,12 @@
                         {% endif %}
                     </td>
                     <td>
-                        {% if mueble.en_oferta %}
-                        <span class="badge badge-oferta">{{ mueble.descuento }}% OFF</span>
-                        {% if mueble.fecha_fin_descuento %}
-                        <small class="text-muted d-block">Hasta {{ mueble.fecha_fin_descuento|date:"d/m/Y" }}</small>
-                        {% endif %}
-                        {% else %}
-                        -
-                        {% endif %}
+                        <span class="comision-porcentaje">{{ mueble.comision }}%</span>
+                        <small class="text-muted d-block">${{ mueble.comision_servicio|floatformat:0 }}</small>
+                    </td>
+                    <td>
+                        <div class="ganancia-proveedor">${{ mueble.ganancia_propietario|floatformat:0 }}</div>
+                        <div class="ganancia-plataforma">${{ mueble.comision_servicio|floatformat:0 }}</div>
                     </td>
                     <td>
                         {% if mueble.proveedor.nombre_empresa %}
@@ -396,7 +462,7 @@
                 </tr>
                 {% empty %}
                 <tr>
-                    <td colspan="7" class="text-center">No se encontraron muebles</td>
+                    <td colspan="8" class="text-center">No se encontraron muebles</td>
                 </tr>
                 {% endfor %}
             </tbody>
@@ -480,14 +546,24 @@
                         <input type="number" class="form-control" name="precio_diario" required>
                         <small class="text-muted">Ingrese el valor sin puntos ni comas (ej: 1000000)</small>
                     </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Comisión (%)</label>
+                        <input type="number" class="form-control" name="comision" min="0" max="100" value="10" required>
+                        <small class="text-muted">Porcentaje que recibe la plataforma</small>
+                    </div>
+                    
                     <div class="form-group">
                         <label class="form-label">Descuento (%)</label>
                         <input type="number" class="form-control" name="descuento" min="0" max="100" value="0">
+                        <small class="text-muted">Descuento especial para promociones</small>
                     </div>
+                    
                     <div class="form-group">
                         <label class="form-label">Fecha Fin Descuento (opcional)</label>
                         <input type="date" class="form-control" name="fecha_fin_descuento">
                     </div>
+                    
                     <div class="form-group">
                         <label class="form-label">Proveedor</label>
                         <select class="form-select" name="proveedor" required>
@@ -504,6 +580,7 @@
                         </select>
                         <small class="text-muted">Seleccione a qué proveedor pertenece este mueble</small>
                     </div>
+                    
                     <div class="form-group">
                         <label class="form-label">Imagen del Mueble</label>
                         <input type="file" class="form-control" name="imagen" accept="image/*">
@@ -551,17 +628,26 @@
                         <label class="form-label">Precio Diario ($)</label>
                         <input type="text" class="form-control" name="precio_diario"
                                value="{{ mueble.precio_diario|floatformat:0 }}" required>
-                        <small class="text-muted">Ingrese el valor sin puntos ni comas (ej: 1000000)(quitar los puntos para editar  o tengan el mismo precio)</small>
+                        <small class="text-muted">Ingrese el valor sin puntos ni comas (ej: 1000000)</small>
                     </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Comisión (%)</label>
+                        <input type="number" class="form-control" name="comision" min="0" max="100" value="{{ mueble.comision }}" required>
+                        <small class="text-muted">Porcentaje que recibe la plataforma</small>
+                    </div>
+                    
                     <div class="form-group">
                         <label class="form-label">Descuento (%)</label>
                         <input type="number" class="form-control" name="descuento" min="0" max="100" value="{{ mueble.descuento }}">
                     </div>
+                    
                     <div class="form-group">
                         <label class="form-label">Fecha Fin Descuento (opcional)</label>
                         <input type="date" class="form-control" name="fecha_fin_descuento"
                                value="{{ mueble.fecha_fin_descuento|date:'Y-m-d' }}">
                     </div>
+                    
                     <div class="form-group">
                         <label class="form-label">Proveedor Actual</label>
                         <div class="alert alert-info">
@@ -589,6 +675,7 @@
                         </select>
                         <small class="text-muted">Seleccione solo si desea cambiar el proveedor</small>
                     </div>
+                    
                     <div class="form-group">
                         <label class="form-label">Imagen Actual</label>
                         {% if mueble.imagen %}
@@ -602,6 +689,23 @@
                         <label class="form-label">Cambiar Imagen</label>
                         <input type="file" class="form-control" name="imagen" accept="image/*">
                         <small class="text-muted">Dejar en blanco para mantener la imagen actual</small>
+                    </div>
+                    
+                    <!-- Resumen de comisiones -->
+                    <div class="alert alert-secondary mt-3">
+                        <h6>Resumen de Comisiones</h6>
+                        <div class="comision-item">
+                            <span>Precio base:</span>
+                            <span>${{ mueble.precio_diario|intcomma }}</span>
+                        </div>
+                        <div class="comision-item">
+                            <span>Comisión ({{ mueble.comision }}%):</span>
+                            <span class="ganancia-plataforma">${{ mueble.comision_servicio|intcomma }}</span>
+                        </div>
+                        <div class="comision-item">
+                            <span>Ganancia proveedor:</span>
+                            <span class="ganancia-proveedor">${{ mueble.ganancia_propietario|intcomma }}</span>
+                        </div>
                     </div>
                 </div>
                 <div class="modal-footer border-orange">
@@ -635,6 +739,8 @@
                     <p>¿Estás seguro de que deseas eliminar el mueble "{{ mueble.nombre }}"?</p>
                     <blockquote class="blockquote">
                         <p class="text-orange">Nombre: {{ mueble.nombre }}</p>
+                        <p class="text-orange">Precio: ${{ mueble.precio_diario|intcomma }}</p>
+                        <p class="text-orange">Comisión: {{ mueble.comision }}% (${{ mueble.comision_servicio|intcomma }})</p>
                     </blockquote>
                     <p class="text-danger">Esta acción no se puede deshacer.</p>
                 </div>

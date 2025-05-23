@@ -136,7 +136,7 @@ class Mueble(models.Model):
     @property
     def comision_servicio(self):
         """Calcula el monto de la comisión basado en el precio diario"""
-        return (self.precio_diario * self.comision_propietario / 100)
+        return (self.precio_diario * self.comision / 100)
     
     @property
     def ganancia_propietario(self):
