@@ -1480,6 +1480,8 @@ def editar_usuario(request, id):
                         # Si no hay nueva contraseña, no tocamos la contraseña
                         # Se mantiene la contraseña actual (sin modificación)
                         print("La contraseña no se proporcionó, se mantiene la misma.")
+                        # Eliminamos el campo 'password' de cleaned_data para evitar que se actualice
+                        form.cleaned_data.pop('password', None)
 
                     # Guardar el usuario sin cambiar la contraseña si no se proporciona una nueva
                     usuario.save()
