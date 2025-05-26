@@ -214,13 +214,12 @@ class Carrito(models.Model):
 
     @classmethod
     def obtener_carrito(cls, request):
-        # Si el usuario está logueado (tiene sesión "logueo")
         if request.session.get("logueo"):
             try:
                 user_id = request.session["logueo"]["id"]
                 user = Usuario.objects.get(id=user_id)
                 carrito, creado = cls.objects.get_or_create(usuario=user)
-                
+
                 # Actualizar el conteo en la sesión si es necesario
                 if creado or "carrito" not in request.session["logueo"]:
                     request.session["logueo"]["carrito"] = {
@@ -228,7 +227,7 @@ class Carrito(models.Model):
                         "items_count": carrito.items.count()
                     }
                     request.session.modified = True
-                    
+
             except (Usuario.DoesNotExist, KeyError):
                 # Si hay algún error, crear carrito de sesión
                 if not request.session.session_key:
@@ -241,8 +240,9 @@ class Carrito(models.Model):
                 request.session.create()
             session_key = request.session.session_key
             carrito, creado = cls.objects.get_or_create(session_key=session_key, usuario__isnull=True)
-        
+
         return carrito
+
 
     def migrar_a_usuario(self, usuario):
         """Migra el carrito de sesión a un usuario"""

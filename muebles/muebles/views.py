@@ -174,7 +174,7 @@ def login(request):
                         "items_count": user.carrito.items.count() if hasattr(user, 'carrito') else 0
                     }
                 }
-                
+
                 # Migrar carrito de sesión a usuario si existe
                 if not request.user.is_authenticated and request.session.session_key:
                     carrito_invitado = Carrito.objects.filter(
@@ -184,7 +184,7 @@ def login(request):
 
                     if carrito_invitado and carrito_invitado.items.exists():
                         carrito_usuario, _ = Carrito.objects.get_or_create(usuario=user)
-                        
+
                         for item in carrito_invitado.items.all():
                             item_existente = carrito_usuario.items.filter(
                                 mueble=item.mueble,
@@ -208,14 +208,14 @@ def login(request):
 
                         carrito_usuario.save()
                         carrito_invitado.delete()
-                        
+
                         # Actualizar conteo en sesión del usuario
                         request.session["logueo"]["carrito"]["items_count"] = carrito_usuario.items.count()
-                        
+
                         # Limpiar el contador de invitado
                         if 'carrito_items_count' in request.session:
                             del request.session['carrito_items_count']
-                
+
                 messages.success(request, f"Bienvenido {user.nombre}")
                 return redirect('index')
             else:
@@ -224,6 +224,8 @@ def login(request):
             messages.warning(request, "El correo electrónico no está registrado.")
 
     return render(request, 'muebles/perfil/login.html')
+
+
 
 
 def registro(request):
@@ -434,7 +436,7 @@ def perfil(request):
         return render(request, 'muebles/perfil/perfil_soporte.html', context)
     
     # Por defecto, vista de cliente
-    return render(request, 'muebles/perfil/perfil_cliente.html', context)
+    return render(request, 'muebles/perfil/perfil.html', context)
 
 
 @login_requerido(roles_permitidos=[1])
@@ -927,40 +929,36 @@ def actualizar_instalacion(request):
 
     return redirect('ver_carrito')
 
-
-
-
-
-    
-
-
-
-
 def eliminar_domicilio(request):
+    carrito = Carrito.obtener_carrito(request)
+
     if request.user.is_authenticated:
-        carrito = get_object_or_404(Carrito, usuario=request.user)
         carrito.domicilio = None
         carrito.save()
     else:
-        if 'carrito_session' in request.session and 'domicilio' in request.session['carrito_session']:
-            del request.session['carrito_session']['domicilio']
-            request.session.modified = True
-    
+        # Para usuarios no logueados, actualizamos el carrito de sesión
+        if hasattr(carrito, 'session_key'):
+            carrito.domicilio = None
+            carrito.save()
+
     messages.success(request, "Domicilio eliminado correctamente.")
     return redirect('ver_carrito')
 
 def eliminar_instalacion(request):
+    carrito = Carrito.obtener_carrito(request)
+
     if request.user.is_authenticated:
-        carrito = get_object_or_404(Carrito, usuario=request.user)
         carrito.servicio_instalacion = False
         carrito.save()
     else:
-        if 'carrito_session' in request.session and 'servicio_instalacion' in request.session['carrito_session']:
-            del request.session['carrito_session']['servicio_instalacion']
-            request.session.modified = True
-    
+        # Para usuarios no logueados, actualizamos el carrito de sesión
+        if hasattr(carrito, 'session_key'):
+            carrito.servicio_instalacion = False
+            carrito.save()
+
     messages.success(request, "Servicio de instalación eliminado correctamente.")
     return redirect('ver_carrito')
+
 
 # ==================== PROCESO DE PAGO ====================
 @login_requerido
@@ -1105,7 +1103,7 @@ def detalle_pedido_usuario(request, id):
         return redirect('perfil')
 
 
-@login_required
+@login_requerido
 def lista_pedidos(request):
     logueo = request.session.get("logueo")
     if not logueo:
